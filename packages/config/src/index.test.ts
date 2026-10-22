@@ -60,6 +60,23 @@ describe("runtime configuration", () => {
     });
   });
 
+  it("allows startup before a PayPal webhook is registered", () => {
+    expect(
+      loadRuntimeConfig({
+        NODE_ENV: "production",
+        DATABASE_MODE: "supabase",
+        SUPABASE_URL: "https://project.supabase.co",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-value",
+        PAYPAL_EXECUTION_MODE: "worker",
+        PAYPAL_CLIENT_ID: "paypal-client-id",
+        PAYPAL_CLIENT_SECRET: "paypal-client-secret",
+        PAYPAL_RETURN_URL: "https://app.example.test/paypal/return",
+        PAYPAL_CANCEL_URL: "https://app.example.test/paypal/cancel",
+        PAYPAL_CURRENCY: "USD",
+      }),
+    ).toMatchObject({ nodeEnv: "production", paypalExecutionMode: "worker" });
+  });
+
   it("rejects placeholder provider configuration in production", () => {
     expect(() =>
       loadRuntimeConfig({

@@ -87,7 +87,6 @@ export function loadRuntimeConfig(
     requireProductionValue(env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY");
     requireProductionValue(env.PAYPAL_CLIENT_ID, "PAYPAL_CLIENT_ID");
     requireProductionValue(env.PAYPAL_CLIENT_SECRET, "PAYPAL_CLIENT_SECRET");
-    requireProductionValue(env.PAYPAL_WEBHOOK_ID, "PAYPAL_WEBHOOK_ID");
     requireHttpsUrl(env.PAYPAL_RETURN_URL, "PAYPAL_RETURN_URL");
     requireHttpsUrl(env.PAYPAL_CANCEL_URL, "PAYPAL_CANCEL_URL");
 
