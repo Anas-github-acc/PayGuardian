@@ -75,7 +75,13 @@ export class SupabaseAuditStore implements AuditEventStore {
       .order("id", { ascending: true });
     if (error) throw error;
     const events = (data ?? []).map((row) => mapAuditEvent(row as Row));
-    if (!verifyAuditChain(events)) throw new Error("AUDIT_CHAIN_INVALID");
+    const verification = await this.client.rpc("verify_audit_chain", {
+      p_environment_id: environmentId,
+    });
+    if (verification.error) throw verification.error;
+    if (verification.data !== true && !verifyAuditChain(events)) {
+      throw new Error("AUDIT_CHAIN_INVALID");
+    }
     return events;
   }
 }

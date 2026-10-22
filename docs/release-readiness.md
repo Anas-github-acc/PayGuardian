@@ -187,9 +187,9 @@ Operator/date:
 ## Current verified boundary
 
 The repository contains automated checks for production configuration, API
-health/OpenAPI, agent health, and audit-integrity SQL invariants. The 13 local
-migrations, including `20261022008000_phase7_audit_integrity.sql`, are applied
-to the configured remote Supabase project, and the deployed web/API health
-checks pass. Backup/restore, agent-runtime hosting, worker hosting, live
-PayPal webhook, and full browser acceptance drills remain pending until their
-evidence is recorded.
+health/OpenAPI, agent health, and audit-integrity SQL invariants. The 15 local
+migrations, including the audit-integrity and audit-chain verification forward
+migrations, are applied to the configured remote Supabase project, and the
+deployed web/API health checks pass. Backup/restore, agent-runtime hosting,
+worker hosting, live PayPal webhook, and full browser acceptance drills remain
+pending until their evidence is recorded.
