@@ -53,8 +53,18 @@ export type Registry = {
   listEnvironments(userId: string): Promise<Environment[]>;
   createEnvironment(input: Omit<Environment, "id" | "createdAt" | "status">): Promise<Environment>;
   getEnvironment(userId: string, environmentId: string): Promise<Environment | null>;
+  setEnvironmentStatus(
+    userId: string,
+    environmentId: string,
+    status: Extract<EnvironmentStatus, "active" | "paused" | "revoked">,
+  ): Promise<Environment | null>;
   listAgents(userId: string, environmentId: string): Promise<Agent[]>;
   getAgent(userId: string, agentId: string): Promise<Agent | null>;
+  setAgentStatus(
+    userId: string,
+    agentId: string,
+    status: Extract<AgentStatus, "disabled" | "revoked">,
+  ): Promise<Agent | null>;
   createAgent(
     input: Omit<Agent, "id" | "createdAt" | "status">,
   ): Promise<{ agent: Agent; credential: CreatedCredential }>;
@@ -108,6 +118,24 @@ export class InMemoryRegistry implements Registry {
     return environment?.ownerUserId === userId ? environment : null;
   }
 
+  async setEnvironmentStatus(
+    userId: string,
+    environmentId: string,
+    status: Extract<EnvironmentStatus, "active" | "paused" | "revoked">,
+  ): Promise<Environment | null> {
+    const environment = await this.getEnvironment(userId, environmentId);
+    if (!environment) return null;
+    if (environment.status === "closed" || environment.status === "revoked") {
+      if (environment.status === status) return environment;
+      throw new Error("INVALID_ENVIRONMENT_TRANSITION");
+    }
+    if (environment.status === "active" && status === "active") return environment;
+    if (environment.status === "paused" && status === "paused") return environment;
+    environment.status = status;
+    this.environments.set(environment.id, environment);
+    return environment;
+  }
+
   async listAgents(userId: string, environmentId: string): Promise<Agent[]> {
     return [...this.agents.values()].filter(
       (item) => item.ownerUserId === userId && item.environmentId === environmentId,
@@ -117,6 +145,45 @@ export class InMemoryRegistry implements Registry {
   async getAgent(userId: string, agentId: string): Promise<Agent | null> {
     const agent = this.agents.get(agentId);
     return agent?.ownerUserId === userId ? agent : null;
+  }
+
+  async setAgentStatus(
+    userId: string,
+    agentId: string,
+    status: Extract<AgentStatus, "disabled" | "revoked">,
+  ): Promise<Agent | null> {
+    const agent = await this.getAgent(userId, agentId);
+    if (!agent) return null;
+    if (agent.status === "revoked") {
+      if (status === "revoked") return agent;
+      throw new Error("INVALID_AGENT_TRANSITION");
+    }
+
+    const descendants = new Set<string>([agent.id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const candidate of this.agents.values()) {
+        if (
+          candidate.ownerUserId === userId &&
+          candidate.environmentId === agent.environmentId &&
+          candidate.parentAgentId &&
+          descendants.has(candidate.parentAgentId) &&
+          !descendants.has(candidate.id)
+        ) {
+          descendants.add(candidate.id);
+          changed = true;
+        }
+      }
+    }
+
+    for (const descendantId of descendants) {
+      const candidate = this.agents.get(descendantId);
+      if (!candidate || candidate.status === "revoked") continue;
+      candidate.status = status;
+      this.agents.set(candidate.id, candidate);
+    }
+    return this.agents.get(agent.id) ?? null;
   }
 
   async createAgent(input: Omit<Agent, "id" | "createdAt" | "status">) {
@@ -168,6 +235,29 @@ export class SupabaseRegistry implements Registry {
     return data ? mapEnvironment(data) : null;
   }
 
+  async setEnvironmentStatus(
+    userId: string,
+    environmentId: string,
+    status: Extract<EnvironmentStatus, "active" | "paused" | "revoked">,
+  ): Promise<Environment | null> {
+    const current = await this.getEnvironment(userId, environmentId);
+    if (!current) return null;
+    if (current.status === "closed" || current.status === "revoked") {
+      if (current.status === status) return current;
+      throw new Error("INVALID_ENVIRONMENT_TRANSITION");
+    }
+    if (current.status === status) return current;
+    const { data, error } = await this.client
+      .from("environments")
+      .update({ status })
+      .eq("owner_user_id", userId)
+      .eq("id", environmentId)
+      .select("id,owner_user_id,name,purpose,currency,budget_limit_minor,status,created_at")
+      .maybeSingle();
+    if (error) throw error;
+    return data ? mapEnvironment(data) : null;
+  }
+
   async listAgents(userId: string, environmentId: string): Promise<Agent[]> {
     const { data, error } = await this.client
       .from("agents")
@@ -192,6 +282,45 @@ export class SupabaseRegistry implements Registry {
       .maybeSingle();
     if (error) throw error;
     return data ? mapAgent(data) : null;
+  }
+
+  async setAgentStatus(
+    userId: string,
+    agentId: string,
+    status: Extract<AgentStatus, "disabled" | "revoked">,
+  ): Promise<Agent | null> {
+    const agent = await this.getAgent(userId, agentId);
+    if (!agent) return null;
+    if (agent.status === "revoked") {
+      if (status === "revoked") return agent;
+      throw new Error("INVALID_AGENT_TRANSITION");
+    }
+    const agents = await this.listAgents(userId, agent.environmentId);
+    const affected = new Set<string>([agent.id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const candidate of agents) {
+        if (
+          candidate.parentAgentId &&
+          affected.has(candidate.parentAgentId) &&
+          !affected.has(candidate.id)
+        ) {
+          affected.add(candidate.id);
+          changed = true;
+        }
+      }
+    }
+    const mutableAgentIds = agents
+      .filter((candidate) => affected.has(candidate.id) && candidate.status !== "revoked")
+      .map((candidate) => candidate.id);
+    const { error } = await this.client
+      .from("agents")
+      .update({ status })
+      .eq("owner_user_id", userId)
+      .in("id", mutableAgentIds);
+    if (error) throw error;
+    return this.getAgent(userId, agent.id);
   }
 
   async createAgent(input: Omit<Agent, "id" | "createdAt" | "status">) {

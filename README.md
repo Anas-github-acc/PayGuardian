@@ -113,9 +113,10 @@ The sandbox Docker daemon is available, but Supabase's Docker network creation i
 
 ```bash
 make check
+pnpm release:check
 ```
 
-The check command runs formatting, TypeScript typechecking, ESLint, JavaScript tests/build, Python formatting/linting, and Python tests. A live Supabase Phase 2 smoke flow has been verified against the configured remote project; a dedicated disposable Supabase integration/concurrency suite and external deployment checks remain pending.
+The check command runs formatting, TypeScript typechecking, ESLint, JavaScript tests/build, Python formatting/linting, and Python tests. `pnpm release:check` adds the Phase 7 repository gate for production configuration, audit integrity, migration inventory, and optional live API/agent health and migration-status checks. The deployment and recovery procedure is in `docs/release-readiness.md`.
 
 ## Planning references
 

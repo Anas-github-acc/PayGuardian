@@ -33,6 +33,7 @@ export type AuthorityCheckInput = {
 export type AuthorityStore = {
   createRoot(input: RootMandateInput): Promise<Mandate>;
   get(id: string, userId?: string): Promise<Mandate | null>;
+  list(environmentId: string, userId: string): Promise<Mandate[]>;
   delegate(
     parentId: string,
     input: DelegationRequest,
@@ -87,6 +88,12 @@ export class InMemoryAuthorityStore implements AuthorityStore {
     const mandate = this.mandates.get(id) ?? null;
     if (mandate && userId && mandate.issuerUserId !== userId) return null;
     return mandate;
+  }
+
+  async list(environmentId: string, userId: string): Promise<Mandate[]> {
+    return [...this.mandates.values()].filter(
+      (mandate) => mandate.environmentId === environmentId && mandate.issuerUserId === userId,
+    );
   }
 
   async delegate(
@@ -219,6 +226,19 @@ export class SupabaseAuthorityStore implements AuthorityStore {
     const { data, error } = await query.maybeSingle();
     if (error) throw error;
     return data ? mapMandate(data as SupabaseMandateRow) : null;
+  }
+
+  async list(environmentId: string, userId: string): Promise<Mandate[]> {
+    const { data, error } = await this.client
+      .from("mandates")
+      .select(
+        "id,environment_id,issuer_user_id,holder_agent_id,parent_mandate_id,budget_limit_minor,allocated_minor,spent_minor,reserved_minor,currency,permitted_actions,expires_at,can_delegate,max_delegation_depth,approval_required,state,revoked_at,created_at",
+      )
+      .eq("environment_id", environmentId)
+      .eq("issuer_user_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => mapMandate(row as SupabaseMandateRow));
   }
 
   async delegate(

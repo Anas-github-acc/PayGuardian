@@ -265,6 +265,12 @@ export function registerPayPalRoutes(
         .code(404)
         .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Payment target not found." });
     }
+    if (environment.status !== "active") {
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "PayPal orders require an active environment.",
+      });
+    }
     if (request.body.currency.toUpperCase() !== "USD") {
       return reply.code(400).send({
         code: "PAYPAL_CURRENCY_UNSUPPORTED",

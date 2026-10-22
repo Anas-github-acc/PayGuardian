@@ -20,6 +20,7 @@ import {
 import { registerPayPalRoutes } from "./paypal-routes.js";
 import { createProviderEventStore, type ProviderEventStore } from "./paypal-events.js";
 import { createProviderJobStore, type ProviderJobStore } from "./provider-jobs.js";
+import { registerPhase6Routes } from "./phase6-routes.js";
 
 export function buildApp(
   options: {
@@ -134,6 +135,7 @@ export function buildApp(
     providerJobs,
     resolvePrincipal,
   });
+  registerPhase6Routes(app, { registry, authority, resolvePrincipal, audit });
 
   return app;
 }

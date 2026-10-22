@@ -28,4 +28,17 @@ describe("Phase 0 gateway", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ authorityEnforcement: "not-enabled" });
   });
+
+  it("publishes the health and status routes in the OpenAPI document", async () => {
+    const app = buildApp();
+    apps.add(app);
+
+    const response = await app.inject({ method: "GET", url: "/docs/json" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().paths).toMatchObject({
+      "/health": expect.any(Object),
+      "/v1/system/status": expect.any(Object),
+    });
+  });
 });

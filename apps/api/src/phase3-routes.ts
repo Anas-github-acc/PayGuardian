@@ -62,6 +62,12 @@ export function registerPhase3Routes(
         .code(404)
         .send({ code: "LEDGER_TARGET_NOT_FOUND", message: "Ledger target not found." });
     }
+    if (environment.status !== "active") {
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "Ledger account creation requires an active environment.",
+      });
+    }
     if (request.body.currency.toUpperCase() !== environment.currency) {
       return reply
         .code(400)
@@ -120,6 +126,12 @@ export function registerPhase3Routes(
       return reply
         .code(404)
         .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+    if (environment.status !== "active") {
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "Budget allocation requires an active environment.",
+      });
+    }
     const account = await dependencies.ledger.getAccount(environment.id, request.params.accountId);
     if (!account)
       return reply
@@ -204,6 +216,12 @@ export function registerPhase3Routes(
       return reply
         .code(404)
         .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Action target not found." });
+    }
+    if (environment.status !== "active") {
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "Protected actions require an active environment.",
+      });
     }
     const decision = await dependencies.authority.evaluate(
       mandate.id,

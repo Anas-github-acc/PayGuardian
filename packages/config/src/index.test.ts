@@ -36,4 +36,66 @@ describe("runtime configuration", () => {
       }),
     ).toThrow("PAYPAL_EXECUTION_MODE=worker is required in production.");
   });
+
+  it("accepts a fully configured production environment", () => {
+    expect(
+      loadRuntimeConfig({
+        NODE_ENV: "production",
+        DATABASE_MODE: "supabase",
+        SUPABASE_URL: "https://project.supabase.co",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-value",
+        PAYPAL_EXECUTION_MODE: "worker",
+        PAYPAL_CLIENT_ID: "paypal-client-id",
+        PAYPAL_CLIENT_SECRET: "paypal-client-secret",
+        PAYPAL_WEBHOOK_ID: "paypal-webhook-id",
+        PAYPAL_RETURN_URL: "https://app.example.test/paypal/return",
+        PAYPAL_CANCEL_URL: "https://app.example.test/paypal/cancel",
+        PAYPAL_CURRENCY: "USD",
+      }),
+    ).toMatchObject({
+      nodeEnv: "production",
+      databaseMode: "supabase",
+      paypalExecutionMode: "worker",
+      localDevAuthEnabled: false,
+    });
+  });
+
+  it("rejects placeholder provider configuration in production", () => {
+    expect(() =>
+      loadRuntimeConfig({
+        NODE_ENV: "production",
+        DATABASE_MODE: "supabase",
+        SUPABASE_URL: "https://project.supabase.co",
+        SUPABASE_SERVICE_ROLE_KEY: "service-role-value",
+        PAYPAL_EXECUTION_MODE: "worker",
+        PAYPAL_CLIENT_ID: "replace-with-paypal-sandbox-client-id",
+        PAYPAL_CLIENT_SECRET: "paypal-client-secret",
+        PAYPAL_WEBHOOK_ID: "paypal-webhook-id",
+        PAYPAL_RETURN_URL: "https://app.example.test/paypal/return",
+        PAYPAL_CANCEL_URL: "https://app.example.test/paypal/cancel",
+      }),
+    ).toThrow("PAYPAL_CLIENT_ID must be configured with a production value.");
+  });
+
+  it("requires HTTPS callback URLs and the supported production currency", () => {
+    const base = {
+      NODE_ENV: "production",
+      DATABASE_MODE: "supabase",
+      SUPABASE_URL: "https://project.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-value",
+      PAYPAL_EXECUTION_MODE: "worker",
+      PAYPAL_CLIENT_ID: "paypal-client-id",
+      PAYPAL_CLIENT_SECRET: "paypal-client-secret",
+      PAYPAL_WEBHOOK_ID: "paypal-webhook-id",
+      PAYPAL_RETURN_URL: "https://app.example.test/paypal/return",
+      PAYPAL_CANCEL_URL: "https://app.example.test/paypal/cancel",
+    };
+
+    expect(() =>
+      loadRuntimeConfig({ ...base, PAYPAL_RETURN_URL: "http://app.example.test/return" }),
+    ).toThrow("PAYPAL_RETURN_URL must be an HTTPS URL in production.");
+    expect(() => loadRuntimeConfig({ ...base, PAYPAL_CURRENCY: "INR" })).toThrow(
+      "PAYPAL_CURRENCY=USD is required in production.",
+    );
+  });
 });

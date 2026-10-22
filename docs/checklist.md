@@ -132,6 +132,8 @@
 - [*] Verify accessibility, mobile/desktop behavior, and large-history usability.
 
 ## Release verification and operations — implementation pending
+- [x] Add a repeatable Phase 7 release-readiness gate for production configuration, audit integrity, migration inventory, and health endpoint validation. Evidence: `scripts/release-readiness.mjs`, `scripts/release-readiness.test.mjs`, `packages/config/src/index.test.ts`, `apps/api/src/app.test.ts`, `apps/agent-runtime/tests/test_main.py`, and `.github/workflows/ci.yml`; repository checks pass, while external targets remain explicitly unverified when not supplied.
+- [x] Document reproducible deployment, migration, backup, rollback, and recovery steps. Evidence: `docs/release-readiness.md`; commands use the pinned lockfiles and fail-closed production configuration requirements without embedding secrets.
 - [*] Pass unit, integration, property/concurrency, contract, and browser tests required by each phase.
 - [*] Complete documented manual acceptance checks and show actual results before advancing phases.
 - [*] Measure authorization p95 against the <100 ms target with a defined workload.

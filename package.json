@@ -12,6 +12,8 @@
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "format:check": "prettier --check .",
+    "release:check:test": "node --test scripts/release-readiness.test.mjs",
+    "release:check": "pnpm release:check:test && node scripts/release-readiness.mjs",
     "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "python:check": "uv run --project apps/agent-runtime ruff check apps/agent-runtime && uv run --project apps/agent-runtime pytest apps/agent-runtime/tests",
     "python:format:check": "uv run --project apps/agent-runtime ruff format --check apps/agent-runtime",

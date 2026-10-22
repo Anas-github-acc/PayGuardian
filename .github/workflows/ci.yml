@@ -49,6 +49,9 @@ jobs:
       - name: Run JavaScript tests
         run: pnpm test
 
+      - name: Run release readiness repository gate
+        run: pnpm release:check
+
       - name: Build JavaScript services
         run: pnpm build
 

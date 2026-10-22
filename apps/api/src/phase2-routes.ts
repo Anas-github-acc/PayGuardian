@@ -65,6 +65,12 @@ export function registerPhase2Routes(
         .code(404)
         .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Environment or agent not found." });
     }
+    if (environment.status !== "active") {
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "Mandate creation requires an active environment.",
+      });
+    }
     if (request.body.currency.toUpperCase() !== environment.currency) {
       return reply.code(400).send({
         code: "CURRENCY_MISMATCH",
@@ -123,6 +129,16 @@ export function registerPhase2Routes(
       return reply.code(403).send({
         code: "DELEGATION_TARGET_INVALID",
         message: "Child agent is not active in the mandate environment.",
+      });
+    }
+    const environment = await dependencies.registry.getEnvironment(
+      owner.userId,
+      parent.environmentId,
+    );
+    if (!environment || environment.status !== "active") {
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "Delegation requires an active environment.",
       });
     }
     const result = await dependencies.authority.delegate(request.params.mandateId, {

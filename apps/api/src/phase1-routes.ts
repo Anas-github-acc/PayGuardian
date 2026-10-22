@@ -128,6 +128,11 @@ export function registerPhase1Routes(
         return reply
           .code(404)
           .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+      if (environment.status !== "active")
+        return reply.code(409).send({
+          code: "ENVIRONMENT_NOT_ACTIVE",
+          message: "Agent registration requires an active environment.",
+        });
       const existing = await dependencies.registry.listAgents(principal.userId, environment.id);
       if (existing.some((agent) => agent.parentAgentId === null && agent.kind === "personal")) {
         return reply.code(409).send({
@@ -176,6 +181,11 @@ export function registerPhase1Routes(
       return reply
         .code(404)
         .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+    if (environment.status !== "active")
+      return reply.code(409).send({
+        code: "ENVIRONMENT_NOT_ACTIVE",
+        message: "Agent registration requires an active environment.",
+      });
     const body = getBody<{
       parentAgentId: string;
       name: string;

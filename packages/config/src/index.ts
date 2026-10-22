@@ -34,6 +34,28 @@ function parsePayPalExecutionMode(value: string | undefined): PayPalExecutionMod
   throw new ConfigurationError("PAYPAL_EXECUTION_MODE must be either inline or worker.");
 }
 
+function requireProductionValue(value: string | undefined, name: string): string {
+  const normalized = value?.trim();
+  if (
+    !normalized ||
+    /(?:replace-with|your-project|placeholder|example\.com|localhost)/i.test(normalized)
+  ) {
+    throw new ConfigurationError(`${name} must be configured with a production value.`);
+  }
+  return normalized;
+}
+
+function requireHttpsUrl(value: string | undefined, name: string): string {
+  const normalized = requireProductionValue(value, name);
+  try {
+    const url = new URL(normalized);
+    if (url.protocol !== "https:") throw new Error("not-https");
+  } catch {
+    throw new ConfigurationError(`${name} must be an HTTPS URL in production.`);
+  }
+  return normalized;
+}
+
 export function loadRuntimeConfig(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): RuntimeConfig {
@@ -59,6 +81,21 @@ export function loadRuntimeConfig(
     throw new ConfigurationError(
       "DATABASE_MODE=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
     );
+  }
+  if (nodeEnv === "production") {
+    requireHttpsUrl(env.SUPABASE_URL, "SUPABASE_URL");
+    requireProductionValue(env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY");
+    requireProductionValue(env.PAYPAL_CLIENT_ID, "PAYPAL_CLIENT_ID");
+    requireProductionValue(env.PAYPAL_CLIENT_SECRET, "PAYPAL_CLIENT_SECRET");
+    requireProductionValue(env.PAYPAL_WEBHOOK_ID, "PAYPAL_WEBHOOK_ID");
+    requireHttpsUrl(env.PAYPAL_RETURN_URL, "PAYPAL_RETURN_URL");
+    requireHttpsUrl(env.PAYPAL_CANCEL_URL, "PAYPAL_CANCEL_URL");
+
+    const paypalCurrency = (env.PAYPAL_CURRENCY ?? "USD").toUpperCase();
+    if (paypalCurrency !== "USD") {
+      throw new ConfigurationError("PAYPAL_CURRENCY=USD is required in production.");
+    }
+    if (env.PAYPAL_BASE_URL) requireHttpsUrl(env.PAYPAL_BASE_URL, "PAYPAL_BASE_URL");
   }
 
   return {
