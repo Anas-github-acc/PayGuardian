@@ -1,0 +1,4 @@
+# Phase 0 local Supabase project marker.
+# Run `supabase start` after installing Docker and the Supabase CLI.
+# Do not place project URLs, keys, or database passwords in this file.
+project_id = "payguardian"

@@ -1,0 +1,21 @@
+{
+  "name": "@payguardian/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --outDir dist --noEmit false",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests --exclude 'dist/**'"
+  },
+  "dependencies": {
+    "@payguardian/domain": "workspace:*",
+    "@payguardian/paypal": "workspace:*",
+    "@supabase/supabase-js": "2.99.2"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "vitest": "5.0.5"
+  }
+}

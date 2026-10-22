@@ -1,0 +1,27 @@
+{
+  "name": "@payguardian/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --outDir dist --noEmit false",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests --exclude 'dist/**'"
+  },
+  "dependencies": {
+    "@fastify/cors": "11.3.1",
+    "@fastify/swagger": "9.9.2",
+    "@fastify/swagger-ui": "6.1.2",
+    "@payguardian/domain": "workspace:*",
+    "@payguardian/paypal": "workspace:*",
+    "@supabase/supabase-js": "2.99.2",
+    "fastify": "5.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "tsx": "4.23.15",
+    "vitest": "5.0.5"
+  }
+}

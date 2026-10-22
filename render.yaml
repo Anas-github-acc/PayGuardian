@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: payguardian-agent-runtime
+    runtime: python
+    buildCommand: pip install uv==0.13.0 && uv sync --frozen --package payguardian-agent-runtime
+    startCommand: uv run --frozen --package payguardian-agent-runtime uvicorn agent_runtime.main:app --host 0.0.0.0 --port $PORT --app-dir apps/agent-runtime/src
+    healthCheckPath: /health
+    rootDir: .

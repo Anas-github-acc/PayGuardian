@@ -1,0 +1,28 @@
+{
+  "name": "payguardian",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.14.0",
+  "scripts": {
+    "dev:web": "pnpm --filter @payguardian/web dev",
+    "dev:api": "pnpm --filter @payguardian/api dev",
+    "dev:agent": "uv run --project apps/agent-runtime uvicorn agent_runtime.main:app --app-dir apps/agent-runtime/src --reload",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "format:check": "prettier --check .",
+    "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "python:check": "uv run --project apps/agent-runtime ruff check apps/agent-runtime && uv run --project apps/agent-runtime pytest apps/agent-runtime/tests",
+    "python:format:check": "uv run --project apps/agent-runtime ruff format --check apps/agent-runtime",
+    "setup:python": "uv sync --all-packages --dev"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "16.5.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0"
+  }
+}
