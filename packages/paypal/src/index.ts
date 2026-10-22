@@ -46,12 +46,13 @@ export type PayPalClient = {
 };
 
 export class PayPalError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly retryable: boolean,
-  ) {
+  readonly code: string;
+  readonly retryable: boolean;
+
+  constructor(message: string, code: string, retryable: boolean) {
     super(message);
+    this.code = code;
+    this.retryable = retryable;
   }
 }
 

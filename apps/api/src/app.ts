@@ -1,7 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
 import { loadRuntimeConfig, type RuntimeConfig } from "@payguardian/config";
 import { createPrincipalResolver } from "./auth.js";
 import { createAuditStore, type AuditEventStore } from "./audit.js";
@@ -54,8 +53,7 @@ export function buildApp(
       tags: [{ name: "system", description: "Service health and metadata" }],
     },
   });
-
-  app.register(swaggerUi, { routePrefix: "/docs" });
+  app.get("/docs/json", async () => app.swagger());
 
   const supabaseClient = createSupabaseClient();
   const registry = options.registry ?? createRegistry();
