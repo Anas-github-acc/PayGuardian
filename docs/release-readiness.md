@@ -30,10 +30,14 @@ DATABASE_MODE=supabase
 ENABLE_LOCAL_DEV_AUTH unset or false
 PAYPAL_EXECUTION_MODE=worker
 SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
-PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, and PAYPAL_WEBHOOK_ID
+PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET
 PAYPAL_RETURN_URL and PAYPAL_CANCEL_URL using HTTPS
 PAYPAL_CURRENCY=USD
 ```
+
+`PAYPAL_WEBHOOK_ID` is required before accepting PayPal webhook events, but the
+API may start without it so health and non-webhook operations remain observable;
+webhook verification fails closed until the ID is configured.
 
 The service-role key, PayPal credentials, webhook ID, and any agent-to-gateway
 secret are server-side values only. Browser bundles and agent prompts must not
@@ -117,7 +121,9 @@ projects, without changing their project settings as part of this runbook:
 1. Apply and verify Supabase migrations before enabling worker-mode payment
    traffic.
 2. Deploy the API and web services from the validated commit to their existing
-   Vercel projects. Confirm the API `/health` and `/docs/json` endpoints.
+   Vercel projects. Confirm the API `/health` and `/docs/json` endpoints. This
+   repository currently verifies `https://payguardian-web.vercel.app` and
+   `https://payguardian-api.vercel.app`.
 3. Deploy the Python agent runtime using the committed `render.yaml`. Confirm
    its `/health` endpoint and keep it in simulation mode until the protected
    gateway path is approved.
@@ -181,7 +187,9 @@ Operator/date:
 ## Current verified boundary
 
 The repository contains automated checks for production configuration, API
-health/OpenAPI, agent health, and audit-integrity SQL invariants. A linked
-remote migration result, deployed health result, backup/restore drill, live
-PayPal webhook drill, and worker hosting proof require external services and
-remain pending until their evidence is recorded.
+health/OpenAPI, agent health, and audit-integrity SQL invariants. The 13 local
+migrations, including `20261022008000_phase7_audit_integrity.sql`, are applied
+to the configured remote Supabase project, and the deployed web/API health
+checks pass. Backup/restore, agent-runtime hosting, worker hosting, live
+PayPal webhook, and full browser acceptance drills remain pending until their
+evidence is recorded.

@@ -41,8 +41,8 @@
 - [x] Configure linting, type checking, unit tests, and CI. Evidence: root scripts, package scripts, `.github/workflows/ci.yml`; targeted checks passed.
 - [x] Verify a clean local startup and documented smoke checks. Evidence: web, API, and agent services started; health/OpenAPI/simulation smoke test passed.
 - [x] Add non-secret Supabase local/project configuration. Evidence: `supabase/config.toml`; remote project verification is complete.
-- [*] Verify the Next.js frontend through a Vercel preview deployment.
-- [*] Verify the Fastify API through a Vercel preview deployment.
+- [x] Verify the Next.js frontend through a Vercel production deployment. Evidence: `https://payguardian-web.vercel.app` returned HTTP 200 after the validated deployment.
+- [x] Verify the Fastify API through a Vercel production deployment. Evidence: `https://payguardian-api.vercel.app/health` and `/docs/json` returned valid responses after the validated deployment.
 - [*] Verify the Python ADK runtime through a Render deployment.
 - [*] Start and verify the Supabase local stack after Docker and Supabase CLI are available.
 - [x] Verify Supabase CLI invocation through `npx supabase`. Evidence: `npx supabase --version` returned `2.121.0`.
@@ -121,6 +121,7 @@
 - [*] Implement environment setup, root authorization, and agent connection flows.
 - [*] Display agent/delegation hierarchy, sessions, runs, mandates, policies, and budgets.
 - [*] Implement approval inbox, security warnings, and emergency revocation controls.
+- [x] Add authenticated emergency environment/agent controls, mandate listing/revocation, and an activity snapshot. Evidence: `apps/api/src/phase6-routes.ts`, `apps/api/src/phase6.test.ts`, and the dashboard controls; live browser acceptance and SSE recovery remain pending.
 - [*] Use AG Grid for agent, mandate, transaction, ledger, and audit tables. Evidence: registered-agent and PayPal operation monitoring grids are implemented; mandate, transaction, ledger, and audit grids remain pending.
 - [x] Add the first AG Grid Community monitoring view for registered agents. Evidence: `apps/web/app/components/agents-grid.tsx`; sorting, filtering, pagination, resizing, responsive sizing, and custom column visibility controls are wired without an Enterprise license key.
 - [*] Add a PayPal operation monitoring view. Evidence: environment-scoped operation collection endpoint, safe state-separated DTO, cursor pagination, and `PaymentOperationsGrid`; provider event timeline and worker-job controls remain pending.
