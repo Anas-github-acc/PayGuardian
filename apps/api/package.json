@@ -14,8 +14,10 @@
     "@fastify/cors": "11.3.1",
     "@fastify/swagger": "9.9.2",
     "@fastify/swagger-ui": "6.1.2",
+    "@payguardian/config": "workspace:*",
     "@payguardian/domain": "workspace:*",
     "@payguardian/paypal": "workspace:*",
+    "@payguardian/observability": "workspace:*",
     "@supabase/supabase-js": "2.99.2",
     "fastify": "5.12.7"
   },

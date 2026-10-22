@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
 import type { Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
+import type { AuditEventStore } from "./audit.js";
 
 type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
 
@@ -31,6 +32,7 @@ export function registerPhase2Routes(
     registry: Registry;
     authority: AuthorityStore;
     resolvePrincipal: PrincipalResolver;
+    audit: AuditEventStore;
   },
 ): void {
   app.post<{
@@ -77,6 +79,18 @@ export function registerPhase2Routes(
         holderAgentId: holder.id,
         currency: request.body.currency.toUpperCase(),
       });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: mandate.id,
+        eventType: "mandate.created",
+        outcome: "success",
+        payload: {
+          holderAgentId: mandate.holderAgentId,
+          budgetLimitMinor: mandate.budgetLimitMinor,
+        },
+      });
       return reply.code(201).send({ mandate });
     } catch (error) {
       return reply.code(400).send({
@@ -117,6 +131,16 @@ export function registerPhase2Routes(
       holderAgentId: child.id,
       currency: request.body.currency.toUpperCase(),
     });
+    await dependencies.audit.append({
+      environmentId: parent.environmentId,
+      actorType: "user",
+      actorId: owner.userId,
+      mandateId: result.mandate?.id ?? parent.id,
+      eventType: result.mandate ? "mandate.delegated" : "mandate.delegation_denied",
+      outcome: result.mandate ? "success" : "denied",
+      reasonCode: result.decision.code,
+      payload: { holderAgentId: child.id, budgetLimitMinor: request.body.budgetLimitMinor },
+    });
     return reply
       .code(result.decision.allowed ? 201 : 403)
       .send(
@@ -134,6 +158,15 @@ export function registerPhase2Routes(
       const mandate = await dependencies.authority.revoke(request.params.mandateId, owner.userId);
       if (!mandate)
         return reply.code(404).send({ code: "MANDATE_NOT_FOUND", message: "Mandate not found." });
+      await dependencies.audit.append({
+        environmentId: mandate.environmentId,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: mandate.id,
+        eventType: "mandate.revoked",
+        outcome: "success",
+        payload: { revokedAt: mandate.revokedAt },
+      });
       return { mandate };
     },
   );

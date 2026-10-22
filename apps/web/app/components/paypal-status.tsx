@@ -2,9 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth-provider";
+import { apiRequest } from "../lib/api";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-const localUserId = process.env.NEXT_PUBLIC_LOCAL_USER_ID ?? "local-user";
 
 type PaymentView = {
   action: { authorizationState: string; executionState: string };
@@ -18,27 +19,25 @@ type PaymentView = {
   reservation: { state: string; amountMinor: number } | null;
 };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      "x-local-user-id": localUserId,
-      ...init?.headers,
-    },
-  });
-  const body = (await response.json()) as T & { message?: string };
-  if (!response.ok) throw new Error(body.message ?? "Unable to load payment status.");
-  return body;
-}
-
 export function PayPalStatus({ cancelled = false }: { cancelled?: boolean }) {
+  const { isLocalDevelopment, session } = useAuth();
   const params = useSearchParams();
   const environmentId = params.get("environment_id");
   const actionId = params.get("action_id");
   const [payment, setPayment] = useState<PaymentView | null>(null);
   const [message, setMessage] = useState("Loading PayPal operation…");
   const [busy, setBusy] = useState(false);
+  const localUserId = process.env.NEXT_PUBLIC_LOCAL_USER_ID ?? "local-user";
+
+  async function request<T>(path: string, init?: RequestInit): Promise<T> {
+    return apiRequest<T>(
+      apiBaseUrl,
+      path,
+      session,
+      init,
+      isLocalDevelopment ? localUserId : undefined,
+    );
+  }
 
   async function refresh() {
     if (!environmentId || !actionId) {

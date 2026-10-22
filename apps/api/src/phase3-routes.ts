@@ -3,6 +3,7 @@ import type { PrincipalResolver } from "./auth.js";
 import type { Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
 import type { LedgerStore } from "./phase3.js";
+import type { AuditEventStore } from "./audit.js";
 
 type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
 
@@ -37,6 +38,7 @@ export function registerPhase3Routes(
     authority: AuthorityStore;
     ledger: LedgerStore;
     resolvePrincipal: PrincipalResolver;
+    audit: AuditEventStore;
   },
 ): void {
   app.post<{
@@ -87,6 +89,15 @@ export function registerPhase3Routes(
         parentAccountId: request.body.parentAccountId ?? null,
         currency: request.body.currency.toUpperCase(),
         availableMinor: request.body.availableMinor,
+      });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: mandate.id,
+        eventType: "ledger.account_created",
+        outcome: "success",
+        payload: { accountId: account.id, parentAccountId: request.body.parentAccountId ?? null },
       });
       return reply.code(201).send({ account });
     } catch (error) {
@@ -142,6 +153,18 @@ export function registerPhase3Routes(
         environmentId: environment.id,
         ...request.body,
       });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        eventType: "ledger.allocated",
+        outcome: "success",
+        payload: {
+          parentAccountId: request.body.parentAccountId,
+          childAccountId: request.body.childAccountId,
+          amountMinor: request.body.amountMinor,
+        },
+      });
       return { allocation: result };
     } catch (error) {
       return reply.code(400).send({ code: errorCode(error), message: "Budget allocation failed." });
@@ -192,12 +215,34 @@ export function registerPhase3Routes(
       },
       owner.userId,
     );
-    if (!decision.allowed) return reply.code(403).send({ decision });
+    if (!decision.allowed) {
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: mandate.id,
+        eventType: "action.denied",
+        outcome: "denied",
+        reasonCode: decision.code,
+        payload: { action: request.body.action, amountMinor: request.body.amountMinor },
+      });
+      return reply.code(403).send({ decision });
+    }
     try {
       const result = await dependencies.ledger.authorizeAndReserve({
         environmentId: environment.id,
         ...request.body,
         currency: request.body.currency.toUpperCase(),
+      });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: mandate.id,
+        actionId: result.action.id,
+        eventType: "action.reserved",
+        outcome: "success",
+        payload: { action: request.body.action, amountMinor: request.body.amountMinor },
       });
       return reply.code(201).send(result);
     } catch (error) {
@@ -225,6 +270,15 @@ export function registerPhase3Routes(
         environment.id,
         request.params.actionId,
       );
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        actionId: request.params.actionId,
+        eventType: "action.captured",
+        outcome: "success",
+        payload: { reservationState: reservation.state },
+      });
       return { reservation };
     } catch (error) {
       return reply
@@ -253,6 +307,16 @@ export function registerPhase3Routes(
         request.params.actionId,
         request.body.reason,
       );
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        actionId: request.params.actionId,
+        eventType: "action.released",
+        outcome: "success",
+        reasonCode: "RELEASED",
+        payload: { reservationState: reservation.state },
+      });
       return { reservation };
     } catch (error) {
       return reply

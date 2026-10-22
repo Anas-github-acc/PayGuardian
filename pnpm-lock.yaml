@@ -196,9 +196,15 @@ importers:
       '@fastify/swagger-ui':
         specifier: 6.1.2
         version: 6.1.2
+      '@payguardian/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@payguardian/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@payguardian/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@payguardian/paypal':
         specifier: workspace:*
         version: link:../../packages/paypal
@@ -221,6 +227,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: 2.99.2
+        version: 2.99.2
       ag-grid-community:
         specifier: 36.2.0
         version: 36.2.0
@@ -277,6 +286,9 @@ importers:
 
   packages/config:
     devDependencies:
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
       vitest:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
@@ -301,6 +313,9 @@ importers:
 
   packages/observability:
     devDependencies:
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
       vitest:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))

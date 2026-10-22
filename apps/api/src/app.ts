@@ -2,7 +2,9 @@ import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { loadRuntimeConfig, type RuntimeConfig } from "@payguardian/config";
 import { createPrincipalResolver } from "./auth.js";
+import { createAuditStore, type AuditEventStore } from "./audit.js";
 import { createRegistry, createSupabaseClient, type Registry } from "./phase1.js";
 import { registerPhase1Routes } from "./phase1-routes.js";
 import { createAuthorityStore, type AuthorityStore } from "./phase2.js";
@@ -31,9 +33,12 @@ export function buildApp(
     paypal?: PayPalClient;
     providerEvents?: ProviderEventStore;
     providerJobs?: ProviderJobStore;
+    audit?: AuditEventStore;
+    config?: RuntimeConfig;
     resolvePrincipal?: ReturnType<typeof createPrincipalResolver>;
   } = {},
 ): FastifyInstance {
+  const config = options.config ?? loadRuntimeConfig();
   const app = Fastify({ logger: options.logger ?? false });
 
   app.register(cors, { origin: process.env.CORS_ORIGIN ?? "http://localhost:3000" });
@@ -52,17 +57,18 @@ export function buildApp(
 
   app.register(swaggerUi, { routePrefix: "/docs" });
 
+  const supabaseClient = createSupabaseClient();
   const registry = options.registry ?? createRegistry();
-  const authority = options.authority ?? createAuthorityStore(createSupabaseClient());
-  const ledger = options.ledger ?? createLedgerStore(createSupabaseClient());
-  const paypalOperations =
-    options.paypalOperations ?? createPayPalOperationStore(createSupabaseClient());
+  const authority = options.authority ?? createAuthorityStore(supabaseClient);
+  const ledger = options.ledger ?? createLedgerStore(supabaseClient);
+  const paypalOperations = options.paypalOperations ?? createPayPalOperationStore(supabaseClient);
   const paypalWorkerOrder =
-    options.paypalWorkerOrder ?? createPayPalWorkerOrderStore(createSupabaseClient());
-  const providerEvents = options.providerEvents ?? createProviderEventStore(createSupabaseClient());
-  const providerJobs = options.providerJobs ?? createProviderJobStore(createSupabaseClient());
+    options.paypalWorkerOrder ?? createPayPalWorkerOrderStore(supabaseClient);
+  const providerEvents = options.providerEvents ?? createProviderEventStore(supabaseClient);
+  const providerJobs = options.providerJobs ?? createProviderJobStore(supabaseClient);
+  const audit = options.audit ?? createAuditStore(supabaseClient);
   const resolvePrincipal =
-    options.resolvePrincipal ?? createPrincipalResolver(createSupabaseClient());
+    options.resolvePrincipal ?? createPrincipalResolver(supabaseClient, config);
 
   app.register(async (routes) => {
     routes.get(
@@ -116,9 +122,9 @@ export function buildApp(
     );
   });
 
-  registerPhase1Routes(app, { registry, resolvePrincipal });
-  registerPhase2Routes(app, { registry, authority, resolvePrincipal });
-  registerPhase3Routes(app, { registry, authority, ledger, resolvePrincipal });
+  registerPhase1Routes(app, { registry, resolvePrincipal, audit });
+  registerPhase2Routes(app, { registry, authority, resolvePrincipal, audit });
+  registerPhase3Routes(app, { registry, authority, ledger, resolvePrincipal, audit });
   registerPayPalRoutes(app, {
     registry,
     authority,

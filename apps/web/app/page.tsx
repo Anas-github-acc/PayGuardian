@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { AuthBoundary, useAuth } from "./auth-provider";
+import { apiRequest } from "./lib/api";
 import { AgentsGrid } from "./components/agents-grid";
 import { PaymentOperationsGrid } from "./components/payment-operations-grid";
 import type { PaymentOperation } from "./components/payment-operations-grid-data";
@@ -17,23 +19,17 @@ type Environment = {
 type Agent = { id: string; name: string; kind: string; parentAgentId: string | null };
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-const localUserId = process.env.NEXT_PUBLIC_LOCAL_USER_ID ?? "local-user";
-
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      "x-local-user-id": localUserId,
-      ...init?.headers,
-    },
-  });
-  const body = (await response.json()) as T & { message?: string };
-  if (!response.ok) throw new Error(body.message ?? "Gateway request failed.");
-  return body;
+export default function HomePage() {
+  return (
+    <AuthBoundary>
+      <Dashboard />
+    </AuthBoundary>
+  );
 }
 
-export default function HomePage() {
+function Dashboard() {
+  const { isLocalDevelopment, session, user, signOut } = useAuth();
+  const localUserId = process.env.NEXT_PUBLIC_LOCAL_USER_ID ?? "local-user";
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [paymentOperations, setPaymentOperations] = useState<PaymentOperation[]>([]);
@@ -43,8 +39,18 @@ export default function HomePage() {
   const [purpose, setPurpose] = useState("Trip planning");
   const [budget, setBudget] = useState("10000");
   const [message, setMessage] = useState(
-    "Local development mode: Supabase Auth is not configured.",
+    isLocalDevelopment ? "Local development mode: Supabase Auth is not configured." : "",
   );
+
+  async function api<T>(path: string, init?: RequestInit): Promise<T> {
+    return apiRequest<T>(
+      apiBaseUrl,
+      path,
+      session,
+      init,
+      isLocalDevelopment ? localUserId : undefined,
+    );
+  }
 
   async function loadEnvironmentData(environmentId: string) {
     setOperationsLoading(true);
@@ -110,14 +116,21 @@ export default function HomePage() {
   return (
     <main className="shell">
       <section className="hero" aria-labelledby="page-title">
-        <p className="eyebrow">Delegation Gateway · Phase 1</p>
+        <div className="topbar">
+          <p className="eyebrow">Delegation Gateway · Phase 6 foundation</p>
+          <button type="button" onClick={() => void signOut()}>
+            Sign out
+          </button>
+        </div>
         <h1 id="page-title">PayGuardian</h1>
         <p className="lede">
           A safe boundary for Personal Agents and specialist agents to request bounded authority.
         </p>
         <div className="status" role="status">
           <span className="status-dot" aria-hidden="true" />
-          Local environment and agent registry
+          {isLocalDevelopment
+            ? "Local development authentication"
+            : `Signed in as ${user?.email ?? "authenticated user"}`}
         </div>
       </section>
 

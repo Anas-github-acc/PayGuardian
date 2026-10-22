@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
 import type { AgentKind, Registry } from "./phase1.js";
+import type { AuditEventStore } from "./audit.js";
 
 type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
 
@@ -31,7 +32,7 @@ async function requirePrincipal(
 
 export function registerPhase1Routes(
   app: FastifyInstance,
-  dependencies: { registry: Registry; resolvePrincipal: PrincipalResolver },
+  dependencies: { registry: Registry; resolvePrincipal: PrincipalResolver; audit: AuditEventStore },
 ): void {
   app.post<{ Body: { name: string; purpose: string; currency: string; budgetLimitMinor: number } }>(
     "/v1/environments",
@@ -66,6 +67,14 @@ export function registerPhase1Routes(
         purpose: body.purpose,
         currency: body.currency.toUpperCase(),
         budgetLimitMinor: body.budgetLimitMinor,
+      });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: principal.userId,
+        eventType: "environment.created",
+        outcome: "success",
+        payload: { currency: environment.currency },
       });
       return reply.code(201).send({ environment });
     },
@@ -137,6 +146,14 @@ export function registerPhase1Routes(
         kind: "personal",
         capabilities: body.capabilities ?? [],
       });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: principal.userId,
+        eventType: "agent.created",
+        outcome: "success",
+        payload: { agentId: created.agent.id, kind: created.agent.kind, parentAgentId: null },
+      });
       return reply.code(201).send(created);
     },
   );
@@ -185,6 +202,14 @@ export function registerPhase1Routes(
       name: body.name,
       kind: body.kind,
       capabilities: body.capabilities ?? [],
+    });
+    await dependencies.audit.append({
+      environmentId: environment.id,
+      actorType: "user",
+      actorId: principal.userId,
+      eventType: "agent.created",
+      outcome: "success",
+      payload: { agentId: created.agent.id, kind: created.agent.kind, parentAgentId: parent.id },
     });
     return reply.code(201).send(created);
   });
