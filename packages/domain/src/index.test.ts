@@ -3,6 +3,7 @@ import {
   availableBudget,
   createRootMandate,
   delegateMandate,
+  evaluateAuthorityChain,
   evaluateMandate,
   revokeMandate,
   type Mandate,
@@ -152,5 +153,135 @@ describe("authority engine", () => {
       now,
     );
     expect(result.decision.code).toBe("APPROVAL_REQUIRED");
+  });
+
+  it("evaluates effective authority across a complete nested delegation chain", () => {
+    const personal = root(); // 10,000 INR
+    const travel = delegateMandate(
+      personal,
+      {
+        id: "travel",
+        issuerUserId: "alice",
+        holderAgentId: "travel-agent",
+        budgetLimitMinor: 6000,
+        currency: "INR",
+        permittedActions: ["book_hotel", "book_transport"],
+        expiresAt: "2026-01-31T00:00:00.000Z",
+        canDelegate: true,
+        maxDelegationDepth: 2,
+        approvalRequired: false,
+        createdAt: now.toISOString(),
+      },
+      now,
+    ).mandate!;
+
+    const food = delegateMandate(
+      personal,
+      {
+        id: "food",
+        issuerUserId: "alice",
+        holderAgentId: "food-agent",
+        budgetLimitMinor: 2000,
+        currency: "INR",
+        permittedActions: ["buy_food"],
+        expiresAt: "2026-01-31T00:00:00.000Z",
+        canDelegate: false,
+        maxDelegationDepth: 1,
+        approvalRequired: false,
+        createdAt: now.toISOString(),
+      },
+      now,
+    ).mandate!;
+
+    const activities = delegateMandate(
+      personal,
+      {
+        id: "activities",
+        issuerUserId: "alice",
+        holderAgentId: "activities-agent",
+        budgetLimitMinor: 2000,
+        currency: "INR",
+        permittedActions: ["book_transport"],
+        expiresAt: "2026-01-31T00:00:00.000Z",
+        canDelegate: false,
+        maxDelegationDepth: 1,
+        approvalRequired: false,
+        createdAt: now.toISOString(),
+      },
+      now,
+    ).mandate!;
+
+    // Personal has allocated all 10,000 units:
+    expect(availableBudget(personal)).toBe(0);
+
+    // Travel delegates 4,000 to hotel and 2,000 to transport:
+    const hotel = delegateMandate(
+      travel,
+      {
+        id: "hotel",
+        issuerUserId: "alice",
+        holderAgentId: "hotel-agent",
+        budgetLimitMinor: 4000,
+        currency: "INR",
+        permittedActions: ["book_hotel"],
+        expiresAt: "2026-01-25T00:00:00.000Z",
+        canDelegate: false,
+        maxDelegationDepth: 1,
+        approvalRequired: false,
+        createdAt: now.toISOString(),
+      },
+      now,
+    ).mandate!;
+
+    const transport = delegateMandate(
+      travel,
+      {
+        id: "transport",
+        issuerUserId: "alice",
+        holderAgentId: "transport-agent",
+        budgetLimitMinor: 2000,
+        currency: "INR",
+        permittedActions: ["book_transport"],
+        expiresAt: "2026-01-25T00:00:00.000Z",
+        canDelegate: false,
+        maxDelegationDepth: 1,
+        approvalRequired: false,
+        createdAt: now.toISOString(),
+      },
+      now,
+    ).mandate!;
+
+    expect(availableBudget(personal)).toBe(0);
+    expect(availableBudget(food)).toBe(2000);
+    expect(availableBudget(activities)).toBe(2000);
+    expect(availableBudget(travel)).toBe(0);
+    expect(availableBudget(transport)).toBe(2000);
+    expect(availableBudget(hotel)).toBe(4000);
+
+    // Hotel action evaluation must succeed even though ancestors' unallocated budget is 0
+    const chain = [personal, travel, hotel];
+    const checkHotel = {
+      action: "book_hotel",
+      amountMinor: 1000,
+      currency: "INR",
+      at: now,
+      approvalGranted: false,
+    };
+    expect(evaluateMandate(hotel, { ...checkHotel, isAncestor: false }).allowed).toBe(true);
+    expect(evaluateAuthorityChain(chain, "hotel", checkHotel).allowed).toBe(true);
+
+    // If an ancestor (travel) is revoked, effective authority evaluation fails
+    const revokedTravel = revokeMandate(travel, now);
+    const brokenChain = [personal, revokedTravel, hotel];
+    expect(evaluateMandate(revokedTravel, { ...checkHotel, isAncestor: true }).code).toBe(
+      "MANDATE_REVOKED",
+    );
+    expect(evaluateAuthorityChain(brokenChain, "hotel", checkHotel).allowed).toBe(false);
+    expect(evaluateAuthorityChain(brokenChain, "hotel", checkHotel).code).toBe("MANDATE_REVOKED");
+
+    // Child cannot exceed its own available budget
+    expect(
+      evaluateMandate(hotel, { ...checkHotel, amountMinor: 5000, isAncestor: false }).code,
+    ).toBe("BUDGET_EXCEEDED");
   });
 });

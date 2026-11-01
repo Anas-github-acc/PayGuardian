@@ -20,6 +20,13 @@ import {
 import { registerPayPalRoutes } from "./paypal-routes.js";
 import { createProviderEventStore, type ProviderEventStore } from "./paypal-events.js";
 import { createProviderJobStore, type ProviderJobStore } from "./provider-jobs.js";
+import {
+  createApprovalStore,
+  createSessionStore,
+  type ApprovalStore,
+  type SessionStore,
+} from "./phase4.js";
+import { registerPhase4Routes } from "./phase4-routes.js";
 import { registerPhase6Routes } from "./phase6-routes.js";
 
 export function buildApp(
@@ -28,6 +35,8 @@ export function buildApp(
     registry?: Registry;
     authority?: AuthorityStore;
     ledger?: LedgerStore;
+    approvals?: ApprovalStore;
+    sessions?: SessionStore;
     paypalOperations?: PayPalOperationStore;
     paypalWorkerOrder?: PayPalWorkerOrderStore | null;
     paypal?: PayPalClient;
@@ -60,6 +69,8 @@ export function buildApp(
   const registry = options.registry ?? createRegistry();
   const authority = options.authority ?? createAuthorityStore(supabaseClient);
   const ledger = options.ledger ?? createLedgerStore(supabaseClient);
+  const approvals = options.approvals ?? createApprovalStore(supabaseClient);
+  const sessions = options.sessions ?? createSessionStore(supabaseClient);
   const paypalOperations = options.paypalOperations ?? createPayPalOperationStore(supabaseClient);
   const paypalWorkerOrder =
     options.paypalWorkerOrder ?? createPayPalWorkerOrderStore(supabaseClient);
@@ -67,7 +78,7 @@ export function buildApp(
   const providerJobs = options.providerJobs ?? createProviderJobStore(supabaseClient);
   const audit = options.audit ?? createAuditStore(supabaseClient);
   const resolvePrincipal =
-    options.resolvePrincipal ?? createPrincipalResolver(supabaseClient, config);
+    options.resolvePrincipal ?? createPrincipalResolver(supabaseClient, config, registry);
 
   app.register(async (routes) => {
     routes.get(
@@ -119,11 +130,51 @@ export function buildApp(
         message: "Phase 0 exposes health and contract proof only.",
       }),
     );
+
+    routes.get(
+      "/v1/models",
+      {
+        schema: {
+          tags: ["system"],
+          response: {
+            200: {
+              type: "object",
+              required: ["models"],
+              properties: {
+                models: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    required: ["id", "label", "provider"],
+                    properties: {
+                      id: { type: "string" },
+                      label: { type: "string" },
+                      provider: { type: "string" },
+                      default: { type: "boolean" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      async () => {
+        const primary = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+        const catalog = [
+          { id: primary, label: primary.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), provider: "Google Gemini", default: true },
+          { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google Gemini" },
+          { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", provider: "Google Gemini" },
+        ];
+        return { models: catalog.filter((m, i, a) => a.findIndex((x) => x.id === m.id) === i) };
+      },
+    );
   });
 
   registerPhase1Routes(app, { registry, resolvePrincipal, audit });
   registerPhase2Routes(app, { registry, authority, resolvePrincipal, audit });
-  registerPhase3Routes(app, { registry, authority, ledger, resolvePrincipal, audit });
+  registerPhase3Routes(app, { registry, authority, ledger, resolvePrincipal, audit, approvals });
+  registerPhase4Routes(app, { registry, authority, approvals, sessions, resolvePrincipal, audit });
   registerPayPalRoutes(app, {
     registry,
     authority,
@@ -134,6 +185,7 @@ export function buildApp(
     providerEvents,
     providerJobs,
     resolvePrincipal,
+    approvals,
   });
   registerPhase6Routes(app, { registry, authority, resolvePrincipal, audit });
 

@@ -606,4 +606,70 @@ describe("PayPal Sandbox routes", () => {
     expect(created.json().operation.status).toBe("PENDING");
     expect(await providerJobs.list({ provider: "paypal" })).toHaveLength(2);
   });
+
+  it("proves revocation does not falsely reverse or alter completed payments", async () => {
+    const { app, headers, environmentId, agentId, mandateId, accountId } = await setup();
+    const payload = {
+      agentId,
+      mandateId,
+      ledgerAccountId: accountId,
+      idempotencyKey: "paypal-complete-before-revoke",
+      requestHash: "paypal-hash-before-revoke",
+      action: "paypal_order",
+      amountMinor: 1000,
+      currency: "USD",
+    };
+
+    // 1. Create and capture order
+    const created = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${environmentId}/payments/paypal/orders`,
+      headers,
+      payload,
+    });
+    expect(created.statusCode).toBe(201);
+    const actionId = created.json().action.id as string;
+
+    const captured = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${environmentId}/payments/paypal/${actionId}/capture`,
+      headers,
+    });
+    expect(captured.statusCode).toBe(200);
+    expect(captured.json().reservation.state).toBe("captured");
+
+    // 2. Revoke the mandate
+    const revokeRes = await app.inject({
+      method: "POST",
+      url: `/v1/mandates/${mandateId}/revocations`,
+      headers,
+    });
+    expect(revokeRes.statusCode).toBe(200);
+    expect(revokeRes.json().mandate.state).toBe("revoked");
+
+    // 3. Verify completed payment operation is immutable and not reversed
+    const statusRes = await app.inject({
+      method: "GET",
+      url: `/v1/environments/${environmentId}/payments/paypal/${actionId}`,
+      headers,
+    });
+    expect(statusRes.statusCode).toBe(200);
+    expect(statusRes.json().operation.status).toBe("COMPLETED");
+    expect(statusRes.json().operation.reconciliationState).toBe("resolved");
+    expect(statusRes.json().operation.captureId).toBe("paypal-capture-1");
+
+    // 4. Verify new payments on revoked mandate are rejected
+    const newPayment = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${environmentId}/payments/paypal/orders`,
+      headers,
+      payload: {
+        ...payload,
+        idempotencyKey: "new-payment-after-revoke",
+        requestHash: "new-hash-after-revoke",
+      },
+    });
+    expect(newPayment.statusCode).toBe(403);
+    expect(newPayment.json().decision.code).toBe("MANDATE_REVOKED");
+  });
 });

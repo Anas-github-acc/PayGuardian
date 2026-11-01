@@ -4,6 +4,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 export type Principal = {
   userId: string;
   kind: "user";
+  agentId?: string;
 };
 
 export type EnvironmentStatus = "active" | "paused" | "closed" | "revoked";
@@ -68,6 +69,11 @@ export type Registry = {
   createAgent(
     input: Omit<Agent, "id" | "createdAt" | "status">,
   ): Promise<{ agent: Agent; credential: CreatedCredential }>;
+  rotateAgentCredential(userId: string, agentId: string): Promise<CreatedCredential | null>;
+  revokeAgentCredential(userId: string, agentId: string, credentialId: string): Promise<boolean>;
+  verifyAgentCredential(
+    secret: string,
+  ): Promise<{ agent: Agent; credential: AgentCredential } | null>;
 };
 
 function now(): string {
@@ -192,6 +198,45 @@ export class InMemoryRegistry implements Registry {
     this.agents.set(agent.id, agent);
     this.credentials.set(credential.id, credential);
     return { agent, credential: created };
+  }
+
+  async rotateAgentCredential(userId: string, agentId: string): Promise<CreatedCredential | null> {
+    const agent = await this.getAgent(userId, agentId);
+    if (!agent || agent.status !== "active") return null;
+    const { credential, created } = createCredential(agent.id);
+    this.credentials.set(credential.id, credential);
+    return created;
+  }
+
+  async revokeAgentCredential(
+    userId: string,
+    agentId: string,
+    credentialId: string,
+  ): Promise<boolean> {
+    const agent = await this.getAgent(userId, agentId);
+    if (!agent) return false;
+    const credential = this.credentials.get(credentialId);
+    if (!credential || credential.agentId !== agent.id) return false;
+    credential.revokedAt = now();
+    this.credentials.set(credential.id, credential);
+    return true;
+  }
+
+  async verifyAgentCredential(
+    secret: string,
+  ): Promise<{ agent: Agent; credential: AgentCredential } | null> {
+    const secretHash = hashSecret(secret);
+    for (const cred of this.credentials.values()) {
+      if (cred.secretHash === secretHash) {
+        if (cred.revokedAt !== null || new Date(cred.expiresAt).getTime() <= Date.now()) {
+          return null;
+        }
+        const agent = this.agents.get(cred.agentId);
+        if (!agent || agent.status !== "active") return null;
+        return { agent, credential: cred };
+      }
+    }
+    return null;
   }
 }
 
@@ -341,6 +386,72 @@ export class SupabaseRegistry implements Registry {
     if (error) throw error;
     const row = data as Record<string, unknown>;
     return { agent: mapAgent(row), credential: { ...created, agentId: String(row.id) } };
+  }
+
+  async rotateAgentCredential(userId: string, agentId: string): Promise<CreatedCredential | null> {
+    const agent = await this.getAgent(userId, agentId);
+    if (!agent || agent.status !== "active") return null;
+    const { credential, created } = createCredential(agent.id);
+    const { error } = await this.client.from("agent_credentials").insert({
+      id: credential.id,
+      agent_id: credential.agentId,
+      secret_hash: credential.secretHash,
+      expires_at: credential.expiresAt,
+    });
+    if (error) throw error;
+    return created;
+  }
+
+  async revokeAgentCredential(
+    userId: string,
+    agentId: string,
+    credentialId: string,
+  ): Promise<boolean> {
+    const agent = await this.getAgent(userId, agentId);
+    if (!agent) return false;
+    const { data, error } = await this.client
+      .from("agent_credentials")
+      .update({ revoked_at: now() })
+      .eq("id", credentialId)
+      .eq("agent_id", agent.id)
+      .select("id")
+      .maybeSingle();
+    if (error) throw error;
+    return data !== null;
+  }
+
+  async verifyAgentCredential(
+    secret: string,
+  ): Promise<{ agent: Agent; credential: AgentCredential } | null> {
+    const secretHash = hashSecret(secret);
+    const { data: credRow, error: credError } = await this.client
+      .from("agent_credentials")
+      .select("id,agent_id,secret_hash,expires_at,revoked_at")
+      .eq("secret_hash", secretHash)
+      .is("revoked_at", null)
+      .gt("expires_at", now())
+      .maybeSingle();
+    if (credError || !credRow) return null;
+    const { data: agentRow, error: agentError } = await this.client
+      .from("agents")
+      .select(
+        "id,environment_id,owner_user_id,parent_agent_id,name,kind,status,capabilities,created_at",
+      )
+      .eq("id", (credRow as Record<string, unknown>).agent_id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (agentError || !agentRow) return null;
+    const cRow = credRow as Record<string, unknown>;
+    return {
+      agent: mapAgent(agentRow as Record<string, unknown>),
+      credential: {
+        id: String(cRow.id),
+        agentId: String(cRow.agent_id),
+        secretHash: String(cRow.secret_hash),
+        expiresAt: String(cRow.expires_at),
+        revokedAt: cRow.revoked_at ? String(cRow.revoked_at) : null,
+      },
+    };
   }
 }
 

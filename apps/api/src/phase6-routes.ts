@@ -168,18 +168,32 @@ export function registerPhase6Routes(
     },
   );
 
-  app.get<{ Params: { environmentId: string } }>(
-    "/v1/environments/:environmentId/activity",
-    async (request, reply) => {
-      const scoped = await environmentFor(
-        request as AppRequest,
-        reply,
-        dependencies.registry,
-        dependencies.resolvePrincipal,
-        request.params.environmentId,
-      );
-      if (!scoped) return;
-      return { events: await dependencies.audit.list(scoped.environment.id) };
-    },
-  );
+  app.get<{
+    Params: { environmentId: string };
+    Querystring: { since?: string; limit?: string };
+  }>("/v1/environments/:environmentId/activity", async (request, reply) => {
+    const scoped = await environmentFor(
+      request as AppRequest,
+      reply,
+      dependencies.registry,
+      dependencies.resolvePrincipal,
+      request.params.environmentId,
+    );
+    if (!scoped) return;
+
+    let events = await dependencies.audit.list(scoped.environment.id);
+    if (request.query.since) {
+      const sinceTime = new Date(request.query.since).getTime();
+      events = events.filter((e) => new Date(e.createdAt).getTime() > sinceTime);
+    }
+    const limit = request.query.limit ? Number.parseInt(request.query.limit, 10) : undefined;
+    if (limit && Number.isSafeInteger(limit) && limit > 0) {
+      events = events.slice(-limit);
+    }
+
+    return {
+      events,
+      cursor: events.at(-1)?.createdAt ?? request.query.since ?? null,
+    };
+  });
 }

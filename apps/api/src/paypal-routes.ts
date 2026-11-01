@@ -13,6 +13,7 @@ import {
 } from "./paypal.js";
 import type { ProviderEventStore } from "./paypal-events.js";
 import type { ProviderJobStore } from "./provider-jobs.js";
+import type { ApprovalStore } from "./phase4.js";
 
 type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
 type PayPalExecutionMode = "inline" | "worker";
@@ -175,6 +176,7 @@ export function registerPayPalRoutes(
     resolvePrincipal: PrincipalResolver;
     providerJobs: ProviderJobStore;
     workerOrder?: PayPalWorkerOrderStore | null;
+    approvals?: ApprovalStore;
   },
 ): void {
   const paypal = dependencies.paypal ?? new HttpPayPalClient();
@@ -240,6 +242,7 @@ export function registerPayPalRoutes(
       action: string;
       amountMinor: number;
       currency: string;
+      approvalId?: string;
       returnUrl?: string;
       cancelUrl?: string;
     };
@@ -277,17 +280,53 @@ export function registerPayPalRoutes(
         message: "PayPal Sandbox provider payments require USD; use simulation for INR.",
       });
     }
+
+    let approvalGranted = false;
+    if (request.body.approvalId && dependencies.approvals) {
+      const approval = await dependencies.approvals.get(environment.id, request.body.approvalId);
+      if (
+        approval &&
+        approval.status === "approved" &&
+        approval.mandateId === mandate.id &&
+        approval.agentId === agent.id &&
+        approval.action === request.body.action &&
+        approval.amountMinor === request.body.amountMinor &&
+        approval.currency === "USD" &&
+        approval.requestHash === request.body.requestHash
+      ) {
+        approvalGranted = true;
+      }
+    }
+
     const decision = await dependencies.authority.evaluate(
       mandate.id,
       {
         action: request.body.action,
         amountMinor: request.body.amountMinor,
         currency: "USD",
-        approvalGranted: false,
+        approvalGranted,
       },
       owner.userId,
     );
-    if (!decision.allowed) return reply.code(403).send({ decision });
+    if (!decision.allowed) {
+      let createdApprovalId: string | undefined;
+      if (decision.code === "APPROVAL_REQUIRED" && dependencies.approvals) {
+        const approval = await dependencies.approvals.create({
+          environmentId: environment.id,
+          mandateId: mandate.id,
+          agentId: agent.id,
+          action: request.body.action,
+          amountMinor: request.body.amountMinor,
+          currency: "USD",
+          requestHash: request.body.requestHash,
+        });
+        createdApprovalId = approval.id;
+      }
+      return reply.code(403).send({
+        decision,
+        ...(createdApprovalId ? { approvalId: createdApprovalId } : {}),
+      });
+    }
     let reserved: Awaited<ReturnType<LedgerStore["authorizeAndReserve"]>> | null = null;
     const executionMode = paypalExecutionMode();
     try {

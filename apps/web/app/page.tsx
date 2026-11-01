@@ -1,438 +1,333 @@
-"use client";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Bot,
+  FileKey,
+  ScrollText,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Terminal,
+  Users,
+  Wallet,
+  Zap,
+} from "lucide-react";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { AuthBoundary, useAuth } from "./auth-provider";
-import { apiRequest } from "./lib/api";
-import { AgentsGrid } from "./components/agents-grid";
-import { PaymentOperationsGrid } from "./components/payment-operations-grid";
-import type { PaymentOperation } from "./components/payment-operations-grid-data";
-
-type Environment = {
-  id: string;
-  name: string;
-  purpose: string;
-  currency: string;
-  budgetLimitMinor: number;
-  status: string;
-};
-
-type Agent = {
-  id: string;
-  name: string;
-  kind: string;
-  parentAgentId: string | null;
-  status: "active" | "disabled" | "revoked";
-};
-
-type Mandate = {
-  id: string;
-  holderAgentId: string;
-  parentMandateId: string | null;
-  budgetLimitMinor: number;
-  allocatedMinor: number;
-  spentMinor: number;
-  reservedMinor: number;
-  currency: string;
-  permittedActions: string[];
-  expiresAt: string;
-  state: "active" | "expired" | "revoked";
-  revokedAt: string | null;
-};
-
-type ActivityEvent = {
-  id: string;
-  eventType: string;
-  outcome: "success" | "denied" | "failure";
-  reasonCode: string | null;
-  createdAt: string;
-  actorType: string;
-};
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <AuthBoundary>
-      <Dashboard />
-    </AuthBoundary>
-  );
-}
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top navigation */}
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-secondary">
+              <Shield className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-sm font-semibold">PayGuardian</span>
+          </Link>
 
-function Dashboard() {
-  const { isLocalDevelopment, session, user, signOut } = useAuth();
-  const localUserId = process.env.NEXT_PUBLIC_LOCAL_USER_ID ?? "local-user";
-  const [environments, setEnvironments] = useState<Environment[]>([]);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [mandates, setMandates] = useState<Mandate[]>([]);
-  const [activity, setActivity] = useState<ActivityEvent[]>([]);
-  const [paymentOperations, setPaymentOperations] = useState<PaymentOperation[]>([]);
-  const [operationsLoading, setOperationsLoading] = useState(false);
-  const [controlLoading, setControlLoading] = useState<string | null>(null);
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>();
-  const [name, setName] = useState("Travel");
-  const [purpose, setPurpose] = useState("Trip planning");
-  const [budget, setBudget] = useState("10000");
-  const [message, setMessage] = useState(
-    isLocalDevelopment ? "Local development mode: Supabase Auth is not configured." : "",
-  );
+          <nav className="hidden items-center gap-6 text-xs text-muted-foreground md:flex">
+            <a href="#platform" className="transition-colors hover:text-foreground">
+              Platform
+            </a>
+            <a href="#agents" className="transition-colors hover:text-foreground">
+              Agents
+            </a>
+            <a href="#docs" className="transition-colors hover:text-foreground">
+              Docs
+            </a>
+            <a href="#pricing" className="transition-colors hover:text-foreground">
+              Pricing
+            </a>
+          </nav>
 
-  async function api<T>(path: string, init?: RequestInit): Promise<T> {
-    return apiRequest<T>(
-      apiBaseUrl,
-      path,
-      session,
-      init,
-      isLocalDevelopment ? localUserId : undefined,
-    );
-  }
-
-  async function loadEnvironmentData(environmentId: string) {
-    setOperationsLoading(true);
-    try {
-      const [agentResponse, paymentResponse, mandateResponse, activityResponse] = await Promise.all(
-        [
-          api<{ agents: Agent[] }>(`/v1/environments/${environmentId}/agents`),
-          api<{ operations: PaymentOperation[] }>(
-            `/v1/environments/${environmentId}/payments/paypal/operations?limit=50`,
-          ),
-          api<{ mandates: Mandate[] }>(`/v1/environments/${environmentId}/mandates`),
-          api<{ events: ActivityEvent[] }>(`/v1/environments/${environmentId}/activity`),
-        ],
-      );
-      setAgents(agentResponse.agents);
-      setPaymentOperations(paymentResponse.operations);
-      setMandates(mandateResponse.mandates);
-      setActivity(activityResponse.events);
-    } finally {
-      setOperationsLoading(false);
-    }
-  }
-
-  async function refreshEnvironments() {
-    const response = await api<{ environments: Environment[] }>("/v1/environments");
-    setEnvironments(response.environments);
-    setSelectedEnvironmentId((current) => {
-      if (current && response.environments.some((environment) => environment.id === current)) {
-        return current;
-      }
-      return response.environments[0]?.id;
-    });
-  }
-
-  useEffect(() => {
-    void refreshEnvironments().catch((error: unknown) => {
-      setMessage(error instanceof Error ? error.message : "Unable to load environments.");
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!selectedEnvironmentId) {
-      setAgents([]);
-      setMandates([]);
-      setActivity([]);
-      setPaymentOperations([]);
-      return;
-    }
-    void loadEnvironmentData(selectedEnvironmentId).catch((error: unknown) => {
-      setMessage(error instanceof Error ? error.message : "Unable to load environment data.");
-      setAgents([]);
-      setMandates([]);
-      setActivity([]);
-      setPaymentOperations([]);
-    });
-  }, [selectedEnvironmentId]);
-
-  async function createEnvironment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      const response = await api<{ environment: Environment }>("/v1/environments", {
-        method: "POST",
-        body: JSON.stringify({ name, purpose, currency: "INR", budgetLimitMinor: Number(budget) }),
-      });
-      setSelectedEnvironmentId(response.environment.id);
-      setMessage("Environment created. Register a Personal Agent through the gateway API next.");
-      await refreshEnvironments();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to create environment.");
-    }
-  }
-
-  async function refreshSelectedEnvironment() {
-    await refreshEnvironments();
-    if (selectedEnvironmentId) await loadEnvironmentData(selectedEnvironmentId);
-  }
-
-  async function controlEnvironment(action: "pause" | "resume" | "revoke") {
-    if (!selectedEnvironmentId) return;
-    if (
-      action === "revoke" &&
-      !window.confirm("Revoke this environment? Future protected actions will be denied.")
-    ) {
-      return;
-    }
-    setControlLoading(`environment-${action}`);
-    try {
-      await api(`/v1/environments/${selectedEnvironmentId}/${action}`, { method: "POST" });
-      setMessage(`Environment ${action === "revoke" ? "revoked" : `${action}d`}.`);
-      await refreshSelectedEnvironment();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to update environment.");
-    } finally {
-      setControlLoading(null);
-    }
-  }
-
-  async function controlAgent(agentId: string, action: "disable" | "revoke") {
-    if (!selectedEnvironmentId) return;
-    if (
-      action === "revoke" &&
-      !window.confirm("Revoke this agent and its descendants? This cannot be undone.")
-    ) {
-      return;
-    }
-    setControlLoading(`agent-${agentId}-${action}`);
-    try {
-      await api(`/v1/environments/${selectedEnvironmentId}/agents/${agentId}/${action}`, {
-        method: "POST",
-      });
-      setMessage(
-        `Agent ${action === "revoke" ? "revoked" : "disabled"}. Descendants are blocked too.`,
-      );
-      await loadEnvironmentData(selectedEnvironmentId);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to update agent.");
-    } finally {
-      setControlLoading(null);
-    }
-  }
-
-  async function revokeMandate(mandateId: string) {
-    if (
-      !window.confirm("Revoke this mandate and all delegated descendants? This cannot be undone.")
-    ) {
-      return;
-    }
-    setControlLoading(`mandate-${mandateId}`);
-    try {
-      await api(`/v1/mandates/${mandateId}/revocations`, { method: "POST" });
-      setMessage("Mandate revoked. Descendant mandates are blocked by the gateway.");
-      if (selectedEnvironmentId) await loadEnvironmentData(selectedEnvironmentId);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to revoke mandate.");
-    } finally {
-      setControlLoading(null);
-    }
-  }
-
-  const selectedEnvironment = environments.find(
-    (environment) => environment.id === selectedEnvironmentId,
-  );
-
-  return (
-    <main className="shell">
-      <section className="hero" aria-labelledby="page-title">
-        <div className="topbar">
-          <p className="eyebrow">Delegation Gateway · Phase 6 foundation</p>
-          <button type="button" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        </div>
-        <h1 id="page-title">PayGuardian</h1>
-        <p className="lede">
-          A safe boundary for Personal Agents and specialist agents to request bounded authority.
-        </p>
-        <div className="status" role="status">
-          <span className="status-dot" aria-hidden="true" />
-          {isLocalDevelopment
-            ? "Local development authentication"
-            : `Signed in as ${user?.email ?? "authenticated user"}`}
-        </div>
-      </section>
-
-      <section className="card" aria-labelledby="setup-title">
-        <h2 id="setup-title">Create an environment</h2>
-        <p className="note">{message}</p>
-        <form className="form" onSubmit={createEnvironment}>
-          <label>
-            Environment name
-            <input value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label>
-            Purpose
-            <input value={purpose} onChange={(event) => setPurpose(event.target.value)} />
-          </label>
-          <label>
-            Budget in minor units
-            <input
-              inputMode="numeric"
-              value={budget}
-              onChange={(event) => setBudget(event.target.value)}
-            />
-          </label>
-          <button type="submit">Create environment</button>
-        </form>
-      </section>
-
-      <section className="card" aria-labelledby="environment-title">
-        <h2 id="environment-title">Environments</h2>
-        {environments.length === 0 ? <p className="muted">No environments yet.</p> : null}
-        <ul>
-          {environments.map((environment) => (
-            <li key={environment.id}>
-              <button
-                className="link-button"
-                type="button"
-                onClick={() => setSelectedEnvironmentId(environment.id)}
-              >
-                {environment.name}
-              </button>{" "}
-              <span className="muted">
-                {environment.purpose} · {environment.budgetLimitMinor} {environment.currency} ·{" "}
-                {environment.status}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <h3>Registered agents</h3>
-        {agents.length === 0 ? (
-          <p className="muted">No agents registered for the selected environment.</p>
-        ) : null}
-        <AgentsGrid agents={agents} />
-        <div className="control-panel" aria-label="Environment emergency controls">
-          <h3>Emergency controls</h3>
-          <p className="muted">
-            Pausing blocks new setup, delegation, ledger mutations, and protected actions. Existing
-            in-flight reconciliation remains available.
-          </p>
-          <div className="action-row">
-            {selectedEnvironment?.status === "active" ? (
-              <button
-                type="button"
-                onClick={() => void controlEnvironment("pause")}
-                disabled={controlLoading !== null}
-              >
-                {controlLoading === "environment-pause" ? "Pausing…" : "Pause environment"}
-              </button>
-            ) : null}
-            {selectedEnvironment?.status === "paused" ? (
-              <button
-                type="button"
-                onClick={() => void controlEnvironment("resume")}
-                disabled={controlLoading !== null}
-              >
-                {controlLoading === "environment-resume" ? "Resuming…" : "Resume environment"}
-              </button>
-            ) : null}
-            {selectedEnvironment && selectedEnvironment.status !== "revoked" ? (
-              <button
-                className="danger-button"
-                type="button"
-                onClick={() => void controlEnvironment("revoke")}
-                disabled={controlLoading !== null}
-              >
-                {controlLoading === "environment-revoke" ? "Revoking…" : "Revoke environment"}
-              </button>
-            ) : null}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className="inline-flex h-8 items-center rounded-md border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-secondary"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex h-8 items-center rounded-md bg-foreground px-3 text-xs font-medium text-background shadow-sm transition-opacity hover:bg-foreground/90"
+            >
+              Dashboard
+            </Link>
           </div>
         </div>
-        <div className="control-panel" aria-label="Agent controls">
-          <h3>Agent controls</h3>
-          {agents.length === 0 ? <p className="muted">No agent controls available.</p> : null}
-          <ul className="control-list">
-            {agents.map((agent) => (
-              <li key={agent.id}>
-                <span>
-                  <strong>{agent.name}</strong> <span className="muted">({agent.status})</span>
-                </span>
-                <span className="inline-actions">
-                  {agent.status === "active" ? (
-                    <button
-                      type="button"
-                      onClick={() => void controlAgent(agent.id, "disable")}
-                      disabled={controlLoading !== null}
-                    >
-                      Disable
-                    </button>
-                  ) : null}
-                  {agent.status !== "revoked" ? (
-                    <button
-                      className="danger-button"
-                      type="button"
-                      onClick={() => void controlAgent(agent.id, "revoke")}
-                      disabled={controlLoading !== null}
-                    >
-                      Revoke
-                    </button>
-                  ) : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="note">
-          Agent registration, mandates, budgets, and payments remain separately enforced by the
-          gateway.
-        </p>
-      </section>
+      </header>
 
-      <section className="card card-wide" aria-labelledby="mandates-title">
-        <h2 id="mandates-title">Mandates</h2>
-        <p className="muted">Authority grants and current budget usage for this environment.</p>
-        {mandates.length === 0 ? <p className="muted">No mandates recorded.</p> : null}
-        <ul className="mandate-list">
-          {mandates.map((mandate) => (
-            <li key={mandate.id}>
-              <div>
-                <strong>{mandate.id}</strong>
-                <span className="muted">
-                  {mandate.state} · holder {mandate.holderAgentId} · {mandate.spentMinor}/
-                  {mandate.budgetLimitMinor} {mandate.currency} spent
+      <main>
+        {/* Hero */}
+        <section className="relative overflow-hidden">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
+            style={{
+              background:
+                "radial-gradient(60% 100% at 50% 0%, oklch(1 0 0 / 0.05), transparent 70%)",
+            }}
+          />
+          <div className="relative mx-auto w-full max-w-5xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-secondary"
+            >
+              <Zap className="h-3 w-3 text-warning" />
+              Sandbox gateway is open — start delegating
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+
+            <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-normal text-foreground sm:text-6xl">
+              Bounded authority for agents that spend money.
+            </h1>
+
+            <p className="lede mx-auto mt-5 max-w-xl text-center text-sm sm:text-base">
+              Your personal agent delegates to travel, hotel and food agents. PayGuardian keeps
+              every hop signed, budgeted and revocable — and shows you exactly who may spend what.
+            </p>
+
+            <div className="mt-8 flex items-center justify-center gap-3">
+              <Link
+                href="/dashboard"
+                className="inline-flex h-9 items-center rounded-md bg-foreground px-4 text-xs font-medium text-background shadow-sm transition-opacity hover:bg-foreground/90"
+              >
+                Open dashboard
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 text-xs font-medium transition-colors hover:bg-secondary"
+              >
+                Sign in
+              </Link>
+            </div>
+
+            {/* Product preview */}
+            <div className="mx-auto mt-14 max-w-4xl overflow-hidden rounded-md border border-border bg-card text-left shadow-md">
+              {/* Mini window topbar */}
+              <div className="flex h-9 items-center gap-2 border-b border-border bg-background px-3">
+                <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[11px] font-medium">PayGuardian</span>
+                <span className="ml-auto rounded border border-border bg-secondary px-1 py-px font-mono text-[8px] uppercase text-muted-foreground">
+                  Sandbox
                 </span>
               </div>
-              {mandate.state === "active" ? (
-                <button
-                  className="danger-button"
-                  type="button"
-                  onClick={() => void revokeMandate(mandate.id)}
-                  disabled={controlLoading !== null}
+
+              <div className="flex">
+                {/* Mini sidebar */}
+                <div className="hidden w-36 shrink-0 border-r border-border p-2 sm:block">
+                  {[
+                    ["Overview", true],
+                    ["Workspace", false],
+                    ["Assistant", false],
+                    ["Approvals", false],
+                    ["Mandates", false],
+                    ["Security", false],
+                  ].map(([label, active]) => (
+                    <div
+                      key={label as string}
+                      className={`rounded-md px-2 py-1.5 text-[11px] ${
+                        active ? "bg-secondary text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {label}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mini content: stats + bars + chat */}
+                <div className="min-w-0 flex-1 p-3">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      ["Active agents", "4"],
+                      ["Authority", "$10,000"],
+                      ["Spent", "$2,450"],
+                      ["Approvals", "1"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-md border border-border bg-background p-2.5">
+                        <div className="text-[10px] text-muted-foreground">{label}</div>
+                        <div className="mt-1 text-sm font-semibold tabular-nums">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-5">
+                    {/* Mini bar chart */}
+                    <div className="rounded-md border border-border bg-background p-3 sm:col-span-3">
+                      <div className="text-[10px] text-muted-foreground">Spend velocity</div>
+                      <div className="mt-2 flex h-20 items-end gap-1.5">
+                        {[38, 22, 55, 62, 80, 30, 20].map((h, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 rounded-t-sm bg-chart-1"
+                            style={{ height: `${h}%` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mini verified chat card */}
+                    <div className="rounded-md border border-border bg-background p-3 sm:col-span-2">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <ShieldCheck className="h-3 w-3 text-success" />
+                        Gateway verified
+                      </div>
+                      <div className="mt-2 rounded-md border border-border bg-secondary p-2 text-[10px] leading-relaxed">
+                        Paid IndiGo flight 6E-204 via PayPal.
+                        <div className="mt-1.5 flex items-center justify-between font-mono text-[9px] text-muted-foreground">
+                          <span>txn_pp_482913</span>
+                          <span className="text-success">completed</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 rounded-md border border-border bg-secondary/60 p-2 text-[10px] text-muted-foreground">
+                        Grand Hyatt booking refused: over sub-mandate limit.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section id="platform" className="border-t border-border">
+          <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6">
+            <h2 className="text-center text-2xl font-semibold sm:text-3xl">
+              Make invisible authority visible
+            </h2>
+            <p className="lede mx-auto mt-3 text-center text-sm">
+              Registration never grants authority. Only signed, bounded mandates do — and every
+              hop down the chain narrows it.
+            </p>
+
+            <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  icon: ScrollText,
+                  title: "Signed mandates",
+                  body: "Budget, scope, expiry and delegation rights, cryptographically bound to the agent identity.",
+                },
+                {
+                  icon: Users,
+                  title: "Nested delegation",
+                  body: "Personal delegates to Travel, Travel to Hotel. Children can never exceed the parent's authority.",
+                },
+                {
+                  icon: ShieldAlert,
+                  title: "Human approvals",
+                  body: "Anything above your threshold pauses for explicit sign-off. No silent overrides.",
+                },
+                {
+                  icon: Zap,
+                  title: "Instant revocation",
+                  body: "Cut off one agent and its whole subtree in a click. In-flight actions resolve by real state.",
+                },
+                {
+                  icon: FileKey,
+                  title: "Tamper-evident audit",
+                  body: "Trace any payment from child agent to the root mandate that allowed it.",
+                },
+                {
+                  icon: Terminal,
+                  title: "MCP & REST",
+                  body: "Connect your own agents and frameworks. The gateway enforces the same rules everywhere.",
+                },
+              ].map(({ icon: Icon, title, body }) => (
+                <div key={title} className="bg-card p-6">
+                  <Icon className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="mt-3 text-sm font-semibold">{title}</h3>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Agent suite */}
+        <section id="agents" className="border-t border-border">
+          <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6">
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+              <div>
+                <h2 className="text-2xl font-semibold sm:text-3xl">
+                  A suite of agents, one chokepoint
+                </h2>
+                <p className="lede mt-3 text-sm">
+                  Personal, Travel, Hotel, Transport, Food and Activities ship as ADK agents. Your
+                  own agents plug in through MCP — and are subject to the same budget and
+                  authorization rules.
+                </p>
+                <Link
+                  href="/dashboard"
+                  className="mt-6 inline-flex h-9 items-center rounded-md border border-border bg-card px-4 text-xs font-medium transition-colors hover:bg-secondary"
                 >
-                  {controlLoading === `mandate-${mandate.id}` ? "Revoking…" : "Revoke mandate"}
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="card card-wide" aria-labelledby="activity-title">
-        <h2 id="activity-title">Activity</h2>
-        <p className="muted">Append-only gateway events for the selected environment.</p>
-        {activity.length === 0 ? <p className="muted">No activity recorded.</p> : null}
-        <ol className="activity-list">
-          {[...activity].reverse().map((event) => (
-            <li key={event.id}>
-              <div>
-                <strong>{event.eventType}</strong>
-                <span className="muted">
-                  {event.outcome} · {event.actorType} · {new Date(event.createdAt).toLocaleString()}
-                </span>
+                  Explore the workspace
+                  <ArrowRight className="ml-1.5 h-3 w-3" />
+                </Link>
               </div>
-              {event.reasonCode ? <span className="muted">{event.reasonCode}</span> : null}
-            </li>
-          ))}
-        </ol>
-      </section>
 
-      <section className="card card-wide" aria-labelledby="payment-operations-title">
-        <h2 id="payment-operations-title">Recent PayPal operations</h2>
-        <p className="muted">
-          {selectedEnvironmentId
-            ? operationsLoading
-              ? "Loading operations…"
-              : "Read-only provider and reconciliation status for the selected environment."
-            : "Select an environment to inspect payment operations."}
-        </p>
-        <PaymentOperationsGrid operations={paymentOperations} />
-      </section>
-    </main>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {[
+                  { icon: Bot, label: "Personal" },
+                  { icon: Wallet, label: "Travel" },
+                  { icon: Bot, label: "Hotel" },
+                  { icon: Bot, label: "Transport" },
+                  { icon: Wallet, label: "Food" },
+                  { icon: Bot, label: "Activities" },
+                ].map(({ icon: Icon, label }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col items-center gap-2 rounded-md border border-border bg-card py-5 text-center"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-secondary">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </span>
+                    <span className="text-xs font-medium">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="border-t border-border">
+          <div className="mx-auto w-full max-w-5xl px-4 py-16 text-center sm:px-6">
+            <h2 className="text-2xl font-semibold sm:text-3xl">Hand over the keys. Keep the control.</h2>
+            <p className="lede mx-auto mt-3 text-sm">
+              Create an environment, set the budget, connect an agent — in minutes.
+            </p>
+            <Link
+              href="/dashboard"
+              className="mt-7 inline-flex h-9 items-center rounded-md bg-foreground px-5 text-xs font-medium text-background shadow-sm transition-opacity hover:bg-foreground/90"
+            >
+              Open dashboard
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            <span>© 2026 PayGuardian LLC</span>
+          </div>
+          <nav className="flex items-center gap-5 text-xs text-muted-foreground">
+            <a href="#docs" className="transition-colors hover:text-foreground">
+              Documentation
+            </a>
+            <a href="#pricing" className="transition-colors hover:text-foreground">
+              Pricing
+            </a>
+            <Link href="/login" className="transition-colors hover:text-foreground">
+              Sign in
+            </Link>
+          </nav>
+        </div>
+      </footer>
+    </div>
   );
 }

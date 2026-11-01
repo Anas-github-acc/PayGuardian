@@ -10,17 +10,29 @@
     "test": "vitest run --passWithNoTests --exclude 'dist/**'"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-dropdown-menu": "^2.2.1",
+    "@supabase/supabase-js": "2.99.2",
     "ag-grid-community": "36.2.0",
     "ag-grid-react": "36.2.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^14.9.0",
+    "lucide-react": "^1.65.0",
+    "motion": "^14.9.0",
     "next": "16.4.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "@supabase/supabase-js": "2.99.2"
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/three": "^0.186.0",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^3.4.19",
     "vitest": "5.0.5"
   }
 }

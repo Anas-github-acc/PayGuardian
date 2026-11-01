@@ -1,0 +1,119 @@
+{
+  "timestamp": "2026-10-28T23:44:37.162Z",
+  "browser": "Chrome/156.0.8078.25",
+  "totalScenarios": 12,
+  "passed": 12,
+  "failed": 0,
+  "totalDurationMs": 31558,
+  "results": [
+    {
+      "name": "01-navigation-and-layout",
+      "status": "PASSED",
+      "durationMs": 1689,
+      "details": {
+        "passed": true,
+        "name": "01-navigation-and-layout"
+      }
+    },
+    {
+      "name": "02-create-environment-flow",
+      "status": "PASSED",
+      "durationMs": 2745,
+      "details": {
+        "passed": true,
+        "name": "02-create-environment-flow",
+        "envName": "Kyoto-1793231048602"
+      }
+    },
+    {
+      "name": "03-environment-switching",
+      "status": "PASSED",
+      "durationMs": 3558,
+      "details": {
+        "passed": true,
+        "name": "03-environment-switching"
+      }
+    },
+    {
+      "name": "04-agent-grid-and-controls",
+      "status": "PASSED",
+      "durationMs": 4343,
+      "details": {
+        "passed": true,
+        "name": "04-agent-grid-and-controls"
+      }
+    },
+    {
+      "name": "05-mandate-revocation",
+      "status": "PASSED",
+      "durationMs": 2515,
+      "details": {
+        "passed": true,
+        "name": "05-mandate-revocation"
+      }
+    },
+    {
+      "name": "06-emergency-controls-lifecycle",
+      "status": "PASSED",
+      "durationMs": 2895,
+      "details": {
+        "passed": true,
+        "name": "06-emergency-controls-lifecycle"
+      }
+    },
+    {
+      "name": "07-payment-operations-grid",
+      "status": "PASSED",
+      "durationMs": 2920,
+      "details": {
+        "passed": true,
+        "name": "07-payment-operations-grid"
+      }
+    },
+    {
+      "name": "08-paypal-callbacks",
+      "status": "PASSED",
+      "durationMs": 3889,
+      "details": {
+        "passed": true,
+        "name": "08-paypal-callbacks"
+      }
+    },
+    {
+      "name": "09-auth-and-login-flows",
+      "status": "PASSED",
+      "durationMs": 2656,
+      "details": {
+        "passed": true,
+        "name": "09-auth-and-login-flows"
+      }
+    },
+    {
+      "name": "10-wallet-and-rpc-mocking",
+      "status": "PASSED",
+      "durationMs": 1752,
+      "details": {
+        "passed": true,
+        "name": "10-wallet-and-rpc-mocking"
+      }
+    },
+    {
+      "name": "11-raw-cdp-protocol",
+      "status": "PASSED",
+      "durationMs": 117,
+      "details": {
+        "passed": true,
+        "name": "11-raw-cdp-protocol"
+      }
+    },
+    {
+      "name": "12-human-approvals-inbox",
+      "status": "PASSED",
+      "durationMs": 2399,
+      "details": {
+        "passed": true,
+        "name": "12-human-approvals-inbox"
+      }
+    }
+  ]
+}

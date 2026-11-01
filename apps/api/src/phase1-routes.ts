@@ -223,4 +223,86 @@ export function registerPhase1Routes(
     });
     return reply.code(201).send(created);
   });
+
+  app.post<{
+    Params: { environmentId: string; agentId: string };
+  }>(
+    "/v1/environments/:environmentId/agents/:agentId/credentials/rotate",
+    async (request, reply) => {
+      const principal = await requirePrincipal(
+        request as AppRequest,
+        reply,
+        dependencies.resolvePrincipal,
+      );
+      if (!principal) return;
+      const environment = await dependencies.registry.getEnvironment(
+        principal.userId,
+        request.params.environmentId,
+      );
+      if (!environment)
+        return reply
+          .code(404)
+          .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+      const agent = await dependencies.registry.getAgent(principal.userId, request.params.agentId);
+      if (!agent || agent.environmentId !== environment.id)
+        return reply.code(404).send({ code: "AGENT_NOT_FOUND", message: "Agent not found." });
+      const created = await dependencies.registry.rotateAgentCredential(principal.userId, agent.id);
+      if (!created)
+        return reply
+          .code(409)
+          .send({ code: "CREDENTIAL_ROTATION_FAILED", message: "Credential rotation failed." });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: principal.userId,
+        eventType: "credential.rotated",
+        outcome: "success",
+        payload: { agentId: agent.id, targetId: created.id },
+      });
+      return reply.code(201).send({ credential: created });
+    },
+  );
+
+  app.post<{
+    Params: { environmentId: string; agentId: string; credentialId: string };
+  }>(
+    "/v1/environments/:environmentId/agents/:agentId/credentials/:credentialId/revoke",
+    async (request, reply) => {
+      const principal = await requirePrincipal(
+        request as AppRequest,
+        reply,
+        dependencies.resolvePrincipal,
+      );
+      if (!principal) return;
+      const environment = await dependencies.registry.getEnvironment(
+        principal.userId,
+        request.params.environmentId,
+      );
+      if (!environment)
+        return reply
+          .code(404)
+          .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+      const agent = await dependencies.registry.getAgent(principal.userId, request.params.agentId);
+      if (!agent || agent.environmentId !== environment.id)
+        return reply.code(404).send({ code: "AGENT_NOT_FOUND", message: "Agent not found." });
+      const success = await dependencies.registry.revokeAgentCredential(
+        principal.userId,
+        agent.id,
+        request.params.credentialId,
+      );
+      if (!success)
+        return reply
+          .code(404)
+          .send({ code: "CREDENTIAL_NOT_FOUND", message: "Credential not found." });
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: principal.userId,
+        eventType: "credential.revoked",
+        outcome: "success",
+        payload: { agentId: agent.id, targetId: request.params.credentialId },
+      });
+      return { revoked: true };
+    },
+  );
 }

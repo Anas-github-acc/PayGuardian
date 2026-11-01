@@ -9,3 +9,8 @@ package = false
 
 [tool.uv.workspace]
 members = ["apps/agent-runtime"]
+
+[tool.pytest.ini_options]
+testpaths = ["apps/agent-runtime/tests"]
+pythonpath = ["apps/agent-runtime/src"]
+

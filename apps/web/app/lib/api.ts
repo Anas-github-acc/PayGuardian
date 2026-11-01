@@ -28,9 +28,13 @@ export async function apiRequest<T>(
   init: RequestInit | undefined,
   localUserId?: string,
 ): Promise<T> {
+  const headers = buildApiHeaders(session, localUserId, init?.headers);
+  if (!init?.body && !(init?.headers && new Headers(init.headers).has("content-type"))) {
+    headers.delete("content-type");
+  }
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
-    headers: buildApiHeaders(session, localUserId, init?.headers),
+    headers,
   });
   const body = (await response.json()) as T & { message?: string };
   if (!response.ok) throw new Error(body.message ?? "Gateway request failed.");

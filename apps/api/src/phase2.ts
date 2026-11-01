@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createRootMandate,
   delegateMandate,
-  evaluateMandate,
+  evaluateAuthorityChain,
   revokeMandate,
   type DelegationRequest,
   type Mandate,
@@ -34,6 +34,7 @@ export type AuthorityStore = {
   createRoot(input: RootMandateInput): Promise<Mandate>;
   get(id: string, userId?: string): Promise<Mandate | null>;
   list(environmentId: string, userId: string): Promise<Mandate[]>;
+  getChain(id: string, userId: string): Promise<Mandate[]>;
   delegate(
     parentId: string,
     input: DelegationRequest,
@@ -145,6 +146,12 @@ export class InMemoryAuthorityStore implements AuthorityStore {
     return revoked;
   }
 
+  async getChain(id: string, userId: string): Promise<Mandate[]> {
+    const mandate = this.mandates.get(id);
+    if (!mandate || mandate.issuerUserId !== userId) return [];
+    return this.chainFor(mandate);
+  }
+
   async evaluate(id: string, input: AuthorityCheckInput, userId: string): Promise<PolicyDecision> {
     const mandate = this.mandates.get(id);
     if (!mandate)
@@ -156,11 +163,7 @@ export class InMemoryAuthorityStore implements AuthorityStore {
         reason: "Mandate is not owned by the authenticated principal.",
       };
     const chain = this.chainFor(mandate);
-    for (const item of chain) {
-      const decision = evaluateMandate(item, { ...input, at: new Date() });
-      if (!decision.allowed) return decision;
-    }
-    return { allowed: true, code: "ALLOW", reason: "The full mandate chain permits this action." };
+    return evaluateAuthorityChain(chain, id, { ...input, at: new Date() });
   }
 
   private chainFor(mandate: Mandate): Mandate[] {
@@ -283,22 +286,20 @@ export class SupabaseAuthorityStore implements AuthorityStore {
     return data ? mapMandate(data as SupabaseMandateRow) : null;
   }
 
-  async evaluate(id: string, input: AuthorityCheckInput, userId: string): Promise<PolicyDecision> {
+  async getChain(id: string, userId: string): Promise<Mandate[]> {
     const { data, error } = await this.client.rpc("get_mandate_chain_for_user", {
       p_mandate_id: id,
       p_user_id: userId,
     });
     if (error) throw error;
-    const chain = Array.isArray(data)
-      ? data.map((row) => mapMandate(row as SupabaseMandateRow))
-      : [];
+    return Array.isArray(data) ? data.map((row) => mapMandate(row as SupabaseMandateRow)) : [];
+  }
+
+  async evaluate(id: string, input: AuthorityCheckInput, userId: string): Promise<PolicyDecision> {
+    const chain = await this.getChain(id, userId);
     if (chain.length === 0)
       return { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Mandate not found." };
-    for (const mandate of chain) {
-      const decision = evaluateMandate(mandate, { ...input, at: new Date() });
-      if (!decision.allowed) return decision;
-    }
-    return { allowed: true, code: "ALLOW", reason: "The full mandate chain permits this action." };
+    return evaluateAuthorityChain(chain, id, { ...input, at: new Date() });
   }
 }
 

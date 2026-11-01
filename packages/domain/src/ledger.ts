@@ -70,6 +70,19 @@ export class InMemoryLedger {
     child.availableMinor += amountMinor;
   }
 
+  reclaim(parentId: string, childId: string, amountMinor: number): void {
+    this.validateAmount(amountMinor);
+    const parent = this.getMutable(parentId);
+    const child = this.getMutable(childId);
+    if (child.parentId !== parent.id)
+      throw new LedgerError("Child account is not owned by parent.", "INVALID_STATE");
+    if (child.availableMinor < amountMinor) {
+      throw new LedgerError("Reclaim exceeds available child funds.", "INSUFFICIENT_AVAILABLE");
+    }
+    child.availableMinor -= amountMinor;
+    parent.availableMinor += amountMinor;
+  }
+
   reserve(actionId: string, accountId: string, amountMinor: number): Reservation {
     this.validateAmount(amountMinor);
     const existing = this.reservations.get(actionId);

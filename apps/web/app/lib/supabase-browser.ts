@@ -17,5 +17,12 @@ export function createSupabaseBrowserClient(): SupabaseClient | null {
 }
 
 export function isLocalDevelopmentAuthEnabled(): boolean {
-  return process.env.NODE_ENV !== "production" && !createSupabaseBrowserClient();
+  if (
+    process.env.NEXT_PUBLIC_ENABLE_LOCAL_DEV_AUTH === "true" ||
+    process.env.ENABLE_LOCAL_DEV_AUTH === "true"
+  ) {
+    return true;
+  }
+  if (process.env.NODE_ENV === "production") return false;
+  return !createSupabaseBrowserClient();
 }

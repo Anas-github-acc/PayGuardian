@@ -26,7 +26,16 @@ export type LedgerStore = {
     availableMinor: number;
   }): Promise<LedgerAccount>;
   getAccount(environmentId: string, accountId: string): Promise<LedgerAccount | null>;
+  listAccounts(environmentId: string): Promise<LedgerAccount[]>;
   allocate(input: {
+    environmentId: string;
+    parentAccountId: string;
+    childAccountId: string;
+    amountMinor: number;
+    idempotencyKey: string;
+    requestHash: string;
+  }): Promise<{ parent: LedgerAccount; child: LedgerAccount }>;
+  reclaim(input: {
     environmentId: string;
     parentAccountId: string;
     childAccountId: string;
@@ -88,6 +97,20 @@ export class InMemoryLedgerStore implements LedgerStore {
     }
   }
 
+  async listAccounts(environmentId: string): Promise<LedgerAccount[]> {
+    const result: LedgerAccount[] = [];
+    for (const [id, envId] of this.accountEnvironments.entries()) {
+      if (envId === environmentId) {
+        try {
+          result.push(this.ledger.getAccount(id));
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return result;
+  }
+
   async allocate(input: {
     environmentId: string;
     parentAccountId: string;
@@ -120,6 +143,50 @@ export class InMemoryLedgerStore implements LedgerStore {
       idempotencyKey: input.idempotencyKey,
       requestHash: input.requestHash,
       action: "ledger.allocate",
+      amountMinor: input.amountMinor,
+      currency: "",
+      authorizationState: "authorized",
+      executionState: "succeeded",
+      createdAt: new Date().toISOString(),
+    });
+    const parent = await this.getAccount(input.environmentId, input.parentAccountId);
+    const child = await this.getAccount(input.environmentId, input.childAccountId);
+    if (!parent || !child) throw new Error("ACCOUNT_NOT_FOUND");
+    return { parent, child };
+  }
+
+  async reclaim(input: {
+    environmentId: string;
+    parentAccountId: string;
+    childAccountId: string;
+    amountMinor: number;
+    idempotencyKey: string;
+    requestHash: string;
+  }): Promise<{ parent: LedgerAccount; child: LedgerAccount }> {
+    if (
+      this.accountEnvironments.get(input.parentAccountId) !== input.environmentId ||
+      this.accountEnvironments.get(input.childAccountId) !== input.environmentId
+    ) {
+      throw new Error("ACCOUNT_NOT_FOUND");
+    }
+    const existing = this.actions.get(`reclaim:${input.idempotencyKey}`);
+    if (existing) {
+      if (existing.requestHash !== input.requestHash) throw new Error("IDEMPOTENCY_CONFLICT");
+      const parent = await this.getAccount(input.environmentId, input.parentAccountId);
+      const child = await this.getAccount(input.environmentId, input.childAccountId);
+      if (!parent || !child) throw new Error("ACCOUNT_NOT_FOUND");
+      return { parent, child };
+    }
+    validateAmount(input.amountMinor);
+    this.ledger.reclaim(input.parentAccountId, input.childAccountId, input.amountMinor);
+    this.actions.set(`reclaim:${input.idempotencyKey}`, {
+      id: `reclaim:${input.idempotencyKey}`,
+      environmentId: input.environmentId,
+      agentId: "",
+      mandateId: "",
+      idempotencyKey: input.idempotencyKey,
+      requestHash: input.requestHash,
+      action: "ledger.reclaim",
       amountMinor: input.amountMinor,
       currency: "",
       authorizationState: "authorized",
@@ -241,6 +308,16 @@ export class SupabaseLedgerStore implements LedgerStore {
     return data ? mapAccount(data as Row) : null;
   }
 
+  async listAccounts(environmentId: string): Promise<LedgerAccount[]> {
+    const { data, error } = await this.client
+      .from("ledger_accounts")
+      .select("id,parent_account_id,available_minor,reserved_minor,captured_minor")
+      .eq("environment_id", environmentId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row) => mapAccount(row as Row));
+  }
+
   async allocate(input: {
     environmentId: string;
     parentAccountId: string;
@@ -250,6 +327,31 @@ export class SupabaseLedgerStore implements LedgerStore {
     requestHash: string;
   }): Promise<{ parent: LedgerAccount; child: LedgerAccount }> {
     const { error } = await this.client.rpc("allocate_budget_idempotent", {
+      p_environment_id: input.environmentId,
+      p_parent_account_id: input.parentAccountId,
+      p_child_account_id: input.childAccountId,
+      p_amount_minor: input.amountMinor,
+      p_idempotency_key: input.idempotencyKey,
+      p_request_hash: input.requestHash,
+    });
+    if (error) throw error;
+    const [parent, child] = await Promise.all([
+      this.getAccount(input.environmentId, input.parentAccountId),
+      this.getAccount(input.environmentId, input.childAccountId),
+    ]);
+    if (!parent || !child) throw new Error("ACCOUNT_NOT_FOUND");
+    return { parent, child };
+  }
+
+  async reclaim(input: {
+    environmentId: string;
+    parentAccountId: string;
+    childAccountId: string;
+    amountMinor: number;
+    idempotencyKey: string;
+    requestHash: string;
+  }): Promise<{ parent: LedgerAccount; child: LedgerAccount }> {
+    const { error } = await this.client.rpc("reclaim_budget_idempotent", {
       p_environment_id: input.environmentId,
       p_parent_account_id: input.parentAccountId,
       p_child_account_id: input.childAccountId,

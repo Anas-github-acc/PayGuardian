@@ -165,4 +165,74 @@ describe("Phase 2 authority routes", () => {
     expect(check.statusCode).toBe(403);
     expect(check.json().decision.code).toBe("MANDATE_NOT_FOUND");
   });
+
+  it("permits child mandate actions when root has allocated all funds, and supports action-to-root trace", async () => {
+    const { app, headers, environmentId, rootAgentId, travelAgentId } = await setup();
+    const root = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${environmentId}/mandates/root`,
+      headers,
+      payload: {
+        holderAgentId: rootAgentId,
+        budgetLimitMinor: 10000,
+        currency: "INR",
+        permittedActions: ["book_hotel", "book_transport"],
+        expiresAt: "2027-01-01T00:00:00.000Z",
+        canDelegate: true,
+        maxDelegationDepth: 3,
+        approvalRequired: false,
+      },
+    });
+    const rootMandateId = root.json().mandate.id as string;
+
+    // Delegate entire 10,000 budget to travel agent (so root has 0 unallocated remaining)
+    const child = await app.inject({
+      method: "POST",
+      url: `/v1/mandates/${rootMandateId}/delegations`,
+      headers,
+      payload: {
+        holderAgentId: travelAgentId,
+        budgetLimitMinor: 10000,
+        currency: "INR",
+        permittedActions: ["book_hotel"],
+        expiresAt: "2026-12-01T00:00:00.000Z",
+        canDelegate: false,
+        maxDelegationDepth: 2,
+        approvalRequired: false,
+      },
+    });
+    expect(child.statusCode).toBe(201);
+    const childMandateId = child.json().mandate.id as string;
+
+    // Checking child mandate for 1,000 must ALLOW even though root has 0 available
+    const check = await app.inject({
+      method: "POST",
+      url: `/v1/mandates/${childMandateId}/check`,
+      headers,
+      payload: { action: "book_hotel", amountMinor: 1000, currency: "INR" },
+    });
+    expect(check.statusCode).toBe(200);
+    expect(check.json().decision.allowed).toBe(true);
+    expect(check.json().decision.code).toBe("ALLOW");
+
+    // Inspect mandate chain for action-to-root trace
+    const chainRes = await app.inject({
+      method: "GET",
+      url: `/v1/mandates/${childMandateId}/chain`,
+      headers,
+    });
+    expect(chainRes.statusCode).toBe(200);
+    const chain = chainRes.json().chain;
+    expect(chain).toHaveLength(2);
+    expect(chain[0].id).toBe(rootMandateId);
+    expect(chain[1].id).toBe(childMandateId);
+
+    // Foreign user cannot view chain
+    const foreignChain = await app.inject({
+      method: "GET",
+      url: `/v1/mandates/${childMandateId}/chain`,
+      headers: { "x-local-user-id": "bob" },
+    });
+    expect(foreignChain.statusCode).toBe(404);
+  });
 });

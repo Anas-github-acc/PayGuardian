@@ -114,6 +114,7 @@ export function evaluateMandate(
     currency: string;
     at: Date;
     approvalGranted: boolean;
+    isAncestor?: boolean;
   },
 ): PolicyDecision {
   if (!mandate) return { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Mandate not found." };
@@ -135,11 +136,22 @@ export function evaluateMandate(
       reason: "Currency does not match the mandate.",
     };
   }
-  if (
-    !Number.isSafeInteger(input.amountMinor) ||
-    input.amountMinor <= 0 ||
-    input.amountMinor > availableBudget(mandate)
-  ) {
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0) {
+    return {
+      allowed: false,
+      code: "BUDGET_EXCEEDED",
+      reason: "Amount must be a positive integer.",
+    };
+  }
+  if (input.isAncestor) {
+    if (input.amountMinor > mandate.budgetLimitMinor) {
+      return {
+        allowed: false,
+        code: "BUDGET_EXCEEDED",
+        reason: "Amount exceeds ancestor mandate budget limit.",
+      };
+    }
+  } else if (input.amountMinor > availableBudget(mandate)) {
     return {
       allowed: false,
       code: "BUDGET_EXCEEDED",
@@ -150,6 +162,36 @@ export function evaluateMandate(
     return { allowed: false, code: "APPROVAL_REQUIRED", reason: "Human approval is required." };
   }
   return { allowed: true, code: "ALLOW", reason: "Action is permitted." };
+}
+
+export function evaluateAuthorityChain(
+  chain: Mandate[],
+  targetMandateId: string,
+  input: {
+    action: string;
+    amountMinor: number;
+    currency: string;
+    at: Date;
+    approvalGranted: boolean;
+  },
+): PolicyDecision {
+  if (chain.length === 0) {
+    return { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Mandate not found." };
+  }
+  const target = chain.find((item) => item.id === targetMandateId);
+  if (!target) {
+    return {
+      allowed: false,
+      code: "MANDATE_NOT_FOUND",
+      reason: "Target mandate not found in chain.",
+    };
+  }
+  for (const item of chain) {
+    const isAncestor = item.id !== targetMandateId;
+    const decision = evaluateMandate(item, { ...input, isAncestor });
+    if (!decision.allowed) return decision;
+  }
+  return { allowed: true, code: "ALLOW", reason: "The full mandate chain permits this action." };
 }
 
 export function delegateMandate(

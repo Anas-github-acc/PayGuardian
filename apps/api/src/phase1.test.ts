@@ -111,4 +111,103 @@ describe("Phase 1 identity, environments, and registry", () => {
     });
     expect(foreignParent.statusCode).toBe(403);
   });
+
+  it("supports credential rotation, revocation, and server-side agent identity resolution", async () => {
+    const registry = new InMemoryRegistry();
+    const app = buildApp({
+      registry,
+      config: {
+        nodeEnv: "test",
+        databaseMode: "memory",
+        localDevAuthEnabled: true,
+        paypalExecutionMode: "inline",
+      },
+    });
+    apps.add(app);
+    const headers = { "x-local-user-id": "alice" };
+
+    const envRes = await app.inject({
+      method: "POST",
+      url: "/v1/environments",
+      headers,
+      payload: { name: "Travel", purpose: "Trips", currency: "INR", budgetLimitMinor: 10000 },
+    });
+    const envId = envRes.json().environment.id;
+
+    const rootRes = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${envId}/agents/root`,
+      headers,
+      payload: { name: "Personal Agent" },
+    });
+    const agentId = rootRes.json().agent.id;
+    const initialSecret = rootRes.json().credential.secret;
+    const initialCredId = rootRes.json().credential.id;
+
+    // Test that the agent credential secret authenticates the agent via Bearer token
+    const authCheckInitial = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers: { authorization: `Bearer ${initialSecret}` },
+    });
+    expect(authCheckInitial.statusCode).toBe(200);
+
+    // Rotate credential -> returns a new secret
+    const rotateRes = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${envId}/agents/${agentId}/credentials/rotate`,
+      headers,
+    });
+    expect(rotateRes.statusCode).toBe(201);
+    const rotatedSecret = rotateRes.json().credential.secret;
+    expect(rotatedSecret).toMatch(/^pg_/);
+    expect(rotatedSecret).not.toBe(initialSecret);
+
+    // During overlap, both initial and rotated secrets authenticate
+    const authCheckRotated = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers: { authorization: `Bearer ${rotatedSecret}` },
+    });
+    expect(authCheckRotated.statusCode).toBe(200);
+
+    const authCheckInitialStillValid = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers: { authorization: `Bearer ${initialSecret}` },
+    });
+    expect(authCheckInitialStillValid.statusCode).toBe(200);
+
+    // Revoke the initial credential
+    const revokeRes = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${envId}/agents/${agentId}/credentials/${initialCredId}/revoke`,
+      headers,
+    });
+    expect(revokeRes.statusCode).toBe(200);
+
+    // Revoked credential is now rejected
+    const authCheckRevoked = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers: { authorization: `Bearer ${initialSecret}` },
+    });
+    expect(authCheckRevoked.statusCode).toBe(401);
+
+    // Rotated credential continues to work
+    const authCheckRotatedAfterRevoke = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers: { authorization: `Bearer ${rotatedSecret}` },
+    });
+    expect(authCheckRotatedAfterRevoke.statusCode).toBe(200);
+
+    // Forged/spoofed agent secret is rejected
+    const authCheckForged = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers: { authorization: "Bearer pg_forged_secret_xyz" },
+    });
+    expect(authCheckForged.statusCode).toBe(401);
+  });
 });

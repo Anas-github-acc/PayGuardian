@@ -204,4 +204,18 @@ export function registerPhase2Routes(
     );
     return reply.code(decision.allowed ? 200 : 403).send({ decision });
   });
+
+  app.get<{ Params: { mandateId: string } }>(
+    "/v1/mandates/:mandateId/chain",
+    async (request, reply) => {
+      const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+      if (!owner) return;
+      const target = await dependencies.authority.get(request.params.mandateId, owner.userId);
+      if (!target) {
+        return reply.code(404).send({ code: "MANDATE_NOT_FOUND", message: "Mandate not found." });
+      }
+      const chain = await dependencies.authority.getChain(request.params.mandateId, owner.userId);
+      return { chain };
+    },
+  );
 }

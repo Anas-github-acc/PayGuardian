@@ -29,3 +29,35 @@ describe("dashboard API authentication headers", () => {
     expect(headers.get("content-type")).toBe("application/json");
   });
 });
+
+describe("apiRequest", () => {
+  it("omits content-type on bodyless requests so Fastify does not reject empty JSON", async () => {
+    let capturedHeaders: Headers | undefined;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedHeaders = new Headers(init?.headers);
+      return {
+        ok: true,
+        json: async () => ({ success: true }),
+      } as unknown as Response;
+    }) as typeof fetch;
+
+    try {
+      const { apiRequest } = await import("./api");
+      await apiRequest("http://mock-api", "/test", null, { method: "POST" }, "local-user");
+      expect(capturedHeaders?.has("content-type")).toBe(false);
+      expect(capturedHeaders?.get("x-local-user-id")).toBe("local-user");
+
+      await apiRequest(
+        "http://mock-api",
+        "/test",
+        null,
+        { method: "POST", body: JSON.stringify({ a: 1 }) },
+        "local-user",
+      );
+      expect(capturedHeaders?.get("content-type")).toBe("application/json");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
