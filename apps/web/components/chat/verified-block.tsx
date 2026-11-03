@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { ShieldCheck, Lock } from "lucide-react";
 import type { VerifiedBlockMessage } from "./types";
 import { BudgetPlanCard, type BudgetSubAllocation } from "../cards/budget-plan-card";
 import { PaymentResultCard, type PaymentLifecycleStage } from "../cards/payment-result-card";

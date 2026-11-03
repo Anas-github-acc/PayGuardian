@@ -4,16 +4,13 @@ import * as React from "react";
 import {
   ShieldCheck,
   ShieldAlert,
-  GitCommit,
-  ExternalLink,
   Copy,
   Clock,
   Layers,
   Code2,
   AlertTriangle,
-  ArrowRight,
   Info,
-  Check,
+  RefreshCw,
 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
@@ -22,7 +19,7 @@ import { LifecycleTimeline } from "./LifecycleTimeline";
 import { VerificationChecklist } from "./VerificationChecklist";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { DEFAULT_TRACES, type PaymentTrace } from "./types";
+import { usePaymentTrace } from "../../lib/api/hooks/use-payment-trace";
 
 export interface PaymentTraceViewProps {
   traceId?: string | null;
@@ -36,25 +33,130 @@ export function PaymentTraceView({
   className = "",
 }: PaymentTraceViewProps) {
   const store = useWorkspaceStore();
-  const effectiveTraceId = traceId ?? store.selectedTraceId ?? "trace-pay-9018";
+  const effectiveTraceId = traceId ?? store.selectedTraceId ?? null;
 
-  // Look up trace from default fixtures or dynamically fallback
-  const trace: PaymentTrace =
-    DEFAULT_TRACES[effectiveTraceId] ??
-    DEFAULT_TRACES["trace-pay-9018"] ??
-    Object.values(DEFAULT_TRACES)[0];
+  const { trace, isLoading, error, isUnavailable, refetch } = usePaymentTrace(
+    store.currentEnvironmentId,
+    effectiveTraceId,
+  );
 
   const [activeTab, setActiveTab] = React.useState<"chain" | "timeline" | "checklist">("chain");
   const [showRawRecord, setShowRawRecord] = React.useState<boolean>(false);
   const [copiedRecord, setCopiedRecord] = React.useState<boolean>(false);
 
   const handleCopyRaw = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
+    if (typeof navigator !== "undefined" && navigator.clipboard && trace?.rawRecord) {
       void navigator.clipboard.writeText(JSON.stringify(trace.rawRecord, null, 2));
       setCopiedRecord(true);
       setTimeout(() => setCopiedRecord(false), 2000);
     }
   };
+
+  // Empty state: no trace selected
+  if (!effectiveTraceId) {
+    return (
+      <div className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}>
+        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-12 text-center min-h-[380px] flex flex-col items-center justify-center">
+          <Layers className="h-10 w-10 text-zinc-600 mb-3" />
+          <h3 className="text-base font-semibold text-white">No payment trace selected</h3>
+          <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
+            Select any transaction or audit event from the Activity Feed or Approvals queue to inspect its cryptographic authorization chain, mandate policy decisions, and settlement record.
+          </p>
+          {onClose && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="mt-4 border-zinc-800 bg-zinc-900 text-xs text-zinc-300 hover:text-white"
+            >
+              Close
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Loading skeleton matching container dimensions without layout shift
+  if (isLoading && !trace) {
+    return (
+      <div className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-4 text-foreground ${className}`}>
+        <div className="h-36 rounded-lg border border-border bg-card/60 animate-pulse" />
+        <div className="h-10 w-72 rounded-lg border border-border bg-card/60 animate-pulse" />
+        <div className="h-[360px] rounded-lg border border-border bg-card/60 animate-pulse" />
+      </div>
+    );
+  }
+
+  // Error state with retry
+  if (error && !trace) {
+    return (
+      <div className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}>
+        <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-8 text-center min-h-[320px] flex flex-col items-center justify-center">
+          <AlertTriangle className="h-8 w-8 text-red-400 mb-2" />
+          <h3 className="text-sm font-semibold text-white">Failed to load payment trace</h3>
+          <p className="mt-1 text-xs text-zinc-400 max-w-md">{error.message}</p>
+          <div className="mt-4 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              className="border-zinc-800 bg-zinc-900 text-xs text-zinc-300 hover:text-white"
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Retry Connection
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-xs text-zinc-400 hover:text-white"
+              >
+                Close
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Unavailable state: actionId not found in backend
+  if (isUnavailable || !trace) {
+    return (
+      <div className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}>
+        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center min-h-[320px] flex flex-col items-center justify-center">
+          <ShieldAlert className="h-8 w-8 text-amber-500/60 mb-2" />
+          <h3 className="text-sm font-semibold text-white">Payment Trace Unavailable</h3>
+          <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
+            No action record or payment trace exists for &quot;{effectiveTraceId}&quot; in environment &quot;{store.currentEnvironmentId || "default"}&quot;.
+          </p>
+          <div className="mt-4 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              className="border-zinc-800 bg-zinc-900 text-xs text-zinc-300 hover:text-white"
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Retry
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-xs text-zinc-400 hover:text-white"
+              >
+                Close
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const isCompleted = trace.status === "completed";
   const isRejected = trace.status === "rejected";
@@ -75,7 +177,9 @@ export function PaymentTraceView({
                 ? "SETTLED & VERIFIED"
                 : trace.status === "rejected"
                 ? "GATEWAY REJECTED"
-                : "PENDING CONFIRMATION"}
+                : isPending
+                ? "PENDING CONFIRMATION"
+                : "EXECUTION FAILED"}
             </Badge>
             <span className="font-mono text-xs text-muted-foreground bg-white/[0.04] px-2 py-0.5 rounded border border-border">
               Rail: {trace.rail}
@@ -83,7 +187,9 @@ export function PaymentTraceView({
           </div>
 
           <div className="flex items-center gap-3 font-mono text-xs text-muted-foreground">
-            <span>Latency: {trace.totalLatencyMs}ms</span>
+            <span>
+              Latency: {trace.totalLatencyMs > 0 ? `${trace.totalLatencyMs}ms` : "Unavailable (GAP-TRC-01)"}
+            </span>
             {onClose && (
               <Button
                 variant="ghost"
@@ -169,7 +275,7 @@ export function PaymentTraceView({
             }`}
           >
             <Clock className="h-3.5 w-3.5 text-warning" />
-            <span>Lifecycle Stages (5)</span>
+            <span>Lifecycle Stages</span>
           </button>
 
           <button

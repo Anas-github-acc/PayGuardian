@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ShieldCheck, Check, Clock, ExternalLink, ArrowRight } from "lucide-react";
+import { ShieldCheck, Check, Clock, ExternalLink } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";

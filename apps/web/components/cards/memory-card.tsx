@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bookmark, Clock, Info, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
+import { Bookmark, Clock, Info, RotateCcw } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 
@@ -9,9 +9,9 @@ export type MemoryCategory = "session" | "environment" | "agent";
 
 export interface MemoryCardProps {
   id?: string;
-  category: MemoryCategory;
-  keyName: string;
-  value: string;
+  category?: MemoryCategory;
+  keyName?: string;
+  value?: string;
   contextSnippet?: string;
   agentName?: string;
   savedAt?: string;
@@ -20,12 +20,12 @@ export interface MemoryCardProps {
 }
 
 export function MemoryCard({
-  id = "mem-entry-819",
+  id = "",
   category = "environment",
-  keyName = "dietary_preference",
-  value = "Vegetarian meals only for all airline bookings; seat 3A or window preference",
-  contextSnippet = 'Agent extracted from user prompt: "Book flights for Goa conference, ensure vegetarian food only"',
-  agentName = "Travel Subagent",
+  keyName = "",
+  value = "",
+  contextSnippet,
+  agentName = "Agent",
   savedAt = new Date().toISOString(),
   onUndo,
   className = "",
@@ -58,17 +58,19 @@ export function MemoryCard({
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
           <Clock className="h-3 w-3" />
-          <span>{new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          <span>
+            {savedAt ? new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+          </span>
         </div>
       </div>
 
       {/* Memory Content */}
       <div className="mt-3">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Memory Key</div>
-        <div className="font-mono text-xs font-semibold text-foreground">{keyName}</div>
+        <div className="font-mono text-xs font-semibold text-foreground">{keyName || "unnamed_key"}</div>
 
         <div className="mt-1.5 rounded-md border border-border bg-secondary p-2.5 text-xs text-foreground leading-relaxed">
-          {value}
+          {value || "No value recorded"}
         </div>
 
         {contextSnippet && (

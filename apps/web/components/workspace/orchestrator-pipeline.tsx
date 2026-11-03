@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useMemo } from "react";
+import { motion } from "framer-motion";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 
@@ -592,32 +592,18 @@ export function PipelineTicker({ className = "" }: { className?: string }) {
   const nodes = store.graphNodes;
   const subagentsCount = nodes.filter((n) => n.role === "subagent").length || 4;
   const activeSubagentsCount = nodes.filter((n) => n.role === "subagent" && n.status === "active").length || 2;
-  const limitMinor = env?.budgetLimitMinor ?? 1000000;
+  const limitMinor = env?.budgetLimitMinor ?? 0;
 
-  const pipelineMessages = useMemo(() => {
-    const envTitle = env?.name ?? "Conference Logistics";
-    return [
-      `Received: "${envTitle} — Autonomous flight, hotel and transfer procurement"`,
-      `Gateway rule check: Max delegation depth ≤ 2 verified for ${subagentsCount} subagents`,
-      `Main Orchestrator: ${formatMinorUnits(limitMinor, currency)} total authority distributed across active tree`,
-      `Travel Agent: IndiGo Flight 6E-204 booked ($245.00) via PayPal rail`,
-      `Flight Scraper: Attached as structural helper (unfunded read-only fare ingestion)`,
-      `Hotel Agent: Reserved room hold at Grand Hyatt Goa ($1,000.00)`,
-      `Gateway Policy Engine: Blocked $5,000.00 spend attempt exceeding $4,000 sub-mandate limit`,
-      `Cryptographic ledger: Mandate sign-off and audit receipt verified`,
-      `Workflow status: ${activeSubagentsCount} active subagents operational · 0 unhandled breaches`,
-      `Idle. Listening for next delegated operator event...`,
-    ];
+  const currentMessage = useMemo(() => {
+    if (!env) {
+      return "Idle. Listening for next delegated operator event...";
+    }
+    const envTitle = env.name;
+    if (activeSubagentsCount > 0) {
+      return `Operational: "${envTitle}" · ${activeSubagentsCount} active subagents (${subagentsCount} total) · ${formatMinorUnits(limitMinor, currency)} total authority`;
+    }
+    return `Operational: "${envTitle}" · Max delegation depth ≤ 2 verified · ${formatMinorUnits(limitMinor, currency)} total authority`;
   }, [env, limitMinor, currency, subagentsCount, activeSubagentsCount]);
-
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % pipelineMessages.length);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, [pipelineMessages.length]);
 
   return (
     <div className={`border-t border-zinc-800/80 px-4 py-2.5 h-[48px] w-full bg-zinc-950/60 ${className}`}>
@@ -626,18 +612,9 @@ export function PipelineTicker({ className = "" }: { className?: string }) {
           ›
         </span>
         <div className="relative flex-1 overflow-hidden h-full flex items-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={messageIndex}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.25 }}
-              className="font-mono text-[11px] text-zinc-400 absolute inset-x-0 truncate"
-            >
-              {pipelineMessages[messageIndex]}
-            </motion.div>
-          </AnimatePresence>
+          <div className="font-mono text-[11px] text-zinc-400 truncate">
+            {currentMessage}
+          </div>
         </div>
       </div>
     </div>
@@ -648,32 +625,20 @@ export function PipelineStats({ className = "" }: { className?: string }) {
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
   const currency = env?.currency ?? "USD";
-  const limitMinor = env?.budgetLimitMinor ?? 1000000;
-  const spentMinor = env?.spentMinor ?? 245000;
-  const reservedMinor = env?.reservedMinor ?? 150000;
+  const limitMinor = env?.budgetLimitMinor ?? 0;
+  const spentMinor = env?.spentMinor ?? 0;
+  const reservedMinor = env?.reservedMinor ?? 0;
   const availableMinor = calculateAvailableMinor(limitMinor, spentMinor, reservedMinor);
 
-  const [workflows, setWorkflows] = useState(1247);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWorkflows((prev) => prev + 1);
-    }, 7200);
-    return () => clearInterval(interval);
-  }, []);
+  const workflows = store.graphNodes.length > 0 ? store.graphNodes.length : (env?.agentCount ?? 0);
 
   return (
     <div className={`border-t border-zinc-800/80 px-4 py-3 flex flex-wrap gap-8 items-center w-full bg-zinc-950/80 ${className}`}>
       <div>
-        <div className="text-[9px] text-zinc-500 tracking-[0.09em] mb-[2px]">WORKFLOWS</div>
-        <motion.div
-          key={workflows}
-          initial={{ scale: 1.05 }}
-          animate={{ scale: 1 }}
-          className="text-sm font-semibold text-zinc-200 font-mono"
-        >
+        <div className="text-[9px] text-zinc-500 tracking-[0.09em] mb-[2px]">AGENTS / NODES</div>
+        <div className="text-sm font-semibold text-zinc-200 font-mono">
           {workflows.toLocaleString()}
-        </motion.div>
+        </div>
       </div>
       <div>
         <div className="text-[9px] text-zinc-500 tracking-[0.09em] mb-[2px]">TOTAL AUTHORITY</div>

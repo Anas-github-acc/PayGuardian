@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bookmark, MessageSquare, ChevronDown } from "lucide-react";
+import { Bookmark, MessageSquare } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
 import { KpiStrip } from "./kpi-strip";
@@ -10,7 +10,7 @@ import { AgentInspector } from "./agent-inspector";
 import { RecentActivityPanel } from "./recent-activity-panel";
 import { MemoryVaultContent } from "./sessions-memory";
 import { NodeDetailDrawer } from "../canvas";
-import { DEFAULT_GRAPH_NODES, DEFAULT_GRAPH_EDGES } from "./workspace-defaults";
+import { useWorkspaceGraph } from "../../lib/api/hooks/use-workspace-graph";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet";
 
@@ -23,54 +23,60 @@ export interface WorkspaceLayoutProps {
 export function WorkspaceLayout({
   className = "",
   onViewTrace,
-  onOpenApprovals,
+  onOpenApprovals: _onOpenApprovals,
 }: WorkspaceLayoutProps) {
   const store = useWorkspaceStore();
   const { navigateTab } = useDashboardNavigation();
+  const env = store.currentEnvironment;
+
+  const {
+    nodes,
+    edges,
+    isLoading: isGraphLoading,
+    error: graphError,
+    refetch: refetchGraph,
+    revokeAgent,
+  } = useWorkspaceGraph(env?.id, { pollingIntervalMs: 8000 });
 
   const [selectedNodeId, setSelectedNodeId] = React.useState<string>("orchestrator-root");
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = React.useState(false);
 
-  // Initialize store graph defaults if empty on first load
+  // Sync live nodes and edges to workspaceStore when received from backend
   React.useEffect(() => {
-    if (store.graphNodes.length === 0) {
-      workspaceStore.setGraphData(DEFAULT_GRAPH_NODES, DEFAULT_GRAPH_EDGES);
+    if (nodes.length > 0) {
+      workspaceStore.setGraphData(nodes, edges);
     }
-  }, [store.graphNodes.length]);
+  }, [nodes, edges]);
 
   const handleSelectNode = (nodeId: string) => {
     setSelectedNodeId(nodeId);
     workspaceStore.setSelectedNodeId(nodeId);
   };
 
-  const handleOpenDetailedDrawer = () => {
-    setIsDrawerOpen(true);
-  };
-
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
   };
 
-  const handleRevokeNode = (nodeId: string) => {
-    // Mark node as revoked in store
-    const updatedNodes = store.graphNodes.map((n) =>
-      n.id === nodeId ? { ...n, status: "revoked" as const, isFunded: false } : n
-    );
-    workspaceStore.setGraphData(updatedNodes, store.graphEdges);
+  // Strictly NO optimistic updates: UI updates ONLY upon confirmed server response
+  const handleRevokeNode = async (nodeId: string) => {
+    try {
+      await revokeAgent(nodeId);
 
-    // Yield verified block message to the Assistant stream
-    const nowIso = new Date().toISOString();
-    workspaceStore.addChatMessage({
-      type: "agent_says",
-      id: `ag-rev-${Date.now()}`,
-      sender: "Security Policy Enforcement",
-      timestamp: nowIso,
-      text: `Authority for agent ${nodeId} has been revoked by operator. Remaining allocated funds reclaimed.`,
-    });
+      // Yield verified block message to the Assistant stream upon confirmation
+      const nowIso = new Date().toISOString();
+      workspaceStore.addChatMessage({
+        type: "agent_says",
+        id: `ag-rev-${Date.now()}`,
+        sender: "Security Policy Enforcement",
+        timestamp: nowIso,
+        text: `Authority for agent ${nodeId} has been revoked by operator. Remaining allocated funds reclaimed.`,
+      });
+    } catch (err) {
+      console.error("Agent revocation failed:", err);
+    }
   };
 
-  const env = store.currentEnvironment;
   const workspaceTitle = env?.name ?? "Conference Logistics";
 
   return (
@@ -121,6 +127,11 @@ export function WorkspaceLayout({
         <DelegationTopology
           selectedNodeId={selectedNodeId}
           onSelectNode={handleSelectNode}
+          nodes={nodes}
+          edges={edges}
+          isLoading={isGraphLoading}
+          error={graphError}
+          onRetry={refetchGraph}
         />
 
         {/* 4. Bottom 50/50 Split: Agent Inspector & Recent Activity */}

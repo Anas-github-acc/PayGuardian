@@ -8,6 +8,7 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
+import { apiClient } from "../../lib/api/client";
 
 export default function LoginPage() {
   const { isConfigured, isLoading, isLocalDevelopment, user, signIn, signUp } = useAuth();
@@ -17,10 +18,23 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  async function routePostAuth() {
+    try {
+      const envs = await apiClient.environments.list();
+      if (!envs || envs.length === 0) {
+        window.location.assign("/onboarding");
+        return;
+      }
+      window.location.assign("/dashboard");
+    } catch {
+      window.location.assign("/onboarding");
+    }
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (user || (isLocalDevelopment && !params.has("preview"))) {
-      window.location.assign("/dashboard");
+      void routePostAuth();
     }
   }, [isLocalDevelopment, user]);
 
@@ -31,15 +45,17 @@ export default function LoginPage() {
     try {
       if (mode === "login") {
         await signIn(email, password);
-        window.location.assign("/dashboard");
+        await routePostAuth();
       } else {
         const result = await signUp(email, password);
         setMessage(
           result.confirmationRequired
             ? "Check your email to confirm your account, then sign in."
-            : "Account created. Opening your dashboard…",
+            : "Account created. Opening your environment…",
         );
-        if (!result.confirmationRequired) window.location.assign("/dashboard");
+        if (!result.confirmationRequired) {
+          await routePostAuth();
+        }
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to authenticate.");

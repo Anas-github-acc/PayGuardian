@@ -330,3 +330,23 @@ h2 {
 .action-row button:hover {
   border-color: oklch(var(--input));
 }
+
+@keyframes agent-flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.animate-agent-flow {
+  animation: agent-flow 1s linear infinite;
+}
+
+.mask-radial-gradient {
+  -webkit-mask-image: radial-gradient(ellipse at center, black, black 70%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, black, black 70%, transparent 100%);
+}
+
+.mask-\[radial-gradient\(ellipse_at_center\,black\,black\,transparent\)\] {
+  -webkit-mask-image: radial-gradient(ellipse at center, black, black, transparent);
+  mask-image: radial-gradient(ellipse at center, black, black, transparent);
+}

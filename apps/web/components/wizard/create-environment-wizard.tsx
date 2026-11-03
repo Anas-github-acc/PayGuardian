@@ -3,9 +3,6 @@
 import * as React from "react";
 import {
   Shield,
-  Layers,
-  Calendar,
-  Sliders,
   FileCheck,
   CheckCircle2,
   ArrowRight,
@@ -19,6 +16,7 @@ import {
 import { cn } from "../../lib/utils";
 import { formatMinorUnits, parseMajorToMinor, getCurrencySymbol } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore, type Environment } from "../../app/lib/workspace-store";
+import { apiClient } from "../../lib/api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -62,7 +60,7 @@ export function CreateEnvironmentWizard({
   // Step 3: Guardrails
   const [allowedRails, setAllowedRails] = React.useState<string[]>(["PayPal", "Simulation"]);
   const [maxPerActionString, setMaxPerActionString] = React.useState("500"); // $500.00
-  const [approvalRequired, setApprovalRequired] = React.useState(true);
+  const [approvalRequired] = React.useState(true);
   const [approvalThresholdString, setApprovalThresholdString] = React.useState("1000"); // $1,000.00
   const [maxDelegationDepth, setMaxDelegationDepth] = React.useState<number>(2);
 
@@ -105,14 +103,6 @@ export function CreateEnvironmentWizard({
       return 0;
     }
   }, [budgetString, currency]);
-
-  const maxPerActionMinor = React.useMemo(() => {
-    try {
-      return parseMajorToMinor(maxPerActionString, currency);
-    } catch {
-      return 0;
-    }
-  }, [maxPerActionString, currency]);
 
   const approvalThresholdMinor = React.useMemo(() => {
     try {
@@ -200,62 +190,68 @@ export function CreateEnvironmentWizard({
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const newEnvId = `env-${slug}-${Date.now().toString().slice(-4)}`;
-    const newEnv: Environment = {
-      id: newEnvId,
-      name,
-      slug,
-      purpose,
-      currency,
-      budgetLimitMinor,
-      spentMinor: 0,
-      reservedMinor: 0,
-      availableMinor: budgetLimitMinor,
-      status: "active",
-      type: envType,
-      createdAt: new Date().toISOString(),
-      expiresAt: calculatedExpiryDate,
-      agentCount: 1, // Root Personal Agent
-      pendingApprovalsCount: 0,
-      maxDelegationDepth,
-      approvalThresholdMinor,
-      allowedRails,
-      consentStatement: dynamicConsentText,
-    };
-
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-      // Attempt backend API call
-      const res = await fetch(`${apiBaseUrl}/v1/environments`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-local-user-id": "local-user",
-        },
-        body: JSON.stringify({
-          name: newEnv.name,
-          purpose: newEnv.purpose,
-          currency: newEnv.currency,
-          budgetLimitMinor: newEnv.budgetLimitMinor,
-        }),
-      }).catch(() => null);
+      // 1. Create Environment in Gateway backend (routes through /api/proxy/v1/environments with session)
+      const createdEnv = await apiClient.environments.create({
+        name,
+        purpose,
+        currency,
+        budgetLimitMinor,
+      });
 
-      if (res && res.ok) {
-        const body = (await res.json()) as { environment?: { id: string } };
-        if (body.environment?.id) {
-          newEnv.id = body.environment.id;
-        }
+      if (!createdEnv?.id) {
+        throw new Error("Gateway failed to return a valid environment ID");
       }
+
+      // 2. Register Root Personal Agent in this newly created environment
+      const rootAgent = await apiClient.agents.createRoot(createdEnv.id, {
+        name: "Personal Agent",
+        capabilities: ["delegate", "simulate", "spend", "reserve"],
+      });
+
+      // 3. Create Root Mandate bound to Root Agent
+      await apiClient.mandates.createRoot(createdEnv.id, {
+        holderAgentId: rootAgent.id,
+        budgetLimitMinor,
+        currency,
+        permittedActions: ["*"],
+        expiresAt: calculatedExpiryDate,
+        canDelegate: true,
+        maxDelegationDepth,
+        approvalRequired: true,
+      });
+
+      // 4. Assemble confirmed Environment object with verified backend ID
+      const newEnv: Environment = {
+        id: createdEnv.id,
+        name: createdEnv.name || name,
+        slug,
+        purpose: createdEnv.purpose || purpose,
+        currency: createdEnv.currency || currency,
+        budgetLimitMinor: createdEnv.budgetLimitMinor ?? budgetLimitMinor,
+        spentMinor: 0,
+        reservedMinor: 0,
+        availableMinor: createdEnv.budgetLimitMinor ?? budgetLimitMinor,
+        status: "active",
+        type: envType,
+        createdAt: createdEnv.createdAt || new Date().toISOString(),
+        expiresAt: calculatedExpiryDate,
+        agentCount: 1, // Root Personal Agent
+        pendingApprovalsCount: 0,
+        maxDelegationDepth,
+        approvalThresholdMinor,
+        allowedRails,
+        consentStatement: dynamicConsentText,
+      };
 
       // Add to workspace store and switch into it (executes atomic reset)
       workspaceStore.addEnvironment(newEnv);
       onCreated?.(newEnv);
       handleClose(false);
     } catch (err) {
-      // In case of error, still register to store for offline dev continuity
-      workspaceStore.addEnvironment(newEnv);
-      onCreated?.(newEnv);
-      handleClose(false);
+      const msg = err instanceof Error ? err.message : "Failed to create environment on Gateway";
+      setErrorMessage(msg);
+      // Notice: Do NOT register dummy ID to workspace store on failure!
     } finally {
       setIsSubmitting(false);
     }

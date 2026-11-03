@@ -2,14 +2,10 @@
 
 import * as React from "react";
 import {
-  ShieldCheck,
-  ShieldAlert,
   ArrowDown,
   Layers,
   Scale,
   Key,
-  Check,
-  Building2,
   Cpu,
 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
@@ -22,6 +18,22 @@ export interface VerticalAuthChainProps {
 }
 
 export function VerticalAuthChain({ nodes, className = "" }: VerticalAuthChainProps) {
+  if (!nodes || nodes.length === 0) {
+    return (
+      <div
+        className={`rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center min-h-[320px] flex flex-col items-center justify-center ${className}`}
+      >
+        <Layers className="h-8 w-8 text-zinc-600 mb-2" />
+        <h4 className="text-sm font-semibold text-white">
+          No Mandate Authority Chain
+        </h4>
+        <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
+          No delegated mandate hierarchy is associated with this action record.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">

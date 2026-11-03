@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Wallet } from "lucide-react";
+import { Wallet, AlertTriangle } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
+import { useBudgetStrip } from "../../lib/api/hooks/use-budget-strip";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 export interface BudgetStripProps {
   className?: string;
@@ -24,10 +26,75 @@ export function BudgetStrip({
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
 
-  const currency = propCurrency ?? currentEnv?.currency ?? "USD";
-  const limitMinor = propLimit ?? currentEnv?.budgetLimitMinor ?? 1000000;
-  const spentMinor = propSpent ?? currentEnv?.spentMinor ?? 245000;
-  const reservedMinor = propReserved ?? currentEnv?.reservedMinor ?? 150000;
+  const {
+    environment,
+    isLoading,
+    error,
+    refetch,
+  } = useBudgetStrip(
+    propLimit === undefined ? currentEnv?.id : undefined,
+    { pollingIntervalMs: 8000 }
+  );
+
+  const env = environment ?? currentEnv;
+
+  if (isLoading && !env && propLimit === undefined) {
+    return (
+      <section
+        aria-label="Budget authority loading"
+        className={`rounded-lg border border-border bg-card text-foreground top-shade p-5 animate-pulse ${className}`}
+      >
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-md bg-secondary" />
+            <div className="space-y-1">
+              <div className="h-4 w-28 rounded bg-secondary" />
+              <div className="h-3 w-20 rounded bg-secondary" />
+            </div>
+          </div>
+          <div className="h-5 w-16 rounded bg-secondary" />
+        </div>
+        <div className="pt-4 space-y-3">
+          <div className="h-8 w-32 rounded bg-secondary" />
+          <div className="h-4 w-48 rounded bg-secondary" />
+          <div className="h-20 rounded-md bg-secondary/50" />
+          <div className="h-2 w-full rounded-full bg-secondary" />
+        </div>
+      </section>
+    );
+  }
+
+  if (error && !env && propLimit === undefined) {
+    return (
+      <section
+        aria-label="Budget authority error"
+        className={`rounded-lg border border-destructive/30 bg-destructive/10 text-foreground top-shade p-5 ${className}`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <p className="text-sm font-medium">Failed to load budget authority</p>
+            </div>
+            <p className="text-xs text-muted-foreground">{error.message || "Connection error"}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            className="h-7 text-xs"
+          >
+            Retry
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  const currency = propCurrency ?? env?.currency ?? "USD";
+  const limitMinor = propLimit ?? env?.budgetLimitMinor ?? 0;
+  const spentMinor = propSpent ?? env?.spentMinor ?? 0;
+  const reservedMinor = propReserved ?? env?.reservedMinor ?? 0;
 
   // Strict integer minor unit math — ZERO float arithmetic
   const availableMinor = calculateAvailableMinor(limitMinor, spentMinor, reservedMinor);

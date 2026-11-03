@@ -2,22 +2,15 @@
 
 import * as React from "react";
 import {
-  ShieldAlert,
-  AlertTriangle,
-  Info,
   ExternalLink,
   Search,
-  Filter,
-  Copy,
   Clock,
-  Zap,
 } from "lucide-react";
-import { formatMinorUnits } from "../../app/lib/currency";
-import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import { workspaceStore } from "../../app/lib/workspace-store";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
-import { DEFAULT_SECURITY_EVENTS, type SecurityEventItem, type SecuritySeverity } from "./types";
+import { DEFAULT_SECURITY_EVENTS, type SecurityEventItem } from "./types";
 
 export interface SecurityEventLogProps {
   onViewTrace?: (traceId: string) => void;
@@ -28,7 +21,7 @@ export function SecurityEventLog({
   onViewTrace,
   className = "",
 }: SecurityEventLogProps) {
-  const [events, setEvents] = React.useState<SecurityEventItem[]>(DEFAULT_SECURITY_EVENTS);
+  const [events] = React.useState<SecurityEventItem[]>(DEFAULT_SECURITY_EVENTS);
   const [severityFilter, setSeverityFilter] = React.useState<string>("ALL");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
 

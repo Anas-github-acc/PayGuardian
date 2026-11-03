@@ -13,35 +13,13 @@ import {
 import { cn } from "../../lib/utils";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import type { AgentNodeData } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
-import { INITIAL_ACTIVITIES } from "../workspace/workspace-defaults";
+import { useWorkspaceGraph } from "../../lib/api/hooks/use-workspace-graph";
+import { useActivityFeed } from "../../lib/api/hooks/use-activity-feed";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-
-/* ------------------------------------------------------------------ */
-/* Static demo series (fixture data, mirrors the sandbox environment)  */
-/* ------------------------------------------------------------------ */
-
-const SPEND_SERIES = [
-  { label: "Mon", spent: 32000, reserved: 12000 },
-  { label: "Tue", spent: 18000, reserved: 9000 },
-  { label: "Wed", spent: 46000, reserved: 21000 },
-  { label: "Thu", spent: 51000, reserved: 18000 },
-  { label: "Fri", spent: 62000, reserved: 24000 },
-  { label: "Sat", spent: 21000, reserved: 15000 },
-  { label: "Sun", spent: 15000, reserved: 51000 },
-];
-
-const AGENT_AUTHORITY = [
-  { label: "Personal", value: 1000000 },
-  { label: "Travel", value: 400000 },
-  { label: "Hotel", value: 400000 },
-  { label: "Food", value: 120000 },
-  { label: "Activities", value: 80000 },
-];
-
-const MAX_BAR = 1000000;
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -93,59 +71,51 @@ function StatCard({
   );
 }
 
-function SpendChart({ currency }: { currency: string }) {
-  const max = Math.max(...SPEND_SERIES.map((d) => d.spent + d.reserved));
-
+function SpendChart() {
   return (
-    <div className="flex h-[220px] items-end gap-2 sm:gap-3">
-      {SPEND_SERIES.map((day) => {
-        const spentH = Math.round((day.spent / max) * 180);
-        const reservedH = Math.round((day.reserved / max) * 180);
-        return (
-          <div key={day.label} className="group flex min-w-0 flex-1 flex-col items-center gap-2">
-            <span className="text-[10px] text-muted-foreground tabular-nums opacity-0 transition-opacity group-hover:opacity-100">
-              {formatMinorUnits(day.spent, currency, { showSymbol: false })}
-            </span>
-            <div className="flex w-full flex-1 flex-col justify-end gap-0.5">
-              <div
-                className="w-full rounded-t-sm bg-chart-2/80 transition-colors group-hover:bg-chart-2"
-                style={{ height: `${reservedH}px` }}
-                title={`Reserved: ${formatMinorUnits(day.reserved, currency)}`}
-              />
-              <div
-                className="w-full rounded-b-sm bg-chart-1 transition-opacity group-hover:opacity-90"
-                style={{ height: `${spentH}px` }}
-                title={`Spent: ${formatMinorUnits(day.spent, currency)}`}
-              />
-            </div>
-            <span className="text-[11px] text-muted-foreground">{day.label}</span>
-          </div>
-        );
-      })}
+    <div className="flex h-[220px] flex-col items-center justify-center rounded border border-dashed border-border bg-muted/20 p-6 text-center">
+      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Clock className="h-4 w-4" />
+      </div>
+      <p className="text-xs font-medium text-foreground">Spend velocity analytics unavailable</p>
+      <p className="mt-1 max-w-[320px] text-[11px] text-muted-foreground">
+        7-day historical spend velocity endpoint is pending backend implementation (Contract Gap GAP-SPEND-01).
+      </p>
     </div>
   );
 }
 
-function AuthorityBars({ currency }: { currency: string }) {
+function AuthorityBars({ nodes, currency }: { nodes: AgentNodeData[]; currency: string }) {
+  if (nodes.length === 0) {
+    return (
+      <div className="flex h-[180px] flex-col items-center justify-center rounded border border-dashed border-border p-4 text-center">
+        <p className="text-xs text-muted-foreground">No agents provisioned in this environment.</p>
+      </div>
+    );
+  }
+
+  const maxBar = Math.max(...nodes.map((n) => n.allocatedMinor), 1);
+
   return (
     <div className="space-y-3">
-      {AGENT_AUTHORITY.map((agent) => (
-        <div key={agent.label} className="flex items-center gap-3">
-          <span className="w-20 shrink-0 truncate text-xs text-muted-foreground">{agent.label}</span>
+      {nodes.map((agent) => (
+        <div key={agent.id} className="flex items-center gap-3">
+          <span className="w-24 shrink-0 truncate text-xs text-muted-foreground" title={agent.name}>
+            {agent.name}
+          </span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
             <div
               className="h-full rounded-full bg-chart-1"
-              style={{ width: `${Math.round((agent.value / MAX_BAR) * 100)}%` }}
+              style={{ width: `${Math.min(100, Math.round((agent.allocatedMinor / maxBar) * 100))}%` }}
             />
           </div>
           <span className="w-20 shrink-0 text-right text-xs tabular-nums text-foreground">
-            {formatMinorUnits(agent.value, currency, { showSymbol: false })}
+            {formatMinorUnits(agent.allocatedMinor, currency, { showSymbol: false })}
           </span>
         </div>
       ))}
       <p className="pt-1 text-[11px] text-muted-foreground">
-        Root mandate <span className="font-mono text-foreground">man-root-9081</span> · every child
-        allocation narrows the parent&rsquo;s authority.
+        Every child allocation narrows the parent&rsquo;s authority boundary.
       </p>
     </div>
   );
@@ -163,18 +133,22 @@ export function Overview({ className = "" }: OverviewProps) {
   const { currentEnvironment } = useWorkspaceStore();
   const { navigateTab } = useDashboardNavigation();
 
+  const { nodes } = useWorkspaceGraph(currentEnvironment?.id);
+  const { activities } = useActivityFeed(currentEnvironment?.id);
+
   const currency = currentEnvironment?.currency ?? "USD";
-  const limit = currentEnvironment?.budgetLimitMinor ?? 1000000;
-  const spent = currentEnvironment?.spentMinor ?? 245000;
-  const reserved = currentEnvironment?.reservedMinor ?? 150000;
+  const limit = currentEnvironment?.budgetLimitMinor ?? 0;
+  const spent = currentEnvironment?.spentMinor ?? 0;
+  const reserved = currentEnvironment?.reservedMinor ?? 0;
   const available = Math.max(0, limit - spent - reserved);
   const pending = currentEnvironment?.pendingApprovalsCount ?? 0;
+  const activeAgentCount = nodes.filter((n) => n.status === "active").length || currentEnvironment?.agentCount || 0;
 
   const spentPct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
   const reservedPct = limit > 0 ? Math.round((reserved / limit) * 100) : 0;
   const availablePct = Math.max(0, 100 - spentPct - reservedPct);
 
-  const recentActions = INITIAL_ACTIVITIES.filter((a) => !a.isSimulation).slice(0, 5);
+  const recentActions = activities.filter((a) => !a.isSimulation).slice(0, 5);
 
   return (
     <div className={`theme-mono flex-1 overflow-y-auto bg-background ${className}`}>
@@ -183,7 +157,7 @@ export function Overview({ className = "" }: OverviewProps) {
         <div className="grid grid-cols-1 border border-border bg-card sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Active agents"
-            value={String(currentEnvironment?.agentCount ?? 4)}
+            value={String(activeAgentCount)}
             delta="+1"
             deltaTone="positive"
             footnote="vs last week"
@@ -230,7 +204,7 @@ export function Overview({ className = "" }: OverviewProps) {
               <CardDescription>Daily spend and reservations, last 7 days.</CardDescription>
             </CardHeader>
             <CardContent>
-              <SpendChart currency={currency} />
+              <SpendChart />
             </CardContent>
           </Card>
 
@@ -240,7 +214,7 @@ export function Overview({ className = "" }: OverviewProps) {
               <CardDescription>Allocated budget per agent, in environment currency.</CardDescription>
             </CardHeader>
             <CardContent>
-              <AuthorityBars currency={currency} />
+              <AuthorityBars nodes={nodes} currency={currency} />
             </CardContent>
           </Card>
         </div>
@@ -265,45 +239,53 @@ export function Overview({ className = "" }: OverviewProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentActions.map((action) => {
-                    const traceId = action.traceId;
-                    return (
-                    <tr key={action.id} className="border-b border-border/60 last:border-b-0">
-                      <td className="whitespace-nowrap px-5 py-3 font-medium text-foreground">
-                        {action.actorName}
-                      </td>
-                      <td className="max-w-[260px] truncate px-5 py-3 text-muted-foreground">
-                        {action.action}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-foreground">
-                        {action.amountMinor ? formatMinorUnits(action.amountMinor, action.currency ?? currency) : "—"}
-                      </td>
-                      <td className="px-5 py-3">
-                        <Badge
-                          variant={action.outcome === "denied" ? "rejected" : action.outcome === "pending" ? "pending" : "success"}
-                        >
-                          {action.outcome}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        {traceId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => {
-                              workspaceStore.setSelectedTraceId(traceId);
-                              navigateTab("traces");
-                            }}
-                          >
-                            Trace
-                            <ExternalLink className="ml-1 h-3 w-3" />
-                          </Button>
-                        )}
+                  {recentActions.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-xs text-muted-foreground">
+                        No recent protected actions recorded in this environment.
                       </td>
                     </tr>
-                    );
-                  })}
+                  ) : (
+                    recentActions.map((action) => {
+                      const traceId = action.traceId;
+                      return (
+                        <tr key={action.id} className="border-b border-border/60 last:border-b-0">
+                          <td className="whitespace-nowrap px-5 py-3 font-medium text-foreground">
+                            {action.actorName}
+                          </td>
+                          <td className="max-w-[260px] truncate px-5 py-3 text-muted-foreground">
+                            {action.action}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-foreground">
+                            {action.amountMinor ? formatMinorUnits(action.amountMinor, action.currency ?? currency) : "—"}
+                          </td>
+                          <td className="px-5 py-3">
+                            <Badge
+                              variant={action.outcome === "denied" ? "rejected" : action.outcome === "pending" ? "pending" : "success"}
+                            >
+                              {action.outcome}
+                            </Badge>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            {traceId && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => {
+                                  workspaceStore.setSelectedTraceId(traceId);
+                                  navigateTab("traces");
+                                }}
+                              >
+                                Trace
+                                <ExternalLink className="ml-1 h-3 w-3" />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </CardContent>
@@ -348,33 +330,39 @@ export function Overview({ className = "" }: OverviewProps) {
                 <CardDescription>Latest verified events in this environment.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-5 pt-1">
-                {INITIAL_ACTIVITIES.slice(0, 4).map((item) => (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
-                        item.outcome === "denied"
-                          ? "border-destructive/30 bg-destructive/10 text-destructive"
-                          : "border-border bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      {item.outcome === "denied" ? (
-                        <ShieldX className="h-3.5 w-3.5" />
-                      ) : item.amountMinor ? (
-                        <Wallet className="h-3.5 w-3.5" />
-                      ) : (
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                      )}
+                {activities.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">
+                    No recent events recorded in this environment.
+                  </p>
+                ) : (
+                  activities.slice(0, 4).map((item) => (
+                    <div key={item.id} className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
+                          item.outcome === "denied"
+                            ? "border-destructive/30 bg-destructive/10 text-destructive"
+                            : "border-border bg-secondary text-muted-foreground"
+                        )}
+                      >
+                        {item.outcome === "denied" ? (
+                          <ShieldX className="h-3.5 w-3.5" />
+                        ) : item.amountMinor ? (
+                          <Wallet className="h-3.5 w-3.5" />
+                        ) : (
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-foreground">{item.action}</p>
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {item.actorName} · {item.timestamp}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-foreground">{item.action}</p>
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {item.actorName} · {item.timestamp}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>

@@ -2,17 +2,12 @@
 
 import * as React from "react";
 import {
-  ShieldAlert,
-  ShieldCheck,
   Check,
   X,
   ExternalLink,
   Copy,
-  Clock,
-  Layers,
   FileCode,
   AlertTriangle,
-  ChevronRight,
   Info,
 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
@@ -48,6 +43,13 @@ export function ApprovalDetailDrawer({
 
   const isPending = approval.status === "pending";
 
+  const canApprove = approval?.allowedActions
+    ? approval.allowedActions.includes("approve")
+    : Boolean(approval && !approval.isHardLimitExceeded && isPending);
+  const canReject = approval?.allowedActions
+    ? approval.allowedActions.includes("reject")
+    : isPending;
+
   const handleCopyHash = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       void navigator.clipboard.writeText(approval.requestHash);
@@ -57,13 +59,13 @@ export function ApprovalDetailDrawer({
   };
 
   const handleApprove = async () => {
-    if (approval.isHardLimitExceeded || !isPending || isProcessing) return;
+    if (!approval || !canApprove || isProcessing) return;
     await onApprove(approval.id);
     onClose();
   };
 
   const handleReject = async () => {
-    if (!isPending || isProcessing) return;
+    if (!approval || !canReject || isProcessing) return;
     await onReject(approval.id, rejectionNote.trim() || undefined);
     setRejecting(false);
     onClose();
@@ -280,7 +282,7 @@ export function ApprovalDetailDrawer({
                 <Button
                   variant="outline"
                   onClick={() => setRejecting(true)}
-                  disabled={isProcessing}
+                  disabled={!canReject || isProcessing}
                   className="min-h-[44px] sm:min-h-[36px] border-destructive/30 text-destructive hover:bg-destructive/10"
                 >
                   <X className="mr-1.5 h-4 w-4" />
@@ -289,11 +291,11 @@ export function ApprovalDetailDrawer({
                 <Button
                   variant="primary"
                   onClick={handleApprove}
-                  disabled={approval.isHardLimitExceeded || isProcessing}
+                  disabled={!canApprove || isProcessing}
                   className="min-h-[44px] sm:min-h-[36px] bg-success hover:bg-success text-black font-semibold"
                 >
                   <Check className="mr-1.5 h-4 w-4" />
-                  {approval.isHardLimitExceeded ? "Locked (Over Limit)" : "Approve with Passkey"}
+                  {!canApprove ? "Locked (Over Limit)" : "Approve with Passkey"}
                 </Button>
               </div>
             )}

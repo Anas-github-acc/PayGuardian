@@ -7,7 +7,6 @@ import {
   ShieldAlert,
   AlertTriangle,
   Lock,
-  Unlock,
   Check,
 } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";

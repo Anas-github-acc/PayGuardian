@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { AuthBoundary } from "../auth-provider";
 import {
   useDashboardNavigation,
   type NavTab,
   type TablesSubTab,
 } from "../lib/navigation";
-import { useWorkspaceStore, workspaceStore } from "../lib/workspace-store";
+import { workspaceStore } from "../lib/workspace-store";
+import { useEnvironments } from "../../lib/api/hooks";
 import { AppShell } from "../../components/shell";
 
 // Dynamic imports with SSR enabled for asynchronous and dynamic content
@@ -72,9 +74,18 @@ export default function DashboardPage() {
 }
 
 function UnifiedDashboard() {
+  const router = useRouter();
   // Driven directly from URL query params as the single source of truth
   const { activeTab, activeSubTab, navigateTab } = useDashboardNavigation();
-  const { currentEnvironment } = useWorkspaceStore();
+  const { environments, currentEnvironment, isLoading, isEnvironmentsLoaded } = useEnvironments();
+
+  const isZeroState = isEnvironmentsLoaded && (environments.length === 0 || !currentEnvironment);
+
+  React.useEffect(() => {
+    if (isEnvironmentsLoaded && (environments.length === 0 || !currentEnvironment)) {
+      router.replace("/onboarding");
+    }
+  }, [isEnvironmentsLoaded, environments.length, currentEnvironment, router]);
 
   const handleViewTrace = React.useCallback(
     (traceId?: string) => {
@@ -156,7 +167,13 @@ function UnifiedDashboard() {
   return (
     <AppShell activeTabOverride={activeTab}>
       <React.Suspense fallback={<TabLoadingSkeleton tab={activeTab} />}>
-        {renderActiveView(activeTab, activeSubTab)}
+        {isLoading && !isEnvironmentsLoaded ? (
+          <TabLoadingSkeleton tab={activeTab} />
+        ) : isZeroState ? (
+          <TabLoadingSkeleton tab={activeTab} />
+        ) : (
+          renderActiveView(activeTab, activeSubTab)
+        )}
       </React.Suspense>
     </AppShell>
   );

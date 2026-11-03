@@ -7,6 +7,7 @@ import {
   CreditCard,
   History,
   Hotel,
+  Info,
   Square,
   Sparkles,
   Wallet,
@@ -282,6 +283,14 @@ export function AssistantView({ className = "", onViewTrace }: AssistantViewProp
         {/* 3. ONLY THE CHAT PART IS VERTICAL SCROLLABLE */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-6 sm:px-6">
+            {/* GAP-SESS-01 notice: Session history persistence missing on gateway */}
+            <div className="mb-4 mx-auto max-w-xl w-full rounded-md border border-zinc-800 bg-zinc-900/60 p-2.5 text-[11px] text-zinc-400 flex items-center gap-2">
+              <Info className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>
+                Session history persistence unavailable on gateway; starting new thread (
+                <span className="font-mono text-zinc-300">GAP-SESS-01</span>).
+              </span>
+            </div>
             {!hasMessages ? (
               <div className="my-auto flex flex-col items-center justify-center py-16 text-center">
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-white shadow-sm">

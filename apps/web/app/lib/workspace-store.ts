@@ -1,7 +1,6 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { formatMinorUnits } from "./currency";
 
 export type EnvironmentType = "sandbox" | "production";
 export type EnvironmentStatus = "active" | "paused" | "closed" | "revoked";
@@ -106,6 +105,7 @@ export interface WorkspaceState {
   currentEnvironmentId: string | null;
   currentEnvironment: Environment | null;
   environmentsList: Environment[];
+  isEnvironmentsLoaded: boolean;
 
   // Live Gateway Connection
   connectionStatus: ConnectionStatus;
@@ -184,9 +184,10 @@ export const DEFAULT_ENVIRONMENTS: Environment[] = [
 ];
 
 const INITIAL_STATE: WorkspaceState = {
-  currentEnvironmentId: DEFAULT_ENVIRONMENTS[0]?.id ?? null,
-  currentEnvironment: DEFAULT_ENVIRONMENTS[0] ?? null,
-  environmentsList: DEFAULT_ENVIRONMENTS,
+  currentEnvironmentId: null,
+  currentEnvironment: null,
+  environmentsList: [],
+  isEnvironmentsLoaded: false,
   connectionStatus: "connected",
   latencyMs: 14,
   reconnectBannerVisible: false,
@@ -297,13 +298,19 @@ class WorkspaceStore {
       environmentsList: list,
       currentEnvironment: current,
       currentEnvironmentId: current?.id ?? null,
+      isEnvironmentsLoaded: true,
     });
+  };
+
+  public setEnvironmentsLoaded = (loaded: boolean): void => {
+    this.setState({ isEnvironmentsLoaded: loaded });
   };
 
   public addEnvironment = (newEnv: Environment): void => {
     const updated = [newEnv, ...this.state.environmentsList];
     this.setState({
       environmentsList: updated,
+      isEnvironmentsLoaded: true,
     });
     // Automatically switch into the freshly created environment with clean state
     this.switchEnvironment(newEnv.id);

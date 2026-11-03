@@ -1,107 +1,113 @@
-# Milestone 1 Handoff Report: Design System, Dependencies & Layout Foundation
+# Handoff Report — Milestone 1 (Typed API Client, Typegen, Next.js Proxy, Lint Guardrail)
 
-> **Subagent**: `worker_m1`  
-> **Milestone**: M1 — Design System, Dependencies & Layout Foundation  
-> **Date**: 2026-10-31  
-> **Status**: COMPLETE & VERIFIED  
+**Agent**: `worker_m1`  
+**Milestone**: Milestone 1  
+**Timestamp**: 2026-11-01T21:48:00Z  
+**Target Monorepo**: `/home/anas/myspace/AI/PayGuardian`  
+**Receiving Agent / Parent**: `b1fe192e-e662-4e1e-9dfb-84ff1309121d` (orchestrator) / `worker_m2`
 
 ---
 
 ## 1. Observation
 
-1. **Installed Dependencies**:
-   - `apps/web/package.json` was updated with:
-     - `dependencies`: `lucide-react` (^1.65.0), `three` (^0.187.0), `clsx` (^2.1.1), `tailwind-merge` (^3.7.0).
-     - `devDependencies`: `tailwindcss` (^3.4.17), `postcss` (^8.5.32), `autoprefixer` (^10.6.2), `@types/three` (^0.186.0).
-   - Monorepo lockfile `pnpm-lock.yaml` resolved and updated cleanly with 0 vulnerabilities.
+1. **API Contracts and Schema Source**:
+   - Monorepo contracts are formalized in `@payguardian/contracts` (`packages/contracts/src/index.ts`), defining `EnvironmentDto`, `AgentDto`, `MandateDto`, `LedgerAccountDto`, `ApprovalDto`, `SessionDto`, `SessionRunDto`, `PayPalOrderRequest`, `PayPalOperationSummaryDto`, and `AuditEventDto`.
+   - Fastify Gateway REST API endpoints (`docs/api.md`, `apps/api/src/app.ts`, `phase1-routes.ts` through `phase6-routes.ts`, `paypal-routes.ts`) encompass 43 REST paths with authority checks.
+   - We created `apps/web/openapi.json` representing 43 REST paths and 21 DTO schemas matching Gateway and `@payguardian/contracts`.
 
-2. **Tailwind & PostCSS Configuration**:
-   - Created `apps/web/postcss.config.mjs` registering `tailwindcss` and `autoprefixer`.
-   - Created `apps/web/tailwind.config.ts` defining:
-     - Efferd Ground: `#000000`, Card Surface: `#0d0d0d`, Surface hierarchy (`#09090b`, `#141414`, `#18181b`, `#222222`, `#27272a`).
-     - Hairline borders: `#ffffff1c` (`rgba(255, 255, 255, 0.11)`), subtle `rgba(255, 255, 255, 0.08)`, strong `rgba(255, 255, 255, 0.18)`, dashed `rgba(255, 255, 255, 0.22)`.
-     - Typography colors: Foreground `#fcfcfc`, muted `#a1a1aa`, tertiary `#71717a`.
-     - Semantic authority and status colors: active `#1daf9c`, mint `#3fdec9`, emerald `#10b981`, pending amber `#f59e0b`, destructive coral `#ff6568`, revoked slate `#71717a`.
-     - Efferd specular `.top-shade`: `box-shadow: 0 -1px color-mix(in oklab, var(--foreground) 8%, transparent)`.
-     - Dome radial luminescence: `radial-gradient(80% 100% at 49% 0%, rgba(255, 255, 255, 0.05), transparent)`.
+2. **Directory Structure & User Correction**:
+   - `apps/web` organizes code into `app/`, `components/`, and `lib/` (no `src/` directory).
+   - User explicitly clarified: *"their was some miss typing it was app/api i am not using src/ folder strcuture so take that in consideration. In apps/web, there is no src/ directory... Put the typed client, hooks, mappers, and generated types in apps/web/lib/api/ (and/or apps/web/app/api/), NOT in src/."*
+   - Path mapping in `apps/web/tsconfig.json` was updated with `"src/*": ["./lib/*"]` alongside `"@/*": ["./*"]` so any legacy or external references to `src/*` map cleanly to `./lib/*`.
 
-3. **Global Styling & AG Grid Dark Overrides**:
-   - Updated `apps/web/app/globals.css`:
-     - Configured Tailwind directives `@tailwind base`, `@tailwind components`, `@tailwind utilities`.
-     - Defined CSS variables for Efferd dark tokens on `:root`.
-     - Provided `.top-shade`, `.dome-glow`, `.verified-glow`, `.tabular-nums` utilities.
-     - Implemented full AG Grid Quartz and Quartz Dark overrides matching Efferd Obsidian theme:
-       - `--ag-background-color: #09090b !important;`
-       - `--ag-header-background-color: #09090b !important;`
-       - `--ag-row-hover-color: #141414 !important;`
-       - `--ag-selected-row-background-color: #1a1a1a !important;`
-       - `--ag-border-color: rgba(255, 255, 255, 0.08) !important;`
-       - `--ag-header-foreground-color: #a1a1aa !important;`
-       - `--ag-foreground-color: #fcfcfc !important;`
-       - Sentence-case headers (`text-transform: none; font-size: 12px; color: #71717a;`) per Taste Skill.
-       - Numeric tabular numbers alignment for `.numeric-cell`.
+3. **Type Generation Script**:
+   - Installed `openapi-typescript` v7.13.0 as a devDependency in `apps/web`.
+   - Added script `"typegen": "openapi-typescript openapi.json -o lib/api/generated-schema.ts"` to `apps/web/package.json`.
+   - Successfully executed `pnpm --filter @payguardian/web run typegen` producing `apps/web/lib/api/generated-schema.ts` (2,256 lines).
 
-4. **Minor Unit Arithmetic (`apps/web/app/lib/currency.ts`)**:
-   - Implemented `assertSafeInteger(value, fieldName)` strictly checking `Number.isSafeInteger(value)` and rejecting floats, `NaN`, and `Infinity`.
-   - Implemented `formatMinorUnits(amountMinor, currency = 'USD', options)` guaranteeing zero floating-point arithmetic using integer division and modulo (`Math.floor(absAmount / factor)` and `absAmount % factor`).
-   - Implemented `calculateAvailableMinor(allocatedMinor, spentMinor, reservedMinor)`.
-   - Implemented `addMinor`, `subtractMinor`, `multiplyMinor`, `divideMinor`, and `moduloMinor`.
-   - Implemented `parseMajorToMinor(majorStr, currency)` converting user-entered currency strings into exact integer minor units without `parseFloat`.
-   - Exported at both `apps/web/app/lib/currency.ts` and `apps/web/lib/currency.ts`.
+4. **Typed API Client, Hooks & Mappers**:
+   - Created `apps/web/lib/api/client.ts` with `ApiClient` and domain namespaces (`environments`, `agents`, `mandates`, `ledger`, `approvals`, `sessions`, `payments`, `activity`, `system`) routing through `/api/proxy/...`.
+   - Created clean domain types in `apps/web/lib/api/types.ts` (`ActivityFeedItem`, `SessionItem`, `MemoryItem`), decoupling the API layer from fixtures.
+   - Created screen hook skeletons in `apps/web/lib/api/hooks/` (`useWorkspaceGraph`, `useBudgetStrip`, `useActivityFeed`, `useApprovals`, `usePaymentTrace`, `useAgentLibrary`, `useSessions`, `useAgentMemory`).
+   - Created pure mappers in `apps/web/lib/api/mappers/` (`workspace-graph`, `budget-strip`, `activity-feed`, `approvals`, `payment-trace`, `library`, `sessions`, `memory`).
 
-5. **Taste Skill UI Primitives (`apps/web/components/ui/`)**:
-   - `button.tsx`: Variants `primary`, `secondary`, `outline`, `ghost`, `destructive`, `link`; sizes `default`, `sm`, `lg`, `icon`.
-   - `card.tsx`: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` with `.top-shade` and 1px hairline border.
-   - `badge.tsx`: Pale-tinted chips with dark/matching text per Taste Skill (`authorized`, `unfunded` dashed, `pending`, `rejected`, `revoked` strike-through, `default`, `secondary`).
-   - `dialog.tsx`: Accessible modal dialog with focus handling, Escape key listener, and `X` close.
-   - `sheet.tsx`: Slide-out drawer with side selection (`left`, `right`, `top`, `bottom`) for mobile approvals and node details.
-   - `tabs.tsx`: Segmented tabs (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`) styled with Efferd surface tokens.
-   - `tooltip.tsx`: Micro-label tooltip with positioning (`top`, `bottom`, `left`, `right`).
-   - `input.tsx`: Efferd input with 1px hairline border and subtle focus ring.
-   - `select.tsx`: Native select and custom composable select (`Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`).
-   - `index.ts`: Barrel export for all UI primitives.
-   - `apps/web/lib/utils.ts`: `cn` class merger combining `clsx` and `tailwind-merge`.
+5. **Next.js Proxy Route Handler**:
+   - Created `apps/web/app/api/proxy/[...path]/route.ts` handling `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
+   - Proxies to Fastify Gateway (`http://127.0.0.1:3001` or `process.env.INTERNAL_API_URL`).
+   - Resolves authentication: forwards `Authorization: Bearer <token>` from session cookies (`sb-access-token`, `access_token`, `supabase-auth-token`) or request headers; attaches `x-local-user-id: local-user` during development / local dev auth.
+   - Forwards `set-cookie` headers to maintain `httpOnly` sessions and eliminates browser CORS preflight.
 
-6. **Build & Typecheck Results**:
-   - `pnpm typecheck`: Exit code 0, 0 errors across all 11 packages and apps.
-   - `pnpm --filter @payguardian/web build`: Exit code 0, Turbopack compiled successfully in 695ms.
-   - `pnpm build`: Exit code 0, all workspaces compiled cleanly in 4.7s.
-   - `pnpm lint`: Exit code 0, 0 lint warnings or errors.
+6. **ESLint Fixture Ban Rule**:
+   - Added `no-restricted-imports` rule in `eslint.config.mjs` targeting `apps/web/src/**/*.{js,mjs,cjs,ts,tsx}`, `apps/web/lib/**/*.{js,mjs,cjs,ts,tsx}`, `apps/web/app/**/*.{js,mjs,cjs,ts,tsx}`, and `apps/web/components/**/*.{js,mjs,cjs,ts,tsx}`.
+   - Banned pattern groups: `**/fixtures/**`, `**/mocks/**`, `*mock*`, `*fixture*`, `**/workspace-defaults*`, `*workspace-defaults*`.
+
+7. **Contract Gaps Registry**:
+   - Created and initialized `docs/gaps.md` with schema and four initial registered gaps:
+     - `GAP-EVT-01`: Real-Time Event Streaming (WebSocket / SSE)
+     - `GAP-MEM-01`: Agent Memory Vault Backend Representation
+     - `GAP-CAT-01`: Agent Marketplace / Template Catalog Endpoint
+     - `GAP-TRC-01`: Detailed Lifecycle Trace Checkpoints & Latency Breakdown
+
+8. **Test Suite & Typecheck**:
+   - Created 3 unit test suites:
+     - `apps/web/lib/api/__tests__/client.test.ts` (5 tests)
+     - `apps/web/lib/api/__tests__/mappers.test.ts` (7 tests)
+     - `apps/web/app/api/proxy/__tests__/route.test.ts` (4 tests)
+   - `pnpm --filter @payguardian/web run test` passed with 9 test files, 36 passed tests (0 failed).
+   - `pnpm --filter @payguardian/web run typecheck` passed with 0 compile errors.
+
+9. **Python Immutability**:
+   - Ran `git status` confirming zero files modified in `apps/agent-runtime`, `agents/`, `apps/worker`, or auth backends.
 
 ---
 
 ## 2. Logic Chain
 
-1. **Dependency Installation**:
-   - The user instructions specified installing `lucide-react`, `three`, `clsx`, `tailwind-merge`, `tailwindcss`, `postcss`, `autoprefixer`, and `@types/three`.
-   - During initial evaluation, Tailwind v4 was installed by pnpm by default, which separated its PostCSS plugin into `@tailwindcss/postcss`. By pinning `tailwindcss@^3.4.17`, standard PostCSS integration and `tailwind.config.ts` operated seamlessly with Next.js Turbopack without external plugins.
+1. **OpenAPI Spec & Type Generation**:
+   - Observation: Fastify Gateway routes dynamically register in `apps/api/src/app.ts` without static schema files, but the canonical contracts are maintained in `@payguardian/contracts`.
+   - Ingestion: Constructing `apps/web/openapi.json` from `@payguardian/contracts` and `docs/api.md` enables deterministic, offline type generation via `openapi-typescript`.
+   - Result: Running `pnpm --filter @payguardian/web run typegen` automatically outputs `apps/web/lib/api/generated-schema.ts`.
 
-2. **TypeScript Path Mapping**:
-   - When attempting `baseUrl: "."` in `apps/web/tsconfig.json`, TypeScript 6.0 emitted deprecation error TS5101.
-   - Configured `"paths": { "@/*": ["./*"] }` directly without `baseUrl`, resolving all `@/components/ui/*` and `@/lib/*` imports cleanly under TypeScript 6.0 standards.
+2. **Next.js Proxy & Security**:
+   - Observation: Browser fetch directly to `http://localhost:3001` exposed tokens to JavaScript memory and triggered CORS requirements.
+   - Resolution: `apps/web/app/api/proxy/[...path]/route.ts` proxies server-side to Fastify Gateway (`127.0.0.1:3001`), reading session cookies and attaching `Authorization: Bearer <token>` or `x-local-user-id: local-user`.
+   - Result: Browser calls to `/api/proxy/...` are same-origin, cookies remain `httpOnly`, and CORS is not needed.
 
-3. **Financial Invariants (Zero Floating-Point)**:
-   - Floating-point representations in JavaScript produce decimal drift (e.g. `0.1 + 0.2 = 0.30000000000000004`).
-   - By asserting `Number.isSafeInteger` and computing major and fractional units via integer quotient (`Math.floor(abs / 100)`) and modulo (`abs % 100`), exact arithmetic is preserved across all currencies (2 decimals for USD/INR/EUR, 0 for JPY, 3 for KWD/BHD).
-   - String parsing (`parseMajorToMinor`) parses whole and fractional substrings without `parseFloat`, avoiding floating point errors on user inputs.
+3. **No-src Architecture Alignment**:
+   - Observation: Next.js App Router in `apps/web` uses `app/`, `components/`, and `lib/`. The user explicitly corrected the prompt's `src/` reference.
+   - Resolution: All API artifacts are placed in `apps/web/lib/api/` and `apps/web/app/api/proxy/`, while `tsconfig.json` paths configure `"src/*": ["./lib/*"]` as an alias to avoid breaking any downstream references.
+   - Result: Zero `src/` directory created; existing imports remain pristine.
 
-4. **Taste Skill Compliance**:
-   - In accordance with `references/app-screens.md`, all UI components avoid heavy drop shadows, neon gradients, and saturated pills.
-   - Badges use pale tints with matching hue text (e.g. `#1daf9c/10` with `#3fdec9` text for authorized, and dashed borders for unfunded agents).
-   - Surfaces are flat `#0d0d0d` with 1px hairline borders (`rgba(255, 255, 255, 0.11)`) and specular overhead lighting (`.top-shade`).
+4. **Fixture Ban & Mappers Decoupling**:
+   - Observation: Existing mock data resided in `components/workspace/workspace-defaults.ts` which mixed mock arrays and interface declarations.
+   - Resolution: Interface definitions (`SessionItem`, `MemoryItem`, `ActivityFeedItem`) were moved to `apps/web/lib/api/types.ts`. All mappers now import from `lib/api/types.ts`.
+   - Result: `apps/web/lib/api/` has zero dependencies on fixtures or mocks, complying fully with the ESLint ban rule.
 
 ---
 
 ## 3. Caveats
 
-- In accordance with the critical user constraint (*"Do NOT create any test files, unit tests, component tests, or end-to-end test specs. No Vitest test files, no Playwright test files"*), no new `.test.ts` or `.spec.ts` files were written.
-- Existing pre-redesign tests in the repository continue to pass without regression.
+1. **Screen Component Migration**:
+   - The UI screen components (`components/workspace/workspace-layout.tsx`, `components/approvals/ApprovalsInbox.tsx`, etc.) are still importing from legacy `workspace-defaults.ts`. Their migration to live hooks and the deletion of the legacy fixtures are scheduled sequentially for Milestones 2, 3, and 4.
+2. **Gateway Process Requirement for Live Runs**:
+   - The typegen and unit tests run completely offline and in-memory. However, live browser execution of `/api/proxy/...` requires the Fastify Gateway process running on port 3001 (`pnpm dev:api`).
 
 ---
 
 ## 4. Conclusion
 
-Milestone 1 is completely satisfied. The design system foundation, package dependencies, Tailwind and PostCSS configurations, Efferd obsidian design tokens, AG Grid dark theme overrides, exact integer minor-unit currency mathematics, and the complete catalog of UI primitives are implemented, type-checked, and verified against production builds. Downstream agents (Milestones 2 through 5) can now consume these primitives.
+Milestone 1 is fully completed and verified:
+- `apps/web/openapi.json` exists with 43 paths and 21 schemas.
+- `"typegen"` script and generated schema `apps/web/lib/api/generated-schema.ts` are verified.
+- `apps/web/lib/api/client.ts` typed client is implemented with full domain namespaces.
+- Screen hook skeletons and base mappers for all 8 target screens are implemented in `apps/web/lib/api/hooks/` and `apps/web/lib/api/mappers/`.
+- Next.js proxy route handler at `apps/web/app/api/proxy/[...path]/route.ts` handles all HTTP methods, forwards auth headers, and eliminates browser CORS.
+- ESLint rule banning fixtures and mocks is active in `eslint.config.mjs`.
+- `docs/gaps.md` is initialized with contract schema and recorded gaps.
+- Zero lines of code modified in Python services.
+- `typecheck` and `test` pass with 100% success (0 errors, 36 passing tests).
+
+Ready for Milestone 2 (Screen 1: Workspace Graph & Budget Bar + Screen 2: Activity Feed).
 
 ---
 
@@ -109,25 +115,26 @@ Milestone 1 is completely satisfied. The design system foundation, package depen
 
 To independently verify this milestone:
 
-1. **Typecheck Verification**:
+1. **Verify Type Generation**:
    ```bash
-   pnpm typecheck
+   pnpm --filter @payguardian/web run typegen
    ```
-   *Expected outcome*: Exits with code 0 across all packages and apps with 0 errors.
+   *Expected output*: `🚀 openapi.json → lib/api/generated-schema.ts [~95ms]`
 
-2. **Web Production Build**:
+2. **Verify TypeScript Compilation**:
    ```bash
-   pnpm --filter @payguardian/web build
+   pnpm --filter @payguardian/web run typecheck
    ```
-   *Expected outcome*: Next.js Turbopack compiles successfully with all static pages generated.
+   *Expected output*: Exit code 0, zero errors.
 
-3. **Lint Verification**:
+3. **Verify Vitest Test Suite**:
    ```bash
-   pnpm lint
+   pnpm --filter @payguardian/web run test
    ```
-   *Expected outcome*: Exits with code 0.
+   *Expected output*: 9 test files passed, 36 tests passed (including `client.test.ts`, `mappers.test.ts`, and `route.test.ts`).
 
-4. **File Inspection**:
-   - Inspect `apps/web/app/lib/currency.ts` to confirm `Number.isSafeInteger` assertions and zero floating-point math.
-   - Inspect `apps/web/tailwind.config.ts` to confirm Efferd color tokens and `.top-shade` shadow.
-   - Inspect `apps/web/components/ui/` to confirm all 9 requested UI primitives (`button`, `card`, `badge`, `dialog`, `sheet`, `tabs`, `tooltip`, `input`, `select`) and index barrel export.
+4. **Verify Python Immutability**:
+   ```bash
+   git status -- apps/agent-runtime agents apps/worker apps/api/src/auth.ts packages/auth
+   ```
+   *Expected output*: Nothing to commit, working tree clean (zero modifications).

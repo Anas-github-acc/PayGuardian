@@ -1,57 +1,38 @@
-# Sentinel Handoff Report: PayGuardian Frontend Redesign
+# Sentinel Final Handoff Report
 
 ## 1. Observation
-- **Initial User Request**: Redesign the complete PayGuardian frontend into an Agent Workspace and Delegation Dashboard based on the Frontend Specification and three reference sites:
-  1. TurboStarter: structural inspiration, app shell, 3-panel workspace, navigation.
-  2. Efferd: obsidian visual identity (`#000000`, card surfaces `#0d0d0d`, `.top-shade` specular rim lighting, hairline borders `rgba(255, 255, 255, 0.11)`, typography).
-  3. Ferrow: interactive 3D multi-agent network canvas with orbital controls, solid funded vs. dashed unfunded edge distinctions, energy flow particles, and live state animations (ripple rings on payment, red flashes on rejection, grey desaturation on revocation).
-- **Explicit Negative Constraint**: "Do NOT write any unit tests, test files, or end-to-end test specs. The user will test manually. Skip all Vitest and Playwright test creation entirely — do not waste tokens on tests."
-- **Execution Lifecycle**:
-  - Interview Phase: Handled via `teamwork_interviewer` and caller approval.
-  - Routing: Routed to `teamwork_orchestrator` (`orchestrator_1`).
-  - Survey Phase (Phase 0): Spec miner, design explorer, and codebase explorer audited requirements, live reference sites, and Next.js/Three.js architecture.
-  - Milestone 1: Design system, Efferd tokens, Tailwind config, AG Grid dark overrides, safe integer minor-unit math (`currency.ts`), and UI primitives. Gate: CLEAN.
-  - Milestone 2: TurboStarter app shell, WebAuthn passkey modal with dev bypass, and 5-step create-environment wizard with mandate-derived consent text. Gate: CLEAN.
-  - Milestone 3: Three-panel workspace (`WorkspaceLayout`), Two Voices chat architecture with 5 gateway-verified cards, Three.js 3D spatial network canvas (`AgentNetworkCanvas`), and accessible keyboard list view (`AgentNetworkListView`). Gate: CLEAN.
-  - Milestone 4: Mobile-first Approvals Inbox (`ApprovalCard`, `ApprovalDetailDrawer`), 4-level vertical authorization chain and 5-stage lifecycle Payment Traces, AG Grid Mandates and Activity Audit tables with 3s live polling, and Security Center with emergency pause and cascade revocation dialogs. Gate: CLEAN.
-  - Milestone 5: 6-specialist Agent Library (`AgentCard`, `AgentDetailDrawer`, `AttachAgentDialog`), Developer MCP Portal (`ConnectionTester`, `KeyManager`, `CodeSnippet`), Sandbox Attack Simulator (5 attack vectors, `[SIMULATION]` tags), and turnkey unified dashboard assembly in `apps/web/app/page.tsx`. Initial gate flagged 3D canvas simulation animation gap; remediated and re-audited: CLEAN.
-  - Visual Verification: Automated CDP browser testing across all views, workflows, and modals capturing 26 live screenshot artifacts in `.agents/teamwork/worker_visual_verification/screenshots/`.
-  - Independent Victory Audit: Dispatched `teamwork_victory_auditor` (`218575c8-32b6-4379-8594-0495aa47009f`). Result: **VICTORY CONFIRMED**.
+The PayGuardian frontend migration from hardcoded fixtures to real backend data across all 8 target screens is fully executed and independently validated against `.agents/teamwork/ORIGINAL_REQUEST.md`.
+
+Key observations verified by independent post-victory audit (`teamwork_victory_auditor`, conversation `787d29af-34eb-4516-980f-6ca1f030612b`):
+- **Zero Python Modifications**: Exactly 0 lines modified in Python backend services (`apps/agent-runtime`, `agents/`, `apps/worker`, or auth backends).
+- **TypeScript Generation & Typed Client**: `apps/web/openapi.json` generated and script `"typegen"` produces `apps/web/lib/api/generated-schema.ts`. Typed client implemented at `apps/web/lib/api/client.ts` with hooks and mappers for each screen.
+- **Next.js Route Proxy**: Dynamic proxy route handler at `apps/web/app/api/proxy/[...path]/route.ts` routes all browser API traffic through Next.js server handlers, preventing browser CORS issues and keeping auth cookies httpOnly.
+- **Sequential 8-Screen Migration**: All 8 screens (1: Workspace Graph, 2: Budget Bar, 3: Activity Feed, 4: Approvals, 5: Payment Trace, 6: Library, 7: Sessions, 8: Memory) migrated to backend data without changing component markup or styling.
+- **Fixture Elimination**: All 12 mock fixture arrays (`DEFAULT_GRAPH_NODES`, `DEFAULT_TRACES`, `CATALOG_AGENTS`, `INITIAL_MEMORIES`, `MOCK_APPROVALS`, `DEFAULT_APPROVALS`, etc.) purged.
+- **Financial Integrity**: Monetary amounts handled strictly as integer minor units with display-only formatting. No client-side budget math. Actions rely on backend `allowed_actions` and update only from confirmed responses (no optimistic updates).
+- **Fallbacks & Gap Registry**: Fallback short polling (3s) active where live streams are missing. Explicit "Unavailable" UI state containers rendered and documented with contracts in `docs/gaps.md`.
+- **Lint Rule & E2E Test**: ESLint rule `no-restricted-imports` active banning fixture/mock imports. End-to-end integration test (`e2e-backend-mutation.test.ts`) verifies backend mutations propagate to UI state across 4 vertical scenarios.
 
 ## 2. Logic Chain
-- **Security & Financial Accounting**:
-  - Minor-unit integer arithmetic is enforced across all tables, cards, inputs, and balances using `apps/web/app/lib/currency.ts` (`assertSafeInteger`, integer quotient and remainder). Zero floating-point arithmetic or drift exists anywhere in the frontend.
-  - The "Two Voices" security invariant is upheld: agent chat text is strictly escaped in plain React text nodes (zero `dangerouslySetInnerHTML`), while gateway decisions and trace records are rendered strictly through dedicated, immutable `VerifiedBlock` containers.
-  - Cross-environment isolation is enforced synchronously in `workspaceStore`: `switchEnvironment` atomically wipes all chat messages, gateway cards, graph nodes, edges, sessions, and active selections, completely preventing cross-environment leakage.
-  - Dynamic mandate consent text in the 5-step wizard is deterministically compiled from budget limits, rails, and approval thresholds rather than freeform text.
-- **Reference Synthesis**:
-  - Structural layout mirrors TurboStarter's 56px obsidian header, responsive tabs, and modular panels.
-  - Visual aesthetics implement Efferd's obsidian palette, hairline borders, and `.top-shade` specular rim lighting.
-  - Multi-agent visualization implements Ferrow's 3D spatial canvas with depth, orbit damping, solid luminous vs. dashed unfunded edges, and live micro-animations, paired with an accessible keyboard list view.
+- Initial user request and follow-up directory correction (`apps/web/lib/api/` and `apps/web/app/api/` instead of `src/api/`) were recorded verbatim into `ORIGINAL_REQUEST.md`.
+- Routed via the General execution path to `teamwork_orchestrator`.
+- Orchestrator decomposed and drove execution across 5 milestones with strict milestone gates (workers, reviewers, challengers, and forensic auditors).
+- Upon victory claim from orchestrator, the Sentinel enforced the mandatory blocking post-victory audit via `teamwork_victory_auditor`.
+- Victory auditor independently executed timeline analysis, cheating detection, and live build/test validation.
+- Verdict: `VICTORY CONFIRMED`.
 
 ## 3. Caveats
-- Per the user's explicit instruction, zero unit tests, component tests, or end-to-end test specs (Vitest/Playwright) were created. All verification was conducted through TypeScript typechecking, Next.js Turbopack production builds, and automated Chrome DevTools Protocol visual inspection.
-- The 3D canvas requires standard WebGL browser context. If WebGL is unavailable, the 1:1 accessible keyboard list view (`AgentNetworkListView`) acts as the fallback.
-- Backend API endpoints provide optimistic local state updates and mock fallbacks if the Fastify API server (`localhost:3001`) is offline during manual testing.
+- Real-time updates utilize 3-second cursor short polling as a fallback where backend WebSocket/SSE streams are not yet exposed; full schemas are defined in `docs/gaps.md` (`GAP-EVT-01`).
+- Missing backend telemetry endpoints (such as full agent memory query and payment trace DAGs) render designated unavailable states with proposed contracts documented in `docs/gaps.md`.
 
 ## 4. Conclusion
-- The PayGuardian Frontend Redesign has achieved complete fulfillment of all P0 and P1 specification requirements.
-- Build and typechecks pass with exit code 0 (`pnpm typecheck` across all 11 monorepo packages, `pnpm --filter @payguardian/web build` static generation 6/6 routes).
-- Independent post-victory audit certified **VICTORY CONFIRMED**.
+All acceptance criteria for requirements R1 through R5 are completely met. All 56 web tests, 111 workspace tests, typechecks, and linters pass cleanly. Production build succeeded.
 
 ## 5. Verification Method
-To verify locally:
-```bash
-# 1. Monorepo Typecheck (exits 0, 0 errors across 11 packages)
-pnpm typecheck
-
-# 2. Next.js Production Build (exits 0, Turbopack compiles in <1s)
-pnpm --filter @payguardian/web build
-
-# 3. Launch dev server and inspect in browser
-pnpm --filter @payguardian/web dev
-# Open http://localhost:3000 to interact with the full dashboard, 3D canvas, and views.
-
-# 4. Review captured visual verification screenshots:
-ls -la .agents/teamwork/worker_visual_verification/screenshots/
-```
+Executed independently by `teamwork_victory_auditor`:
+- `pnpm --filter @payguardian/web run typegen` -> Exit code 0
+- `pnpm --filter @payguardian/web run typecheck` -> Exit code 0 (0 errors)
+- `pnpm --filter @payguardian/web run lint` -> Exit code 0 (0 errors, 0 warnings)
+- `pnpm --filter @payguardian/web run test` -> Exit code 0 (12/12 files passed, 56/56 tests passed)
+- `pnpm test` -> Exit code 0 (111/111 workspace tests passed)
+- `pnpm --filter @payguardian/web run build` -> Exit code 0 (Next.js production build succeeded)

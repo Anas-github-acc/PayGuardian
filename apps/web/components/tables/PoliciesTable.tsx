@@ -3,7 +3,6 @@
 import * as React from "react";
 import { SlidersHorizontal, Info, Check } from "lucide-react";
 import { formatMinorUnits, parseMajorToMinor, minorToMajorString } from "../../app/lib/currency";
-import { useWorkspaceStore } from "../../app/lib/workspace-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -14,7 +13,6 @@ export interface PoliciesTableProps {
 }
 
 export function PoliciesTable({ className = "" }: PoliciesTableProps) {
-  const store = useWorkspaceStore();
   const [policies, setPolicies] = React.useState<PolicyRow[]>(DEFAULT_POLICIES);
   const [editingPolicy, setEditingPolicy] = React.useState<PolicyRow | null>(null);
   const [formSingleAction, setFormSingleAction] = React.useState<string>("");

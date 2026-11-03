@@ -6,9 +6,7 @@ import {
   Link2,
   Box,
   ChevronRight,
-  ArrowUpDown,
   Search,
-  ExternalLink,
 } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
@@ -171,7 +169,9 @@ export function AgentNetworkListView({
             {nodes.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-xs text-zinc-500">
-                  No agents found matching criteria.
+                  {rawNodes.length === 0
+                    ? "No agent nodes found in this environment."
+                    : "No agents found matching search criteria."}
                 </td>
               </tr>
             ) : (

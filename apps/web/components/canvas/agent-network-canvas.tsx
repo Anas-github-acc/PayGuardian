@@ -7,11 +7,7 @@ import {
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Maximize2,
-  Filter,
-  Layers,
   List,
-  Eye,
   ShieldCheck,
   Link2,
 } from "lucide-react";
@@ -19,7 +15,6 @@ import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import type { AgentNodeData, AgentEdgeData, CanvasViewFilter } from "./types";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
 
 export interface AgentNetworkCanvasProps {
   className?: string;
@@ -35,100 +30,6 @@ export interface AgentNetworkCanvasProps {
   /** Hide the floating "List View" toggle when a card header hosts it instead. */
   hideViewToggle?: boolean;
 }
-
-// Default fallback node layout if store is initially unpopulated
-const DEFAULT_NODES: AgentNodeData[] = [
-  {
-    id: "orchestrator-root",
-    name: "Main Orchestrator",
-    role: "orchestrator",
-    status: "active",
-    allocatedMinor: 1000000,
-    spentMinor: 245000,
-    reservedMinor: 150000,
-    position: [0, 80, 0],
-    isFunded: true,
-  },
-  {
-    id: "agent-travel",
-    name: "Travel Subagent",
-    role: "subagent",
-    status: "active",
-    allocatedMinor: 400000,
-    spentMinor: 125000,
-    reservedMinor: 50000,
-    position: [-110, -30, 20],
-    isFunded: true,
-  },
-  {
-    id: "agent-hotel",
-    name: "Hotel Subagent",
-    role: "subagent",
-    status: "active",
-    allocatedMinor: 400000,
-    spentMinor: 120000,
-    reservedMinor: 100000,
-    position: [110, -30, 20],
-    isFunded: true,
-  },
-  {
-    id: "agent-flights-unfunded",
-    name: "Flight Scraper",
-    role: "subagent",
-    status: "unfunded",
-    allocatedMinor: 0,
-    spentMinor: 0,
-    reservedMinor: 0,
-    position: [-160, -120, -25],
-    isFunded: false, // Dashed structural attachment
-  },
-  {
-    id: "agent-booking-gw",
-    name: "Booking Gateway",
-    role: "subagent",
-    status: "active",
-    allocatedMinor: 200000,
-    spentMinor: 0,
-    reservedMinor: 0,
-    position: [160, -120, -25],
-    isFunded: true,
-  },
-];
-
-const DEFAULT_EDGES: AgentEdgeData[] = [
-  {
-    id: "edge-root-travel",
-    source: "orchestrator-root",
-    target: "agent-travel",
-    isAuthorized: true, // Solid edge
-    status: "flowing",
-    amountMinor: 400000,
-  },
-  {
-    id: "edge-root-hotel",
-    source: "orchestrator-root",
-    target: "agent-hotel",
-    isAuthorized: true, // Solid edge
-    status: "idle",
-    amountMinor: 400000,
-  },
-  {
-    id: "edge-travel-scraper",
-    source: "agent-travel",
-    target: "agent-flights-unfunded",
-    isAuthorized: false, // Dashed structural edge
-    status: "idle",
-    amountMinor: 0,
-  },
-  {
-    id: "edge-hotel-booking",
-    source: "agent-hotel",
-    target: "agent-booking-gw",
-    isAuthorized: true, // Solid edge
-    status: "payment_pulse",
-    amountMinor: 200000,
-  },
-];
 
 export function AgentNetworkCanvas({
   className = "",
@@ -147,17 +48,14 @@ export function AgentNetworkCanvas({
   const store = useWorkspaceStore();
 
   const [activeFilter, setActiveFilter] = React.useState<CanvasViewFilter>(filter);
-  const [hoveredNodeId, setHoveredNodeId] = React.useState<string | null>(null);
 
   // Follow the controlled filter prop so a parent card header can drive it.
   React.useEffect(() => {
     setActiveFilter(filter);
   }, [filter]);
 
-  const effectiveNodes =
-    propNodes ?? (store.graphNodes.length > 0 ? store.graphNodes : DEFAULT_NODES);
-  const effectiveEdges =
-    propEdges ?? (store.graphEdges.length > 0 ? store.graphEdges : DEFAULT_EDGES);
+  const effectiveNodes = propNodes ?? store.graphNodes;
+  const effectiveEdges = propEdges ?? store.graphEdges;
 
   // Filter nodes according to active filter
   const filteredNodes = React.useMemo(() => {

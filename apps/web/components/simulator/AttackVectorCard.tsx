@@ -3,18 +3,12 @@
 import * as React from "react";
 import {
   ShieldAlert,
-  Zap,
-  ArrowRight,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
   Play,
   RotateCw,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
 import { SimulationBadge } from "./SimulationBadge";
 import type { AttackVector } from "./types";
 

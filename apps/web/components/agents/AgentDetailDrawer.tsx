@@ -19,9 +19,6 @@ import { formatMinorUnits } from "../../app/lib/currency";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
 } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";

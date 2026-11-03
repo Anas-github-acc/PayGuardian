@@ -1,58 +1,49 @@
-use main agent under that subagent to complete this designing part - first decide how you are gonna assign task to each subagents their task and whats your role for this work. Redesign the frontend for PayGuardian into a production-grade Agent Workspace and Delegation Dashboard based on the specification, synthesizing TurboStarter for structure, Efferd for visual styling, and Ferrow for 3D multi-agent architecture visualization.
+use multi-agent to finsh the work. Replace hardcoded frontend data in the Next.js application with real backend data using docs/frontend-audit.md for production readiness.
 
 Working directory: /home/anas/myspace/AI/PayGuardian
 Integrity mode: development
 
-## References
-- TurboStarter: https://demo.turbostarter.dev/ (structure, layout, components, navigation, interactions)
-- Efferd: https://efferd.com/ (visual identity: colors, backgrounds, typography, sizes, spacing, borders, shadows)
-- Ferrow: https://illos-ferrow-template.vercel.app/#start (3D agent architecture visualization, node positioning, animations, lighting, depth, interactions)
-- Frontend Specification: Agent Workspace and Delegation Dashboard
-- Taste Skill guidelines: locate and read installed SKILL.md before implementation
-
-## Verification Resources
-- Test suites: Vitest unit tests in repository and Playwright end-to-end tests
-- Visual and interaction verification: Chrome DevTools Protocol (CDP) inspection comparing local implementation with the 3 live reference websites
+## Reference Material
+- `docs/frontend-audit.md` (Frontend-to-Backend Integration Audit & Architecture Specification)
 
 ## Requirements
 
-### R1. Design System and Reference Synthesis
-Inspect the existing codebase and all three references, locate and review the Taste Skill guideline, and establish a cohesive, premium design system without generic AI-generated aesthetics before writing UI code. Preserve existing business logic and reuse existing components and dependencies wherever appropriate.
+### R1. Typed API Client, Type Generation, and Next.js Routing
+Generate TypeScript types from the delegation API's OpenAPI specification and add a script to regenerate them. Create a typed client in `src/api/` with one hook per screen and mappers that turn API responses into the props the existing components already take, without altering component markup or styling. Route all requests through Next.js (route handlers or rewrites) so session cookies stay httpOnly and CORS is not needed in the browser, following the auth flow documented in `docs/frontend-audit.md`. Do not modify Python services (auth backend, delegation API, worker, agents).
 
-### R2. App Shell, Authentication, and Environment Management
-Implement the application shell with environment switcher, status pill, navigation, and live reconnect banner; authentication flows supporting passkeys with fallback; and the 5-step create-environment wizard with budget, guardrails, and mandate-derived consent generation. Scope implementation to P0 (core MVP) and P1 specification items, treating P2 as optional stretch.
+### R2. Screen Migration and Fixture Removal
+Replace hardcoded data one screen at a time across the 8 screens in sequence: starting with the graph and budget bar, then the activity feed, approvals, payment trace, library, sessions, and memory. Delete each screen's fixtures once it works with backend data. Never invent data: if an endpoint or field is MISSING, show a clear "unavailable" state in the UI and list it in `docs/gaps.md` with the proposed request and response contract.
 
-### R3. Three-Panel Workspace and Interactive 3D Agent Network Canvas
-Build the three-panel workspace containing session management, main and subagent chat with streaming responses and gateway-verified cards (budget plan, payment result, rejection with plain-language reason, delegation, memory with undo), and an interactive 3D network canvas showing the orchestrator and connected subagents with node positioning, animations, lighting, depth, and live state updates, alongside an accessible keyboard list view.
+### R3. Commands, Mutations, and Financial Data Integrity
+Make every button call a backend command and update only from the confirmed response or event, with no optimistic updates for money, authority, or approvals. Handle amounts as integer minor units plus currency, formatting for display only; remove any client-side budget math or permission checks, and use fields the API returns (for example `allowed_actions`) instead.
 
-### R4. Approvals, Payment Traces, Mandates, and Activity Auditing
-Deliver the mobile-first approval inbox with card details, plain-language reasons, and approve/reject actions; payment trace views displaying vertical chains, lifecycle timelines, and gateway verification checklists; AG Grid-powered tables for mandates, policies, and activity audit logs with server-side paging and filtering; and the security center with environment pause, authority revocation, and security event logs.
+### R4. Live Updates, Skeletons, and UI States
+Use the backend's event stream for live updates; if none exists, use short polling as a clearly marked temporary fallback and record the gap in `docs/gaps.md`. Add loading skeletons, empty states, and error states with retry, matching layout sizes so nothing jumps.
 
-### R5. Agent Library, Developer Connect, Simulator, and Backend Integration
-Deliver the agent library for browsing, detail inspection, and attaching agents; the developer connection portal with MCP endpoint snippets, key management, and connection testing; and the attack simulator for sandbox environments. Integrate with existing repository services and endpoints, creating or updating necessary endpoints and operations, with mock fallbacks for external dependencies.
+### R5. Lint Guardrails and Verification
+Add a lint rule banning imports from fixtures or mocks inside `src/`. Add an end-to-end test that changes a value in the backend and asserts the UI shows it. Ensure existing workspace validation scripts (`npm run typecheck`, `npm run lint`, and `npm run test` in `apps/web`) and the end-to-end test pass cleanly.
 
 ## Acceptance Criteria
 
-### Visual and Architectural Verification
-- [ ] UI combines TurboStarter layout, Efferd visual styling, and Ferrow 3D agent network visualization into a single cohesive design system following Taste Skill guidelines.
-- [ ] CDP inspection of the running frontend confirms visual fidelity, responsive layout (desktop-first three panels, tablet/mobile adaptations), and interaction consistency against the reference sites.
-- [ ] Visual distinction between solid (authorized) and dashed (unfunded) nodes is maintained across all graph states.
+### Type Generation and Routing
+- [ ] TypeScript types are generated from the delegation API OpenAPI spec with a script in `apps/web` to regenerate them.
+- [ ] `src/api/` contains a typed client, one hook per screen, and mappers producing the exact prop interfaces expected by existing components without modifying component markup or styles.
+- [ ] All API requests from the browser route through Next.js route handlers or rewrites, maintaining httpOnly session cookies without browser CORS issues.
+- [ ] Zero lines of code are modified in Python services (`apps/agent-runtime`, `agents/`, `apps/worker`, or auth backends).
 
-### Authority and Security Integrity
-- [ ] Gateway-verified facts (budgets, decisions, traces) render strictly through dedicated components distinct from agent chat text.
-- [ ] Agent-written and third-party text is escaped and cannot inject markup or render gateway cards.
-- [ ] Currency amounts are handled as minor units with zero floating-point arithmetic in the frontend.
-- [ ] Environment switching completely resets chat, graph, and selection state to prevent cross-environment leakage.
+### Screen Migration and Fixture Removal
+- [ ] The 8 target screens are migrated to backend data in order: workspace graph and budget bar, activity feed, approvals, payment trace, library, sessions, and memory.
+- [ ] Mock and fixture files for each of the 8 screens are deleted from `src/` once integrated.
+- [ ] For every missing backend endpoint or field, the component renders a visible "unavailable" state and `docs/gaps.md` documents the gap with a proposed contract.
 
-### Functional Deliverables
-- [ ] Create-environment wizard generates consent text dynamically from mandate values and persists environment upon explicit approval.
-- [ ] 3D agent network canvas renders the orchestrator and subagents with interactive navigation, live state animations (authority flow, pulse on payment, red flash on rejection, grey on revocation), and a keyboard list view.
-- [ ] Approval inbox displays request details with plain-language reasons and functional Approve/Reject actions.
-- [ ] Payment trace displays the vertical authorization chain, lifecycle stage timeline, and gateway verification checklist.
-- [ ] Mandate and activity tables use AG Grid with server-side paging, filtering, and row-click trace navigation.
-- [ ] Developer portal provides MCP server URL, setup snippets, and connection testing.
-- [ ] Sandbox attack simulator triggers simulated rule violations streaming into graph and activity feed with simulation badges.
+### Mutation and Financial Integrity
+- [ ] Button actions dispatch backend commands and update UI state strictly after receiving a confirmed server response or event (no optimistic updates for money, authority, or approvals).
+- [ ] Monetary amounts are stored and handled as integer minor units with currency strings, formatted for display only.
+- [ ] Client-side budget calculations and permission checks are removed in favor of backend-provided fields such as `allowed_actions`.
 
-### Automated Testing
-- [ ] Component tests (Vitest) pass for money display, authority badges, and gateway verification components.
-- [ ] End-to-end tests (Playwright) pass for core flows: create environment, attach agent, approve budget plan, payment success/rejection, revoke subtree, and approval flow.
+### Real-Time, Resilience, and Testing
+- [ ] Live UI updates consume the backend event stream, or short polling fallback is active with the gap documented in `docs/gaps.md`.
+- [ ] Loading skeletons, empty states, and error states with retry are implemented on each screen, matching container dimensions without layout shift.
+- [ ] A lint rule bans imports from fixtures or mocks inside `src/`.
+- [ ] An end-to-end test executes, changes a value in the backend, and asserts that the UI shows the updated value.
+- [ ] `npm run typecheck`, `npm run lint`, and `npm run test` in `apps/web` pass with zero errors.

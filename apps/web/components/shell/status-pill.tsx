@@ -13,7 +13,6 @@ export interface StatusPillProps {
 
 export function StatusPill({ className, showLatency = true }: StatusPillProps) {
   const { connectionStatus, latencyMs } = useWorkspaceStore();
-  const [isHovered, setIsHovered] = React.useState(false);
 
   const statusConfig = {
     connected: {
@@ -48,8 +47,6 @@ export function StatusPill({ className, showLatency = true }: StatusPillProps) {
     <Tooltip>
       <TooltipTrigger
         className={cn("outline-none focus:outline-none", className)}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <div
           className={cn(

@@ -4,21 +4,14 @@ import * as React from "react";
 import {
   Zap,
   ShieldAlert,
-  AlertTriangle,
-  Play,
-  RotateCcw,
   CheckCircle2,
   Trash2,
   Lock,
-  ArrowRight,
-  Shield,
-  Layers,
   Activity,
 } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
 import { SimulationBadge } from "./SimulationBadge";
 import { AttackVectorCard } from "./AttackVectorCard";
 import { ATTACK_VECTORS, type AttackVector, type SimulationLogItem } from "./types";

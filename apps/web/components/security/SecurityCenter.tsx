@@ -1,18 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ShieldAlert,
-  ShieldCheck,
-  Lock,
-  PauseCircle,
-  PlayCircle,
-  AlertTriangle,
-  Layers,
-  Trash2,
-  RefreshCw,
-  GitBranch,
-} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { EmergencyControls } from "./EmergencyControls";

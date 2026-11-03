@@ -93,6 +93,7 @@ const config: Config = {
       },
       // Spec shadow: 0 4px 8px -1px hsl(0 0% 0% / 0.10)
       boxShadow: {
+        xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
         sm: "0 1px 2px hsl(var(--shadow-color) / 0.1)",
         DEFAULT: "0 4px 8px -1px hsl(var(--shadow-color) / 0.1)",
         md: "0 4px 8px -1px hsl(var(--shadow-color) / 0.1)",
@@ -115,11 +116,21 @@ const config: Config = {
           from: { opacity: "0", transform: "scale(0.95)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
+        "agent-flow": {
+          to: {
+            strokeDashoffset: "-14",
+          },
+        },
       },
       animation: {
         "fade-in-0": "fade-in-0 100ms ease-out",
         "fade-in-50": "fade-in-50 150ms ease-out",
         "zoom-in-95": "zoom-in-95 100ms ease-out",
+        "agent-flow": "agent-flow 1s linear infinite",
+      },
+      spacing: {
+        18: "4.5rem",
+        90: "22.5rem",
       },
     },
   },

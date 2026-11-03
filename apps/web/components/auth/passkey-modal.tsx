@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";

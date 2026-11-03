@@ -5,18 +5,17 @@ import {
   Fingerprint,
   Terminal,
   Shield,
-  KeyRound,
   ArrowRight,
-  CheckCircle,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../app/auth-provider";
-import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import { workspaceStore } from "../../app/lib/workspace-store";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { PasskeyModal } from "./passkey-modal";
+import { apiClient } from "../../lib/api/client";
 
 export interface AuthCardProps {
   className?: string;
@@ -24,8 +23,7 @@ export interface AuthCardProps {
 }
 
 export function AuthCard({ className, onSuccess }: AuthCardProps) {
-  const { isConfigured, isLocalDevelopment, signIn, signUp } = useAuth();
-  const { user } = useWorkspaceStore();
+  const { isConfigured, signIn, signUp } = useAuth();
 
   const [mode, setMode] = React.useState<"login" | "signup">("login");
   const [email, setEmail] = React.useState("");
@@ -34,6 +32,25 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
   const [submitting, setSubmitting] = React.useState(false);
   const [passkeyModalOpen, setPasskeyModalOpen] = React.useState(false);
 
+  const routePostAuth = async () => {
+    if (onSuccess) {
+      onSuccess();
+      return;
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const envs = await apiClient.environments.list();
+        if (!envs || envs.length === 0) {
+          window.location.assign("/onboarding");
+          return;
+        }
+        window.location.assign("/dashboard");
+      } catch {
+        window.location.assign("/onboarding");
+      }
+    }
+  };
+
   const handleDevBypass = () => {
     workspaceStore.setUser({
       id: "local-user",
@@ -41,11 +58,7 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
       name: "Developer (Local Bypass)",
       authMethod: "bypass",
     });
-    if (onSuccess) {
-      onSuccess();
-    } else if (typeof window !== "undefined") {
-      window.location.assign("/dashboard");
-    }
+    void routePostAuth();
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -62,11 +75,7 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
           name: email.split("@")[0],
           authMethod: "password",
         });
-        if (onSuccess) {
-          onSuccess();
-        } else if (typeof window !== "undefined") {
-          window.location.assign("/dashboard");
-        }
+        await routePostAuth();
       } else {
         const res = await signUp(email, password);
         setMessage(
@@ -75,11 +84,7 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
             : "Account created successfully. Redirecting…"
         );
         if (!res.confirmationRequired) {
-          if (onSuccess) {
-            onSuccess();
-          } else if (typeof window !== "undefined") {
-            window.location.assign("/dashboard");
-          }
+          await routePostAuth();
         }
       }
     } catch (err) {

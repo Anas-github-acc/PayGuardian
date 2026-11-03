@@ -1,77 +1,82 @@
-# BRIEFING — 2026-10-31T16:45:00Z
+# BRIEFING — 2026-11-01T22:25:00Z
 
 ## Mission
-Build Milestone 2: App Shell, Authentication, and Environment Management for PayGuardian web application.
+Milestone 2: Migrate Screen 1 (Workspace Graph & Budget Bar) and Screen 2 (Activity Feed) to live backend data and delete their fixtures.
 
 ## 🔒 My Identity
-- Archetype: implementer, qa, specialist
-- Roles: implementer, qa
+- Archetype: worker_m2
+- Roles: implementer, qa, specialist
 - Working directory: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/
-- Original parent: 662ebdf7-a54e-4c8e-b87d-6c61fdc3fb5c
-- Milestone: Milestone 2: App Shell, Authentication, and Environment Management
+- Original parent: b1fe192e-e662-4e1e-9dfb-84ff1309121d
+- Milestone: Milestone 2
 
 ## 🔒 Key Constraints
-- DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results or dummy/facade implementations.
-- CRITICAL TESTING CONSTRAINT: Do NOT create any test files, unit tests, component tests, or end-to-end test specs. No Vitest test files, no Playwright test files. The user will test manually. Focus all effort on the actual implementation.
-- Exclusively own and modify:
-  * apps/web/app/lib/workspace-store.ts
-  * apps/web/components/shell/*
-  * apps/web/components/auth/*
-  * apps/web/components/wizard/*
-- Strict adherence to TurboStarter design system (obsidian `#000000`, hairline border `#ffffff1c`, height 56px, glowing micro-dots, Geist/JetBrains Mono typography).
+- Zero lines of code modified in Python services (apps/agent-runtime, agents/, apps/worker, or auth backends).
+- App Router layout in apps/web (no src/ directory). All API logic in apps/web/lib/api/ and apps/web/app/api/proxy/.
+- No hardcoded test results, expected outputs, or dummy implementations.
+- No optimistic updates for authority or budget. UI updates ONLY on confirmed server response (HTTP 200/201).
+- Format integer minor units strictly for display without client-side floating-point math.
+- pnpm --filter @payguardian/web run typecheck must pass with 0 errors.
+- pnpm --filter @payguardian/web run test must pass with 0 errors.
+- git diff on protected services must remain empty.
 
 ## Current Parent
-- Conversation ID: 662ebdf7-a54e-4c8e-b87d-6c61fdc3fb5c
-- Updated: 2026-10-31T16:45:00Z
+- Conversation ID: b1fe192e-e662-4e1e-9dfb-84ff1309121d
+- Updated: 2026-11-01T22:25:00Z
 
 ## Task Summary
-- **What to build**:
-  1. `apps/web/app/lib/workspace-store.ts`: Central store using React's concurrent-safe `useSyncExternalStore` pattern, tracking environments, live status, nav tabs, selections, and atomic `resetWorkspace()` preventing cross-environment leakage.
-  2. `apps/web/components/shell/*`:
-     - `header.tsx`: TurboStarter navigation bar (56px, `#000000`, hairline border `#ffffff1c`, logo, status pill, environment switcher, nav tabs, emergency pause toggle, passkey profile indicator).
-     - `environment-switcher.tsx`: Dropdown showing current environment, Sandbox vs Production badge, formatted budget, environment switching with atomic reset, and "+ New Environment" wizard trigger.
-     - `status-pill.tsx`: Live connection indicator with glowing micro-dot (emerald, amber, ruby), latency display, and telemetry tooltip.
-     - `reconnect-banner.tsx`: Sticky dismissible warning banner when connection drops or pauses.
-     - `nav-tabs.tsx`: 6 core navigation tabs with pending approval badge and sandbox indicators.
-     - `app-shell.tsx`: Turnkey integration container.
-  3. `apps/web/components/auth/*`:
-     - `passkey-modal.tsx`: WebAuthn biometric passkey prompt with animated scanner, FIDO2 assertion, and local dev bypass fallback (`x-local-user-id`).
-     - `auth-card.tsx`: Production-grade authentication card for login/registration screens.
-  4. `apps/web/components/wizard/*`:
-     - `create-environment-wizard.tsx`: 5-step modal wizard (Identity, Root Mandate with `parseMajorToMinor`, Guardrails, Dynamic Consent text generation from mandate parameters with mandatory authorization checkbox, Review & Confirm with API persistence and atomic store switch).
-- **Success criteria**:
-  - `pnpm typecheck` succeeds across all workspaces
-  - `pnpm --filter @payguardian/web build` succeeds
-  - Zero cross-environment leakage with atomic reset
-- **Interface contracts**: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/orchestrator_1/PROJECT.md
+- **What to build**: Screen 1 (Workspace Graph & Budget Bar) and Screen 2 (Activity Feed) migration to live backend endpoints; delete fixtures (DEFAULT_GRAPH_NODES, DEFAULT_GRAPH_EDGES, SPEND_SERIES, AGENT_AUTHORITY, INITIAL_ACTIVITIES, DEFAULT_ACTIVITY_EVENTS); wire Agent Revocation mutation; remove fake synthetic tickers in orchestrator-pipeline; fix reviewer findings (status 204/205/304 in proxy route, unused variables).
+- **Success criteria**: All live hooks connected, mock fixtures deleted, components wired, loading/empty/error states implemented, typecheck and tests pass with 0 errors.
+- **Interface contracts**: apps/web/lib/api/
 - **Code layout**: apps/web/
+
+## Key Decisions Made
+- In ApiClient: normalized Fastify Gateway response envelopes ({ environments: [...] }, { agents: [...] }, etc.) and raw arrays via unwrapArray helper.
+- Fixed Next.js App Router proxy route handler to explicitly pass null body for 101, 204, 205, 304 responses, preventing Response constructor TypeError.
+- Used since timestamp cursor short-polling (3000ms) with deduplication by ID for useActivityFeed.
+- Agent revocation strictly updates UI after confirmed server response (HTTP 200/201); zero optimistic state updates.
+- Deleted all Screen 1 & Screen 2 mock fixtures (DEFAULT_GRAPH_NODES, DEFAULT_GRAPH_EDGES, SPEND_SERIES, AGENT_AUTHORITY, INITIAL_ACTIVITIES, DEFAULT_ACTIVITY_EVENTS).
+- Documented GAP-SPEND-01 (7-day spend velocity analytics endpoint gap) in docs/gaps.md.
+
+## Artifact Index
+- DISPATCH.md — Dispatch instructions
+- BRIEFING.md — Persistent context
+- progress.md — Liveness & progress tracker
+- handoff.md — Final handoff report
 
 ## Change Tracker
 - **Files modified**:
-  * `apps/web/app/lib/workspace-store.ts` (created)
-  * `apps/web/components/shell/status-pill.tsx` (created)
-  * `apps/web/components/shell/reconnect-banner.tsx` (created)
-  * `apps/web/components/shell/environment-switcher.tsx` (created)
-  * `apps/web/components/shell/nav-tabs.tsx` (created)
-  * `apps/web/components/shell/header.tsx` (created)
-  * `apps/web/components/shell/app-shell.tsx` (created)
-  * `apps/web/components/shell/index.ts` (created)
-  * `apps/web/components/auth/passkey-modal.tsx` (created)
-  * `apps/web/components/auth/auth-card.tsx` (created)
-  * `apps/web/components/auth/index.ts` (created)
-  * `apps/web/components/wizard/create-environment-wizard.tsx` (created)
-  * `apps/web/components/wizard/index.ts` (created)
-- **Build status**: Pass (pnpm typecheck & next build both exit 0)
+  - `apps/web/app/api/proxy/[...path]/route.ts`: Fixed 204/205/304 null body and set-cookie headers
+  - `apps/web/app/api/proxy/__tests__/route.test.ts`: Added 204 No Content test
+  - `apps/web/lib/api/client.ts`: Added unwrapArray envelope handling
+  - `apps/web/lib/api/hooks/use-activity-feed.ts`: 3s short polling with since cursor
+  - `apps/web/lib/api/hooks/use-workspace-graph.ts`: Agent revocation mutation with server confirmation
+  - `apps/web/lib/api/hooks/use-budget-strip.ts`: Live polling support
+  - `apps/web/lib/api/mappers/activity-feed.ts`: Purpose/action fallback mapping
+  - `apps/web/lib/api/mappers/workspace-graph.ts`: Ledger account mapping and status resolution
+  - `apps/web/components/workspace/workspace-layout.tsx`: Live useWorkspaceGraph wiring and revocation
+  - `apps/web/components/workspace/delegation-topology.tsx`: Live nodes/edges, loading skeleton, error, empty state
+  - `apps/web/components/workspace/budget-strip.tsx`: Live useBudgetStrip wiring, loading/error states, zero fake defaults
+  - `apps/web/components/workspace/orchestrator-pipeline.tsx`: Removed fake synthetic tickers
+  - `apps/web/components/workspace/recent-activity-panel.tsx`: Deleted static JSX cards, wired live feed
+  - `apps/web/components/workspace/activity-micro-feed.tsx`: Live feed wiring with loading/error states
+  - `apps/web/components/dashboard/overview.tsx`: Live nodes & activities, SpendChart GAP-SPEND-01 container
+  - `apps/web/components/tables/ActivityAuditTable.tsx`: Live feed wiring, removed forced fixture merge
+  - `apps/web/components/tables/types.ts`: Removed DEFAULT_ACTIVITY_EVENTS
+  - `apps/web/components/workspace/workspace-defaults.ts`: Removed deleted fixtures
+  - `apps/web/components/canvas/agent-network-canvas.tsx`: Deleted DEFAULT_NODES and DEFAULT_EDGES
+  - `apps/web/components/canvas/agent-network-list-view.tsx`: Empty state message
+  - `apps/web/components/canvas/node-detail-drawer.tsx`: Removed fake fallback numbers
+  - `apps/web/components/workspace/agent-inspector.tsx`: Removed fake fallback numbers and names
+  - `apps/web/components/workspace/workspace.test.tsx`: Type-safe test cases validating relational mapping
+  - `docs/gaps.md`: Documented GAP-SPEND-01
+- **Build status**: Pass (typecheck 0 errors, vitest 37/37 passing)
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: Pass (0 errors)
-- **Lint status**: Clean
-- **Tests added/modified**: None (strictly adhering to testing constraint)
+- **Build/test result**: Pass (typecheck 0 errors, vitest 37/37 passing across 9 test files)
+- **Lint status**: Unused vars cleaned in all touched files
+- **Tests added/modified**: Updated workspace.test.tsx, route.test.ts, mappers.test.ts
 
 ## Loaded Skills
 - None
-
-## Artifact Index
-- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/progress.md
-- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/handoff.md

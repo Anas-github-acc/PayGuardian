@@ -1,51 +1,63 @@
-## 2026-10-31T16:35:41Z
-You are a teamwork_worker subagent assigned to Milestone 2: App Shell, Authentication, and Environment Management.
+## 2026-11-01T22:00:43Z
+You are worker_m2, an expert TypeScript/Next.js engineer.
+Your working directory is: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/
 
-Read:
-- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/ORIGINAL_REQUEST.md
-- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/orchestrator_1/PROJECT.md
-- Specification analysis: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/spec_miner_survey/spec_analysis.md
-- UI primitives in apps/web/components/ui/
-
-Your working directory is:
-/home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/
+Read your original request file: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/ORIGINAL_REQUEST.md
+Also read:
+- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/PROJECT.md
+- /home/anas/myspace/AI/PayGuardian/docs/frontend-audit.md
+- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/explorer_survey_screens_1_4/report.md
+- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m1/handoff.md
+- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/reviewer_m1_code/report.md
 
 MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-CRITICAL TESTING CONSTRAINT:
-Do NOT create any test files, unit tests, component tests, or end-to-end test specs. No Vitest test files, no Playwright test files. The user will test manually. Focus all effort on the actual implementation.
+REMINDER ON DIRECTORY STRUCTURE:
+The project uses Next.js App Router (`apps/web/app`, `apps/web/components`, `apps/web/lib`). There is NO `src/` directory. All API logic is in `apps/web/lib/api/` and `apps/web/app/api/proxy/`.
 
-Your Scope & Write Ownership:
-You exclusively own:
-- apps/web/app/lib/workspace-store.ts (Central store with atomic resetWorkspace() preventing cross-environment leakage)
-- apps/web/components/shell/* (AppHeader, EnvironmentSwitcher, StatusPill, LiveReconnectBanner, NavTabs)
-- apps/web/components/auth/* (PasskeyModal, AuthCard with WebAuthn/passkey simulation & dev bypass fallback)
-- apps/web/components/wizard/* (CreateEnvironmentWizard 5-step modal, dynamic consent text generation, review & explicit approval)
+Your objective is Milestone 2: Migrate Screen 1 (Workspace Graph & Budget Bar) and Screen 2 (Activity Feed) to live backend data and delete their fixtures:
 
-Requirements to fulfill:
-1. Workspace Store & Atomic Environment Reset (`apps/web/app/lib/workspace-store.ts`):
-   - Track: `currentEnvironmentId`, `currentEnvironment`, `environmentsList`, `connectionStatus` ('connected' | 'reconnecting' | 'offline'), `reconnectBannerVisible`, `activeNavTab` ('workspace' | 'approvals' | 'traces' | 'tables' | 'security' | 'simulator'), `chatMessages`, `gatewayCards`, `graphNodes`, `graphEdges`, `selectedNodeId`, `selectedTraceId`.
-   - Implement `switchEnvironment(envId)` which executes an atomic `resetWorkspace()`: clears chat messages, gateway cards, graph state, selection state, and active trace, then fetches fresh environment data via `/v1/environments`. This guarantees ZERO cross-environment data leakage.
-2. App Shell Components (`apps/web/components/shell/`):
-   - `header.tsx`: TurboStarter-styled top navigation bar (obsidian background `#000000`, hairline bottom border `#ffffff1c`, height 56px / `h-14`), PayGuardian logo with status pill, breadcrumbs, environment switcher dropdown, nav tabs/pills, and user avatar / passkey indicator.
-   - `environment-switcher.tsx`: Dropdown showing current environment name, badge (Sandbox/Production), budget indicator, other environments, and "+ New Environment" button opening the wizard.
-   - `status-pill.tsx`: Live connection indicator with glowing micro-dot (emerald for connected, amber for reconnecting, ruby for offline), latency display (e.g. "12ms"), and tooltip.
-   - `reconnect-banner.tsx`: Dismissible top alert banner displayed when `connectionStatus === 'reconnecting'` or offline, with manual "Retry Connection" button.
-3. Authentication Flow (`apps/web/components/auth/`):
-   - `passkey-modal.tsx`: Passkey authentication flow with WebAuthn simulation (`navigator.credentials.get` with mock fallback for dev), fingerprint/key icon, biometric prompt styling, and immediate fallback to dev local bypass header (`x-local-user-id`).
-4. 5-Step Create-Environment Wizard (`apps/web/components/wizard/`):
-   - Modal wizard with step indicator (1 to 5):
-     * Step 1 (Identity): Name, Slug, Environment Type (Sandbox vs Production).
-     * Step 2 (Root Mandate): Currency selector (USD, EUR, JPY), Budget limit (using `parseMajorToMinor` in `currency.ts`), Duration / Expiry.
-     * Step 3 (Guardrails): Allowed payment rails (PayPal checkbox checked), Max per-action limit, Human approval required for amounts above threshold.
-     * Step 4 (Dynamic Consent Generation): Dynamically compiles a human-readable legal & plain-language consent agreement from the values in Steps 1-3 (e.g., *"By proceeding, you grant authority to environment '[Name]' to initiate payments up to [Budget] via PayPal. Actions exceeding [Threshold] strictly require explicit human cryptographic sign-off. Authority expires on [Date]."*). Includes an explicit authorization checkbox.
-     * Step 5 (Review & Confirm): Summary card with tabular layout of all configured policies, consent confirmation status, and "Authorize & Create Environment" action button.
-   - On completion: Calls `POST /v1/environments` (or `/v1/environments/:id/mandates/root`), creates the environment, updates the workspace store, and switches into the new environment with clean state.
-5. Verification:
-   - Run `pnpm typecheck`
-   - Run `pnpm --filter @payguardian/web build`
-   - Confirm builds succeed with zero errors.
-6. Write your completion report to `/home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/handoff.md` and send a message back with your verification results.
+1. Screen 1 Migration (Workspace Graph & Budget Bar):
+   - Wire `apps/web/lib/api/hooks/use-workspace-graph.ts` and `use-budget-strip.ts` to call backend endpoints:
+     - `GET /v1/environments/:id/agents`
+     - `GET /v1/environments/:id/mandates`
+     - `GET /v1/environments/:id/ledger/accounts`
+   - Map backend relational data into `AgentNodeData` and edge topology using `apps/web/lib/api/mappers/workspace-graph.ts` and `budget-strip.ts`.
+   - Update `components/workspace/workspace-layout.tsx`, `delegation-topology.tsx`, `canvas/agent-network-canvas.tsx`, `agent-network-list-view.tsx`, `node-detail-drawer.tsx`, `budget-strip.tsx`, and `overview.tsx` to consume live data from hooks.
+   - Wire Agent Revocation mutation: call `apiClient.agents.revoke(environmentId, agentId)`. Update UI ONLY upon confirmed server response (HTTP 200/201). Strictly NO optimistic updates for authority or budget.
+   - In `orchestrator-pipeline.tsx`, remove fake synthetic tickers (2.8s ticker and 7.2s counter).
+   - Delete mock fixtures: Remove `DEFAULT_GRAPH_NODES`, `DEFAULT_GRAPH_EDGES`, `SPEND_SERIES`, `AGENT_AUTHORITY` from `workspace-defaults.ts` and component files.
+   - Implement loading skeleton, empty state, and error state with retry for Graph and Budget Bar, matching container dimensions without layout shift.
 
-Update progress.md regularly.
+2. Screen 2 Migration (Activity Feed):
+   - Wire `apps/web/lib/api/hooks/use-activity-feed.ts` to call `GET /v1/environments/:id/activity` with 3s short polling using `since` timestamp cursor.
+   - Update `components/workspace/activity-micro-feed.tsx`, `recent-activity-panel.tsx`, and `tables/ActivityAuditTable.tsx` to consume live activities from `useActivityFeed`.
+   - Format integer minor units strictly for display without client-side floating-point math.
+   - In `recent-activity-panel.tsx:65-128`, delete the hardcoded static JSX transaction cards that ignore props.
+   - In `ActivityAuditTable.tsx:94-96`, remove the forced merging of mock fixtures into live response arrays.
+   - Delete mock fixtures: Remove `INITIAL_ACTIVITIES` and `DEFAULT_ACTIVITY_EVENTS` from `workspace-defaults.ts`.
+   - Implement loading skeleton, empty state, and error state with retry matching layout sizes.
+
+3. Fix Reviewer Findings:
+   - In `apps/web/app/api/proxy/[...path]/route.ts`: Fix status 204/205/304 handling: if `[101, 204, 205, 304].includes(upstreamResponse.status)`, set body to `null` to prevent TypeError in `NextResponse`.
+   - Remove unused variables identified in M1 review (`route.test.ts`, `mappers.test.ts`, `use-agent-memory.ts`, `use-approvals.ts`, `workspace-graph.ts`).
+
+4. Verification:
+   - Run `pnpm --filter @payguardian/web run typecheck` (must pass with 0 errors).
+   - Run `pnpm --filter @payguardian/web run test` (must pass with 0 errors).
+   - Verify `git diff -- apps/agent-runtime agents apps/worker apps/api/src/auth.ts packages/auth` remains completely empty.
+
+STRICT CONSTRAINT:
+Zero lines of code are modified in Python services (`apps/agent-runtime`, `agents/`, `apps/worker`, or auth backends).
+
+Output instructions:
+Write your handoff report to:
+`/home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m2/handoff.md`
+Report verification commands and results clearly. When done, send a message back.
+
+
+## 2026-11-01T22:17:19Z
+**Context**: Milestone 2 Execution (Screens 1 & 2 Migration)
+**Content**: Heartbeat check: please report your current status on Milestone 2 (Screen 1: Workspace Graph & Budget Bar and Screen 2: Activity Feed migration, fixture deletions, and typecheck/test verification).
+**Action**: Update your progress.md and reply with your current status.

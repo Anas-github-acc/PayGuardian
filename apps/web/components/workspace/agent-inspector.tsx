@@ -1,20 +1,9 @@
 "use client";
 
 import * as React from "react";
-import {
-  ShieldCheck,
-  Wallet,
-  Clock,
-  AlertTriangle,
-  RotateCcw,
-  Ban,
-  ExternalLink,
-  ChevronRight,
-  Info,
-} from "lucide-react";
+import { ShieldCheck, Wallet, Clock } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
-import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
-import { Button } from "../ui/button";
+import { useWorkspaceStore } from "../../app/lib/workspace-store";
 
 export interface AgentInspectorProps {
   className?: string;
@@ -27,7 +16,7 @@ export function AgentInspector({
   className = "",
   selectedNodeId,
   onRevoke,
-  onViewTrace,
+  onViewTrace: _onViewTrace,
 }: AgentInspectorProps) {
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
@@ -40,27 +29,14 @@ export function AgentInspector({
   const node = store.graphNodes.find((n) => n.id === activeId);
 
   const nodeName =
-    node?.name ??
-    (activeId === "orchestrator-root"
-      ? "Main Orchestrator"
-      : activeId === "agent-travel"
-      ? "Travel Agent"
-      : activeId === "agent-hotel"
-      ? "Hotel Agent"
-      : activeId === "agent-flights-unfunded"
-      ? "Flight Scraper"
-      : activeId === "agent-booking-gw"
-      ? "Booking Gateway"
-      : "Selected Agent");
+    node?.name ?? (activeId ? `Agent (${activeId.slice(0, 8)})` : "Selected Agent");
 
-  const isRoot = activeId === "orchestrator-root" || node?.role === "orchestrator";
-  const isUnfunded = node?.status === "unfunded" || activeId === "agent-flights-unfunded";
+  const isRoot = node?.role === "orchestrator" || activeId === "orchestrator-root";
+  const isUnfunded = node?.status === "unfunded" || !node?.isFunded;
 
-  const allocatedMinor =
-    node?.allocatedMinor ??
-    (isRoot ? env?.budgetLimitMinor ?? 1000000 : isUnfunded ? 0 : 400000);
-  const spentMinor = node?.spentMinor ?? (isRoot ? env?.spentMinor ?? 245000 : 0);
-  const reservedMinor = node?.reservedMinor ?? (isRoot ? env?.reservedMinor ?? 150000 : 0);
+  const allocatedMinor = node?.allocatedMinor ?? (isRoot ? env?.budgetLimitMinor ?? 0 : 0);
+  const spentMinor = node?.spentMinor ?? (isRoot ? env?.spentMinor ?? 0 : 0);
+  const reservedMinor = node?.reservedMinor ?? (isRoot ? env?.reservedMinor ?? 0 : 0);
   const availableMinor = calculateAvailableMinor(allocatedMinor, spentMinor, reservedMinor);
 
   const handleRevokeClick = () => {

@@ -1,51 +1,46 @@
-## 2026-10-31T16:19:30Z
-You are a teamwork_worker subagent assigned to Milestone 1: Design System, Dependencies & Layout Foundation.
+## 2026-11-01T21:37:03Z
+You are worker_m1, an expert full-stack TypeScript/Next.js engineer.
+Your working directory is: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m1/
 
-Read the authoritative project blueprint and request:
-- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/ORIGINAL_REQUEST.md
-- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/orchestrator_1/PROJECT.md
-- Synthesis from Design Survey: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/explorer_design_survey/design_synthesis.md
-- Analysis from Spec Miner: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/spec_miner_survey/spec_analysis.md
-
-Your working directory is:
-/home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m1/
+Read your original request file: /home/anas/myspace/AI/PayGuardian/.agents/teamwork/ORIGINAL_REQUEST.md
+Also read:
+- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/PROJECT.md
+- /home/anas/myspace/AI/PayGuardian/docs/frontend-audit.md
+- /home/anas/myspace/AI/PayGuardian/.agents/teamwork/explorer_survey_infra/report.md
 
 MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-CRITICAL TESTING CONSTRAINT:
-Do NOT create any test files, unit tests, component tests, or end-to-end test specs. No Vitest test files, no Playwright test files. The user will test manually. Focus all effort on the actual implementation.
+Your objective is Milestone 1: Typed API Client, OpenAPI Type Generation, Next.js Routing, and Lint Guardrail:
+1. Generate / create `apps/web/openapi.json` representing Fastify Gateway endpoints and DTOs from `@payguardian/contracts` (as analyzed in explorer_survey_infra/report.md).
+2. Add the `"typegen"` script to `apps/web/package.json` (`"typegen": "openapi-typescript openapi.json -o src/api/generated-schema.ts"`). If needed, install `openapi-typescript` as a devDependency in `apps/web`. Run the typegen script to generate `apps/web/src/api/generated-schema.ts`.
+3. Update `apps/web/tsconfig.json` so that `"src/*": ["./src/*"]` path alias is properly configured alongside `"@/*": ["./*"]`.
+4. Create `apps/web/src/api/`:
+   - `client.ts`: Typed API client routing all requests through Next.js proxy `/api/proxy/v1/...` with session token / local auth header support.
+   - Screen hook skeletons and base mapper helpers in `src/api/hooks/` and `src/api/mappers/`.
+5. Implement Next.js proxy route handler at `apps/web/app/api/proxy/[...path]/route.ts`:
+   - Handles GET, POST, PUT, PATCH, DELETE.
+   - Proxies to Fastify Gateway (`http://127.0.0.1:3001`).
+   - Forwards auth headers: `x-local-user-id: local-user` during dev, Bearer tokens if session cookie present.
+   - Keeps session cookies httpOnly and eliminates browser CORS.
+6. Configure ESLint rule in root `eslint.config.mjs` (or `apps/web`) banning imports from `*fixtures*`, `*mocks*`, and `*workspace-defaults*` inside `apps/web/src/**`.
+7. Initialize `docs/gaps.md` with schema for recording missing endpoints and proposed contracts.
+8. Run `pnpm --filter @payguardian/web run typecheck` and `pnpm --filter @payguardian/web run test` (or `npm run typecheck` and `npm run test`) to verify zero compile or test errors.
 
-Your Scope & Write Ownership:
-You exclusively own:
-- apps/web/package.json (install dependencies: lucide-react, three, @types/three, clsx, tailwind-merge, tailwindcss, postcss, autoprefixer)
-- apps/web/tailwind.config.ts (or .js)
-- apps/web/postcss.config.mjs
-- apps/web/app/globals.css (Efferd dark theme tokens, hairline 1px borders, .top-shade specular rim lighting, AG Grid Quartz Dark styling overrides)
-- apps/web/app/lib/currency.ts (exact integer minor unit arithmetic, formatMinorUnits, zero float operations)
-- apps/web/components/ui/ (Button, Card, Badge, Dialog, Sheet, Tabs, Tooltip, Input, Select primitives styled with Efferd tokens)
+STRICT CONSTRAINT:
+Zero lines of code are modified in Python services (`apps/agent-runtime`, `agents/`, `apps/worker`, or auth backends).
 
-Requirements to fulfill:
-1. Install required packages in apps/web: `pnpm --filter web add lucide-react three clsx tailwind-merge` and `pnpm --filter web add -D tailwindcss postcss autoprefixer @types/three`. Ensure monorepo pnpm-lockfile is updated cleanly.
-2. Configure Tailwind CSS with the Efferd color palette:
-   - Ground: #000000
-   - Card/Surface: #0d0d0d
-   - Hairline border: #ffffff1c (and rgba(255,255,255,0.08))
-   - Foreground: #fcfcfc
-   - Muted: #a1a1a1 / #2e2e2e
-   - Accent / Status: Emerald/mint (#3fdec9 or #10b981) for authorized/active, Amber (#f59e0b) for pending, Ruby/destructive (#ff6568) for rejection/revocation
-   - `.top-shade`: `box-shadow: 0 -1px color-mix(in oklab, var(--foreground) 8%, transparent)`
-   - Dome radial luminescence: `radial-gradient(80% 100% at 49% 0%, rgba(255, 255, 255, 0.05), transparent)`
-   - AG Grid Quartz Dark overrides to match Efferd obsidian aesthetic seamlessly.
-3. Implement `apps/web/app/lib/currency.ts`:
-   - `formatMinorUnits(amountMinor: number, currency = 'USD'): string`
-   - Zero floating-point arithmetic. Ensure exact integer addition, subtraction, division, modulo.
-   - Assert `Number.isSafeInteger(amountMinor)`.
-4. Implement UI components in `apps/web/components/ui/` with high aesthetic density conforming to the Taste Skill (flat surfaces, 1px borders, crisp typography, pale-tinted chips with dark text, no neon slop).
-5. Verify your changes:
-   - Run `pnpm typecheck`
-   - Run `pnpm --filter web build`
-   - Confirm builds and compilation pass without errors.
-6. Write your comprehensive completion report to `/home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m1/handoff.md` and send a message back with your verification results.
+Output instructions:
+Write your handoff report to:
+`/home/anas/myspace/AI/PayGuardian/.agents/teamwork/worker_m1/handoff.md`
+Report verification commands and results clearly. When done, send a message back.
 
-Update your progress.md regularly.
+## 2026-11-01T21:40:39Z
+**Context**: Milestone 1 Implementation (Typed API Client & Directory Structure)
+**Content**: IMPORTANT CORRECTION FROM USER:
+The user clarified: "their was some miss typing it was app/api i am not using src/ folder strcuture so take that in consideration"
+In `apps/web`, there is no `src/` directory. The Next.js App Router structure is used (`apps/web/app`, `apps/web/components`, `apps/web/lib`).
+Therefore:
+1. Put the typed client, hooks, mappers, and generated types in `apps/web/lib/api/` (and/or `apps/web/app/api/`), NOT in `src/`.
+2. Any lint rule or reference banning fixture imports should apply across `apps/web/app/`, `apps/web/components/`, `apps/web/lib/` instead of `src/`.
+**Action**: Adapt your implementation files and configurations to use `apps/web/lib/api/` / `apps/web/app/api/` without creating a `src/` directory.

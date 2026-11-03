@@ -1,4 +1,3 @@
-export * from "./workspace-defaults";
 export * from "./budget-strip";
 export * from "./kpi-strip";
 export * from "./delegation-topology";

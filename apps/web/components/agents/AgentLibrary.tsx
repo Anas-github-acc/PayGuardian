@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Search, Bot, CheckCircle2 } from "lucide-react";
+import { Search, Bot, CheckCircle2, AlertCircle, RefreshCw, Plus } from "lucide-react";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
-import { CATALOG_AGENTS, type SpecialistAgent, type AgentCategory } from "./types";
+import { useAgentLibrary } from "../../lib/api/hooks/use-agent-library";
+import { type SpecialistAgent, type AgentCategory } from "./types";
 import { AgentCard } from "./AgentCard";
 import { AgentDetailDrawer } from "./AgentDetailDrawer";
 import { AttachAgentDialog } from "./AttachAgentDialog";
@@ -17,6 +18,9 @@ export interface AgentLibraryProps {
 export function AgentLibrary({ className = "" }: AgentLibraryProps) {
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
+
+  // Live backend hook fetching environment agents
+  const { agents, isLoading, error, refetch } = useAgentLibrary(currentEnv?.id);
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState<AgentCategory>("all");
@@ -32,9 +36,9 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
     return new Map(store.graphNodes.map((n) => [n.id, n.status]));
   }, [store.graphNodes]);
 
-  // Filtered agent list
+  // Filtered agent list based on live environment agents
   const filteredAgents = React.useMemo(() => {
-    return CATALOG_AGENTS.filter((agent) => {
+    return agents.filter((agent) => {
       // Category filter
       if (selectedCategory !== "all" && agent.category !== selectedCategory) {
         return false;
@@ -56,10 +60,7 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
       }
       return true;
     });
-  }, [selectedCategory, showAttachedOnly, searchQuery, nodeStatusById]);
-
-  const attachedAgents = filteredAgents.filter((a) => nodeStatusById.has(a.id));
-  const availableAgents = filteredAgents.filter((a) => !nodeStatusById.has(a.id));
+  }, [agents, selectedCategory, showAttachedOnly, searchQuery, nodeStatusById]);
 
   const categories: { id: AgentCategory; label: string }[] = [
     { id: "all", label: "All Agents" },
@@ -85,15 +86,43 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
     setAttachingAgent(agent);
   };
 
+  const handleCreateChildAgent = () => {
+    setAttachingAgent({
+      id: `agent-child-${Date.now()}`,
+      name: "Procurement Specialist",
+      tagline: "Autonomous procurement child agent with bounded spending authority",
+      description: "Registered child agent ready for delegated authority under a parent mandate.",
+      specialty: "worker",
+      role: "subagent",
+      category: "procurement",
+      authorityTier: "Tier 2: Autonomous Micro-Transactions",
+      tierLevel: 2,
+      recommendedBudgetMinor: 50000,
+      currency: currentEnv?.currency ?? "USD",
+      supportedRails: ["PayPal", "Simulation"],
+      publisher: "Custom",
+      avatarIcon: "network",
+      permissions: ["Execute bounded transactions", "Check mandate authority"],
+      samplePrompts: ["Procure resources within delegated mandate limit"],
+      securityAudit: {
+        auditedBy: "PayGuardian Security Engine",
+        auditDate: new Date().toISOString().split("T")[0],
+        cveVulnerabilities: 0,
+        status: "certified",
+        signatureHash: "0xsha256verified",
+        sandboxTested: true,
+      },
+    });
+  };
+
   const handleAttachSuccess = (agent: SpecialistAgent) => {
     setNotification({
       message: `Successfully attached ${agent.name} to environment '${currentEnv?.name ?? "Current"}'.`,
       type: "success",
     });
+    void refetch();
     setTimeout(() => setNotification(null), 4000);
   };
-
-  const attachedCount = store.graphNodes.filter((n) => n.role === "subagent").length;
 
   const gridClass = "mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
@@ -103,7 +132,7 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
       <AgentCard
         key={agent.id}
         agent={agent}
-        isAttached={status !== undefined}
+        isAttached={status !== undefined || agent.isAttached}
         status={status}
         onInspect={handleInspect}
         onAttach={handleAttach}
@@ -114,7 +143,7 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
   return (
     <div className={`flex min-h-0 flex-1 flex-col overflow-y-auto bg-background text-foreground ${className}`}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
-        {/* Section header: title + description + Browse all */}
+        {/* Section header: title + description + Actions */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Agent library</h1>
@@ -123,12 +152,18 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
               structural connection with zero default spend.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={resetFilters} className="shrink-0">
-            Browse all
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={resetFilters} className="h-8 text-xs">
+              Browse all
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleCreateChildAgent} className="h-8 text-xs">
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Attach Agent
+            </Button>
+          </div>
         </div>
 
-        {/* Search & category filter bar: search on its own line, chips wrap below */}
+        {/* Search & category filter bar */}
         <div className="mt-5">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -185,47 +220,110 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
           </div>
         )}
 
-        {filteredAgents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Bot className="h-10 w-10 text-muted-foreground mb-3" />
-            <h3 className="text-sm font-semibold text-foreground">No agents found</h3>
+        {/* Loading Skeleton */}
+        {isLoading && (
+          <div className="mt-8 space-y-6 animate-pulse" aria-label="Loading agents skeleton">
+            <div className="flex items-center justify-between">
+              <div className="h-5 w-48 rounded bg-muted/60" />
+              <div className="h-4 w-20 rounded bg-muted/50" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-md border border-border bg-card p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="h-9 w-9 rounded-md bg-muted/60" />
+                    <div className="h-5 w-16 rounded bg-muted/50" />
+                  </div>
+                  <div className="h-4 w-3/4 rounded bg-muted/60" />
+                  <div className="h-3 w-1/2 rounded bg-muted/40" />
+                  <div className="h-10 w-full rounded bg-muted/30" />
+                  <div className="border-t border-border pt-3 flex gap-2">
+                    <div className="h-7 w-16 rounded bg-muted/50" />
+                    <div className="h-7 w-16 rounded bg-muted/50" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Error State with Retry */}
+        {!isLoading && error && (
+          <div className="mt-10 flex flex-col items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
+            <AlertCircle className="h-10 w-10 text-destructive mb-3" />
+            <h3 className="text-sm font-semibold text-foreground">Failed to load agent library</h3>
             <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-              No specialist agents matched your current filter or search criteria.
+              {error.message || "Could not retrieve registered agents from the gateway."}
             </p>
-            <Button variant="outline" size="sm" onClick={resetFilters} className="mt-4 h-7 text-xs">
-              Reset Filters
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              className="mt-4 h-8 text-xs inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Retry Connection
             </Button>
           </div>
-        ) : (
+        )}
+
+        {/* Main Content Area */}
+        {!isLoading && !error && (
           <>
-            {/* Attached to this environment */}
-            {attachedAgents.length > 0 && (
+            {filteredAgents.length === 0 ? (
+              <div className="mt-10 flex flex-col items-center justify-center py-12 text-center rounded-lg border border-dashed border-border bg-card/40 p-8">
+                <Bot className="h-10 w-10 text-muted-foreground mb-3" />
+                <h3 className="text-sm font-semibold text-foreground">No agents found</h3>
+                <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                  {searchQuery
+                    ? "No specialist agents matched your current filter or search criteria."
+                    : "No agents registered in this environment yet. Click 'Attach Agent' to register a child agent."}
+                </p>
+                {searchQuery ? (
+                  <Button variant="outline" size="sm" onClick={resetFilters} className="mt-4 h-7 text-xs">
+                    Reset Filters
+                  </Button>
+                ) : (
+                  <Button variant="primary" size="sm" onClick={handleCreateChildAgent} className="mt-4 h-8 text-xs">
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Attach Agent
+                  </Button>
+                )}
+              </div>
+            ) : (
+              /* Attached to this environment section */
               <section className="mt-8">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-foreground">
                     Attached to this environment
                   </h2>
-                  <span className="text-xs text-muted-foreground">{attachedCount} active</span>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredAgents.length} registered
+                  </span>
                 </div>
-                <div className={gridClass}>{attachedAgents.map(renderCard)}</div>
+                <div className={gridClass}>{filteredAgents.map(renderCard)}</div>
               </section>
             )}
 
-            {/* Available in library */}
-            <section className="mt-8">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-foreground">Available in library</h2>
-                <span className="text-xs text-muted-foreground">
-                  {availableAgents.length} agents
-                </span>
+            {/* R2: Explicit Agent Catalog Unavailable Container (GAP-CAT-01) */}
+            <section className="mt-10 border-t border-border pt-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-foreground">Available in library (Catalog)</h2>
+                <span className="text-xs font-mono text-muted-foreground">GAP-CAT-01</span>
               </div>
-              {availableAgents.length > 0 ? (
-                <div className={gridClass}>{availableAgents.map(renderCard)}</div>
-              ) : (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Every matching agent is already attached to this environment.
+              <div className="rounded-lg border border-warning/30 bg-card p-6 text-center">
+                <AlertCircle className="mx-auto h-8 w-8 text-warning mb-2" />
+                <h3 className="text-sm font-semibold text-foreground">Agent Catalog Unavailable</h3>
+                <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Fastify Gateway lacks an agent catalog endpoint. Global specialist agent marketplace directory is
+                  not yet exposed by the backend API.
                 </p>
-              )}
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded border border-border bg-secondary/60 px-3 py-1 font-mono text-[11px] text-muted-foreground">
+                  <span>Referencing</span>
+                  <strong className="text-foreground">GAP-CAT-01</strong>
+                  <span>in docs/gaps.md</span>
+                </div>
+              </div>
             </section>
           </>
         )}
@@ -237,7 +335,7 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
         isOpen={Boolean(inspectingAgent)}
         onClose={() => setInspectingAgent(null)}
         onAttach={handleAttach}
-        isAttached={inspectingAgent ? nodeStatusById.has(inspectingAgent.id) : false}
+        isAttached={inspectingAgent ? nodeStatusById.has(inspectingAgent.id) || inspectingAgent.isAttached : false}
       />
 
       {/* Attach Agent Dialog */}

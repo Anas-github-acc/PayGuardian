@@ -10,9 +10,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Input } from "../ui/input";
 import type { ApprovalItem } from "./types";
 
 export interface ApprovalCardProps {
@@ -80,6 +77,13 @@ export function ApprovalCard({
     return () => clearInterval(interval);
   }, [approval.expiresAt]);
 
+  const canApprove = approval.allowedActions
+    ? approval.allowedActions.includes("approve")
+    : (!approval.isHardLimitExceeded && isPending);
+  const canReject = approval.allowedActions
+    ? approval.allowedActions.includes("reject")
+    : isPending;
+
   const handleOpenDetails = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     onOpenDetails?.(approval);
@@ -87,19 +91,19 @@ export function ApprovalCard({
 
   const handleApprove = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (approval.isHardLimitExceeded || !isPending || isProcessing) return;
+    if (!canApprove || isProcessing) return;
     await onApprove(approval.id);
   };
 
   const handleDenyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isPending || isProcessing) return;
+    if (!canReject || isProcessing) return;
     setRejecting(true);
   };
 
   const handleConfirmReject = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isPending || isProcessing) return;
+    if (!canReject || isProcessing) return;
     await onReject(approval.id, rejectionNote.trim() || undefined);
     setRejecting(false);
   };
@@ -117,7 +121,7 @@ export function ApprovalCard({
   return (
     <article
       aria-label={`Approval request for ${approval.purpose}`}
-      onClick={() => onOpenDetails?.(approval)}
+      onClick={handleOpenDetails}
       className={`cursor-pointer rounded-xl border p-4 text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700 shadow-sm ${
         isRejected
           ? "border-red-900/40 bg-red-950/20 hover:bg-red-950/30"
@@ -219,7 +223,7 @@ export function ApprovalCard({
               <button
                 type="button"
                 onClick={handleDenyClick}
-                disabled={isProcessing}
+                disabled={!canReject || isProcessing}
                 className="h-8 px-3 rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-1"
               >
                 <X className="h-3.5 w-3.5" />
@@ -228,7 +232,7 @@ export function ApprovalCard({
               <button
                 type="button"
                 onClick={handleApprove}
-                disabled={approval.isHardLimitExceeded || isProcessing}
+                disabled={!canApprove || isProcessing}
                 className="h-8 px-3.5 rounded-lg bg-blue-600 text-xs font-medium text-white hover:bg-blue-500 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />

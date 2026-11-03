@@ -3,16 +3,10 @@
 import * as React from "react";
 import {
   ShieldCheck,
-  ShieldAlert,
   Link2,
   MessageSquare,
-  SlidersHorizontal,
   Trash2,
-  ExternalLink,
   AlertTriangle,
-  Layers,
-  Clock,
-  Key,
 } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
@@ -39,7 +33,7 @@ export function NodeDetailDrawer({
   currency = "USD",
   onRevoke,
   onDirectChat,
-  onProposeAllocation,
+  onProposeAllocation: _onProposeAllocation,
   onDetach,
 }: NodeDetailDrawerProps) {
   const store = useWorkspaceStore();
@@ -56,12 +50,12 @@ export function NodeDetailDrawer({
     id: nodeId ?? "unknown-agent",
     name: "Agent Details",
     role: "subagent",
-    status: "active",
-    allocatedMinor: 400000,
-    spentMinor: 125000,
-    reservedMinor: 50000,
+    status: "unfunded",
+    allocatedMinor: 0,
+    spentMinor: 0,
+    reservedMinor: 0,
     position: [0, 0, 0],
-    isFunded: true,
+    isFunded: false,
   };
 
   const availableMinor = calculateAvailableMinor(

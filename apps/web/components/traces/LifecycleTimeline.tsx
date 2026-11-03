@@ -25,6 +25,25 @@ export function LifecycleTimeline({ stages, className = "" }: LifecycleTimelineP
     setExpandedIndex((current) => (current === idx ? null : idx));
   };
 
+  if (!stages || stages.length === 0) {
+    return (
+      <div
+        className={`rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center min-h-[320px] flex flex-col items-center justify-center ${className}`}
+      >
+        <Clock className="h-8 w-8 text-amber-500/60 mb-2" />
+        <h4 className="text-sm font-semibold text-white">
+          5-Stage Execution Latency Telemetry Unavailable
+        </h4>
+        <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
+          The Fastify Gateway backend does not currently stream microsecond per-stage execution latency telemetry for this action. Per PayGuardian integrity rules (GAP-TRC-01), synthetic stage latencies are not fabricated.
+        </p>
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-mono text-amber-400">
+          Contract Gap: GAP-TRC-01
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">

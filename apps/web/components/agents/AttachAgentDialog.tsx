@@ -11,12 +11,13 @@ import {
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
 import { Link2, AlertCircle } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import { apiClient } from "../../lib/api/client";
 import type { SpecialistAgent } from "./types";
 import type { AgentNodeData, AgentEdgeData } from "../../app/lib/workspace-store";
+import type { MandateDto } from "@payguardian/contracts";
 
 export interface AttachAgentDialogProps {
   agent: SpecialistAgent | null;
@@ -37,12 +38,14 @@ export function AttachAgentDialog({
 
   // Form State
   const [budgetDollars, setBudgetDollars] = React.useState<string>("500");
-  const [selectedParentId, setSelectedParentId] = React.useState<string>("orchestrator-root");
+  const [selectedParentId, setSelectedParentId] = React.useState<string>(
+    () => store.graphNodes[0]?.id ?? "orchestrator-root"
+  );
   const [allowedRails, setAllowedRails] = React.useState<string[]>(["PayPal"]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Sync default budget when agent changes
+  // Sync default budget and selected parent when agent changes
   React.useEffect(() => {
     if (agent) {
       const defaultDollars = (agent.recommendedBudgetMinor / 100).toFixed(0);
@@ -52,12 +55,19 @@ export function AttachAgentDialog({
     }
   }, [agent]);
 
+  React.useEffect(() => {
+    if (store.graphNodes.length > 0 && !store.graphNodes.some((n) => n.id === selectedParentId)) {
+      setSelectedParentId(store.graphNodes[0].id);
+    }
+  }, [store.graphNodes, selectedParentId]);
+
   if (!agent) return null;
 
   // Potential parent nodes from workspace graph
-  const availableParents = store.graphNodes.length > 0
-    ? store.graphNodes.filter((n) => n.id !== agent.id && n.status !== "revoked")
-    : [{ id: "orchestrator-root", name: "Main Orchestrator", role: "orchestrator" as const }];
+  const availableParents =
+    store.graphNodes.length > 0
+      ? store.graphNodes.filter((n) => n.id !== agent.id && n.status !== "revoked")
+      : [{ id: "orchestrator-root", name: "Main Orchestrator", role: "orchestrator" as const }];
 
   // Calculate budget minor units from input dollars (strict integer math)
   const parsedDollars = parseFloat(budgetDollars);
@@ -69,9 +79,14 @@ export function AttachAgentDialog({
     );
   };
 
-  const handleAttach = () => {
+  const handleAttach = async () => {
     if (allowedRails.length === 0) {
       setErrorMessage("At least one payment rail must be selected.");
+      return;
+    }
+
+    if (!currentEnv?.id) {
+      setErrorMessage("No active environment selected.");
       return;
     }
 
@@ -79,16 +94,46 @@ export function AttachAgentDialog({
     setErrorMessage(null);
 
     try {
-      // Determine node coordinates relative to existing graph
+      // 1. Sequential Backend Command: Register child agent on gateway
+      const childAgent = await apiClient.agents.registerChild(currentEnv.id, {
+        parentAgentId: selectedParentId,
+        name: agent.name,
+        kind: agent.specialty || "worker",
+        capabilities: agent.permissions,
+      });
+
+      // 2. Sequential Backend Command: Delegate mandate if budget specified
+      let delegatedMandate: MandateDto | null = null;
+      if (budgetMinor > 0) {
+        const mandates = await apiClient.mandates.list(currentEnv.id);
+        const parentMandate =
+          mandates.find((m) => m.holderAgentId === selectedParentId && m.state === "active") ??
+          mandates.find((m) => !m.parentMandateId && m.state === "active") ??
+          mandates[0];
+
+        if (parentMandate) {
+          delegatedMandate = await apiClient.mandates.delegate(parentMandate.id, {
+            holderAgentId: childAgent.id,
+            budgetLimitMinor: budgetMinor,
+            currency,
+            permittedActions: agent.permissions,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            canDelegate: false,
+            maxDelegationDepth: 0,
+            approvalRequired: false,
+          });
+        }
+      }
+
+      // 3. Update UI state strictly upon confirmed server response (no optimistic updates)
       const nodeIndex = store.graphNodes.length;
-      const angle = (nodeIndex * (2 * Math.PI)) / Math.max(1, nodeIndex + 1);
-      const posX = Math.round(Math.cos(angle) * 140);
-      const posY = Math.round(-30 - (nodeIndex % 2) * 50);
-      const posZ = Math.round(Math.sin(angle) * 40);
+      const posX = (nodeIndex % 2 === 0 ? 1 : -1) * (60 + nodeIndex * 20);
+      const posY = -40;
+      const posZ = 0;
 
       const newNode: AgentNodeData = {
-        id: agent.id,
-        name: agent.name,
+        id: childAgent.id,
+        name: childAgent.name,
         role: "subagent",
         status: budgetMinor > 0 ? "active" : "unfunded",
         allocatedMinor: budgetMinor,
@@ -99,53 +144,55 @@ export function AttachAgentDialog({
       };
 
       const newEdge: AgentEdgeData = {
-        id: `edge-${selectedParentId}-${agent.id}`,
+        id: `edge-${selectedParentId}-${childAgent.id}`,
         source: selectedParentId,
-        target: agent.id,
+        target: childAgent.id,
         isAuthorized: budgetMinor > 0,
         status: budgetMinor > 0 ? "flowing" : "idle",
         amountMinor: budgetMinor,
       };
 
-      // Atomic update in workspaceStore
       workspaceStore.attachAgent(newNode, newEdge);
 
-      // Record gateway policy message in chat
       const nowIso = new Date().toISOString();
       workspaceStore.addChatMessage({
         type: "agent_says",
-        id: `msg-attach-${Date.now()}`,
+        id: `msg-attach-${childAgent.id}`,
         sender: "Gateway Policy Engine",
         timestamp: nowIso,
-        text: `Specialist agent '${agent.name}' (${agent.specialty}) has been attached to '${selectedParentId}' with a delegated limit of ${formatMinorUnits(budgetMinor, currency)} via [${allowedRails.join(", ")}].`,
+        text: `Specialist child agent '${childAgent.name}' has been registered under parent '${selectedParentId}' with a confirmed delegated limit of ${formatMinorUnits(budgetMinor, currency)}.`,
       });
 
-      // Add verified block delegation card if funded
-      if (budgetMinor > 0) {
+      if (delegatedMandate) {
         workspaceStore.addChatMessage({
           type: "verified_block",
-          id: `msg-vdel-${Date.now()}`,
+          id: `msg-vdel-${delegatedMandate.id}`,
           cardType: "delegation",
           sender: "Delegation Gateway",
           timestamp: nowIso,
           verifiedAt: nowIso,
           payload: {
-            parentMandateId: `man-${selectedParentId.slice(0, 8)}`,
-            childAgentId: agent.id,
-            childAgentName: agent.name,
+            id: delegatedMandate.id,
+            parentMandateId: delegatedMandate.parentMandateId ?? undefined,
+            childAgentId: childAgent.id,
+            childAgentName: childAgent.name,
             allocatedMinor: budgetMinor,
             currency,
             permittedActions: agent.permissions,
             allowedRails,
-            gatewaySignature: "0x7a89f921bc" + Math.random().toString(16).slice(2, 8),
+            gatewaySignature: `mandate:${delegatedMandate.id}`,
           },
         });
       }
 
-      onSuccess?.(agent);
+      onSuccess?.({ ...agent, id: childAgent.id, name: childAgent.name });
       onClose();
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Failed to attach agent.");
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Failed to register child agent and delegate spending authority on gateway."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -164,7 +211,7 @@ export function AttachAgentDialog({
                 Attach {agent.name}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Configure spending delegation and parent authority attachment.
+                Configure spending delegation and parent authority attachment via Fastify Gateway.
               </DialogDescription>
             </div>
           </div>
@@ -263,6 +310,7 @@ export function AttachAgentDialog({
             type="button"
             variant="ghost"
             onClick={onClose}
+            disabled={isSubmitting}
             className="h-8 text-xs"
           >
             Cancel
@@ -274,7 +322,7 @@ export function AttachAgentDialog({
             disabled={isSubmitting}
             className="h-8 text-xs"
           >
-            {isSubmitting ? "Attaching…" : "Confirm & Attach"}
+            {isSubmitting ? "Attaching on Gateway…" : "Confirm & Attach"}
           </Button>
         </DialogFooter>
       </DialogContent>

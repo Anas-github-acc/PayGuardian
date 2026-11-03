@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, X, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Check, X, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Badge } from "../ui/badge";
 import type { TraceVerificationCheck } from "./types";
 
@@ -14,6 +14,25 @@ export function VerificationChecklist({
   checks,
   className = "",
 }: VerificationChecklistProps) {
+  if (!checks || checks.length === 0) {
+    return (
+      <div
+        className={`rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center min-h-[320px] flex flex-col items-center justify-center ${className}`}
+      >
+        <ShieldAlert className="h-8 w-8 text-amber-500/60 mb-2" />
+        <h4 className="text-sm font-semibold text-white">
+          5-Point Cryptographic Policy Verification Matrix Unavailable
+        </h4>
+        <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
+          Individual cryptographic checklist records are not exposed by the current Fastify Gateway action trace endpoint. Per PayGuardian integrity rules (GAP-TRC-01), synthetic check verdicts are not fabricated.
+        </p>
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-mono text-amber-400">
+          Contract Gap: GAP-TRC-01
+        </div>
+      </div>
+    );
+  }
+
   const allPassed = checks.every((c) => c.passed);
   const failedCount = checks.filter((c) => !c.passed).length;
 
