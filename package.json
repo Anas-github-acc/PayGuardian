@@ -7,6 +7,7 @@
     "dev:web": "pnpm --filter @payguardian/web dev",
     "dev:api": "pnpm --filter @payguardian/api dev",
     "dev:agent": "uv run --project apps/agent-runtime uvicorn agent_runtime.main:app --app-dir apps/agent-runtime/src --reload",
+    "dev:agent_worker": "PYTHONPATH=apps/agent-runtime/src uv run --project apps/agent-runtime python -m agent_runtime.pgmq_worker",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",

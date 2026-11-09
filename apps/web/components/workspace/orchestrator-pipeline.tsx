@@ -116,30 +116,47 @@ export function PipelineSvg({
 
   const nodes = store.graphNodes;
   const rootNode = useMemo(
-    () => nodes.find((n) => n.role === "orchestrator" || n.id === "orchestrator-root"),
+    () => nodes.find((n) => n.role === "orchestrator" || n.id === "orchestrator-root") || nodes[0],
     [nodes]
   );
-  const travelAgent = useMemo(() => nodes.find((n) => n.id === "agent-travel"), [nodes]);
-  const hotelAgent = useMemo(() => nodes.find((n) => n.id === "agent-hotel"), [nodes]);
-  const flightScraper = useMemo(
-    () => nodes.find((n) => n.id === "agent-flights-unfunded"),
-    [nodes]
+  const childAgents = useMemo(
+    () => nodes.filter((n) => n.id !== (rootNode?.id ?? "orchestrator-root")),
+    [nodes, rootNode]
   );
-  const bookingGw = useMemo(() => nodes.find((n) => n.id === "agent-booking-gw"), [nodes]);
 
   const handleNodeClick = (nodeId: string) => {
     workspaceStore.setSelectedNodeId(nodeId);
     onSelectNode?.(nodeId);
   };
 
-  const paths = {
-    pTriggerToGateway: "M140,90 L180,90",
-    pGatewayToOrch: "M306,90 L346,90",
-    pOrchToTravel: "M490,90 C520,90 520,40 550,40",
-    pOrchToHotel: "M490,90 C520,90 520,140 550,140",
-    pTravelToScraper: "M694,40 L734,40",
-    pHotelToBooking: "M694,140 L734,140",
-  };
+  const pTriggerToGateway = "M140,90 L180,90";
+  const pGatewayToOrch = "M306,90 L346,90";
+
+  // Dynamic positions for child subagents
+  const childPositions = useMemo(() => {
+    if (childAgents.length === 1) {
+      return [{ x: 550, y: 65, w: 160, h: 50, path: "M490,90 L550,90" }];
+    }
+    if (childAgents.length === 2) {
+      return [
+        { x: 550, y: 22, w: 160, h: 48, path: "M490,90 C520,90 520,46 550,46" },
+        { x: 550, y: 110, w: 160, h: 48, path: "M490,90 C520,90 520,134 550,134" },
+      ];
+    }
+    if (childAgents.length === 3) {
+      return [
+        { x: 540, y: 16, w: 145, h: 48, path: "M490,90 C515,90 515,40 540,40" },
+        { x: 540, y: 116, w: 145, h: 48, path: "M490,90 C515,90 515,140 540,140" },
+        { x: 720, y: 66, w: 145, h: 48, path: "M490,90 L720,90" },
+      ];
+    }
+    return [
+      { x: 540, y: 16, w: 140, h: 48, path: "M490,90 C515,90 515,40 540,40" },
+      { x: 540, y: 116, w: 140, h: 48, path: "M490,90 C515,90 515,140 540,140" },
+      { x: 710, y: 16, w: 140, h: 48, path: "M680,40 L710,40" },
+      { x: 710, y: 116, w: 140, h: 48, path: "M680,140 L710,140" },
+    ];
+  }, [childAgents.length]);
 
   return (
     <div className={`w-full py-2 ${className}`}>
@@ -189,7 +206,7 @@ export function PipelineSvg({
 
         {/* 1. Connection Path: Trigger -> Gateway */}
         <path
-          d={paths.pTriggerToGateway}
+          d={pTriggerToGateway}
           fill="none"
           stroke="rgba(0,82,255,0.22)"
           strokeWidth="1.5"
@@ -199,7 +216,7 @@ export function PipelineSvg({
 
         {/* 2. Connection Path: Gateway -> Orchestrator */}
         <path
-          d={paths.pGatewayToOrch}
+          d={pGatewayToOrch}
           fill="none"
           stroke="rgba(0,82,255,0.22)"
           strokeWidth="1.5"
@@ -207,63 +224,51 @@ export function PipelineSvg({
           markerEnd="url(#blueArrow)"
         />
 
-        {/* 3. Connection Path: Orchestrator -> Travel Agent */}
-        <path
-          d={paths.pOrchToTravel}
-          fill="none"
-          stroke={activeId === "agent-travel" ? "rgba(0,82,255,0.7)" : "rgba(0,82,255,0.22)"}
-          strokeWidth="1.5"
-          strokeDasharray="3 5"
-        />
-
-        {/* 4. Connection Path: Orchestrator -> Hotel Agent */}
-        <path
-          d={paths.pOrchToHotel}
-          fill="none"
-          stroke={activeId === "agent-hotel" ? "rgba(0,82,255,0.7)" : "rgba(0,82,255,0.22)"}
-          strokeWidth="1.5"
-          strokeDasharray="3 5"
-        />
-
-        {/* 5. Connection Path: Travel Agent -> Flight Scraper (Unfunded structural helper) */}
-        <path
-          d={paths.pTravelToScraper}
-          fill="none"
-          stroke="rgba(245,158,11,0.3)"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
-          markerEnd="url(#orangeArrow)"
-        />
-
-        {/* 6. Connection Path: Hotel Agent -> Booking Gateway */}
-        <path
-          d={paths.pHotelToBooking}
-          fill="none"
-          stroke="rgba(0,82,255,0.25)"
-          strokeWidth="1.5"
-          strokeDasharray="3 5"
-          markerEnd="url(#blueArrow)"
-        />
-
         {/* Animated Traveling Signal Dots */}
-        <AnimatedDot path={paths.pTriggerToGateway} duration={1.1} delay={0} size={2.5} opacity={1} />
-        <AnimatedDot path={paths.pGatewayToOrch} duration={0.9} delay={0.2} size={2.5} opacity={1} />
-        
-        <AnimatedDot path={paths.pOrchToTravel} duration={1.2} delay={0.1} size={2.2} opacity={0.9} />
-        <AnimatedDot path={paths.pOrchToTravel} duration={1.2} delay={0.65} size={1.5} opacity={0.55} />
+        <AnimatedDot path={pTriggerToGateway} duration={1.1} delay={0} size={2.5} opacity={1} />
+        <AnimatedDot path={pGatewayToOrch} duration={0.9} delay={0.2} size={2.5} opacity={1} />
 
-        <AnimatedDot path={paths.pOrchToHotel} duration={1.2} delay={0.3} size={2.2} opacity={0.9} />
-        <AnimatedDot path={paths.pOrchToHotel} duration={1.2} delay={0.85} size={1.5} opacity={0.55} />
-
-        <AnimatedDot
-          path={paths.pTravelToScraper}
-          duration={1.4}
-          delay={0.4}
-          size={2.2}
-          opacity={0.85}
-          color="#f59e0b"
-        />
-        <AnimatedDot path={paths.pHotelToBooking} duration={1.1} delay={0.5} size={2.2} opacity={0.9} />
+        {/* Dynamic Connection Paths for Child Subagents */}
+        {childAgents.length === 0 ? (
+          <path
+            d="M490,90 L550,90"
+            fill="none"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth="1.5"
+            strokeDasharray="3 5"
+          />
+        ) : (
+          childAgents.map((agent, idx) => {
+            const pos = childPositions[idx] || childPositions[childPositions.length - 1];
+            const isSelected = activeId === agent.id;
+            const isUnfunded = agent.status === "unfunded" || (agent.allocatedMinor ?? 0) === 0;
+            const strokeColor = isUnfunded
+              ? "rgba(245,158,11,0.4)"
+              : isSelected
+              ? "rgba(0,82,255,0.8)"
+              : "rgba(0,82,255,0.25)";
+            return (
+              <React.Fragment key={`path-${agent.id}`}>
+                <path
+                  d={pos.path}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="1.5"
+                  strokeDasharray="3 5"
+                  markerEnd={isUnfunded ? "url(#orangeArrow)" : "url(#blueArrow)"}
+                />
+                <AnimatedDot
+                  path={pos.path}
+                  duration={1.2}
+                  delay={0.1 + idx * 0.25}
+                  size={2.2}
+                  opacity={isUnfunded ? 0.75 : 0.9}
+                  color={isUnfunded ? "#f59e0b" : "#0052FF"}
+                />
+              </React.Fragment>
+            );
+          })
+        )}
 
         {/* ─── NODE 1: Trigger / Operator Mandate ─── */}
         <g
@@ -409,177 +414,116 @@ export function PipelineSvg({
             fontFamily="monospace"
             fontWeight="500"
           >
-            {formatMinorUnits(rootNode?.allocatedMinor ?? 1000000, currency)}
+            {formatMinorUnits(rootNode?.allocatedMinor ?? env?.budgetLimitMinor ?? 0, currency)}
           </text>
           <PulsingDot cx={406} cy={116} color="#0052FF" duration={1.2} delay={0} />
           <PulsingDot cx={418} cy={116} color="#0052FF" duration={1.2} delay={0.4} />
           <PulsingDot cx={430} cy={116} color="#0052FF" duration={1.2} delay={0.8} />
         </g>
 
-        {/* ─── NODE 4: Travel Subagent ─── */}
-        <g
-          onClick={() => handleNodeClick("agent-travel")}
-          className="cursor-pointer group"
-        >
-          <rect
-            x="550"
-            y="16"
-            width="144"
-            height="48"
-            rx="8"
-            fill="#111113"
-            stroke={activeId === "agent-travel" ? "#3b82f6" : "rgba(255,255,255,0.1)"}
-            strokeWidth={activeId === "agent-travel" ? "1.5" : "0.5"}
-            className="transition-colors group-hover:stroke-blue-400/80"
-          />
-          <text
-            x="620"
-            y="35"
-            textAnchor="middle"
-            fontSize="11"
-            fill="rgba(255,255,255,0.9)"
-            fontFamily="system-ui"
-            fontWeight="500"
-          >
-            {travelAgent?.name ?? "Travel Agent"}
-          </text>
-          <text
-            x="620"
-            y="50"
-            textAnchor="middle"
-            fontSize="9"
-            fill="rgba(255,255,255,0.4)"
-            fontFamily="monospace"
-          >
-            {formatMinorUnits(travelAgent?.allocatedMinor ?? 400000, currency)} limit
-          </text>
-          <StatusIndicator cx={678} cy={28} color="#3b82f6" />
-        </g>
-
-        {/* ─── NODE 5: Flight Scraper (Structural Helper · Unfunded) ─── */}
-        <g
-          onClick={() => handleNodeClick("agent-flights-unfunded")}
-          className="cursor-pointer group"
-        >
-          <rect
-            x="734"
-            y="16"
-            width="150"
-            height="48"
-            rx="8"
-            fill="#111113"
-            stroke={
-              activeId === "agent-flights-unfunded"
+        {/* Dynamic Child Subagents Rendering */}
+        {childAgents.length === 0 ? (
+          <g className="cursor-default">
+            <rect
+              x="550"
+              y="65"
+              width="210"
+              height="50"
+              rx="8"
+              fill="#111113"
+              stroke="rgba(255,255,255,0.15)"
+              strokeDasharray="4 4"
+              strokeWidth="1"
+            />
+            <text
+              x="655"
+              y="86"
+              textAnchor="middle"
+              fontSize="10"
+              fill="rgba(255,255,255,0.45)"
+              fontFamily="system-ui"
+              letterSpacing=".05em"
+            >
+              NO SUBAGENTS DELEGATED
+            </text>
+            <text
+              x="655"
+              y="102"
+              textAnchor="middle"
+              fontSize="8.5"
+              fill="rgba(255,255,255,0.25)"
+              fontFamily="system-ui"
+            >
+              Subagents appear upon task delegation
+            </text>
+          </g>
+        ) : (
+          childAgents.map((agent, idx) => {
+            const pos = childPositions[idx] || childPositions[childPositions.length - 1];
+            const isSelected = activeId === agent.id;
+            const isUnfunded = agent.status === "unfunded" || (agent.allocatedMinor ?? 0) === 0;
+            const strokeColor = isSelected
+              ? isUnfunded
                 ? "#f59e0b"
-                : "rgba(245,158,11,0.3)"
-            }
-            strokeDasharray="3 3"
-            strokeWidth={activeId === "agent-flights-unfunded" ? "1.5" : "0.8"}
-            className="transition-colors group-hover:stroke-orange-400"
-          />
-          <text
-            x="806"
-            y="35"
-            textAnchor="middle"
-            fontSize="11"
-            fill="rgba(255,255,255,0.85)"
-            fontFamily="system-ui"
-            fontWeight="500"
-          >
-            {flightScraper?.name ?? "Flight Scraper"}
-          </text>
-          <text
-            x="806"
-            y="50"
-            textAnchor="middle"
-            fontSize="9"
-            fill="rgba(245,158,11,0.8)"
-            fontFamily="monospace"
-          >
-            Unfunded Helper
-          </text>
-          <StatusIndicator cx={868} cy={28} color="#f59e0b" pulsing duration={2.1} />
-        </g>
+                : "#3b82f6"
+              : isUnfunded
+              ? "rgba(245,158,11,0.3)"
+              : "rgba(255,255,255,0.1)";
 
-        {/* ─── NODE 6: Hotel Subagent ─── */}
-        <g
-          onClick={() => handleNodeClick("agent-hotel")}
-          className="cursor-pointer group"
-        >
-          <rect
-            x="550"
-            y="116"
-            width="144"
-            height="48"
-            rx="8"
-            fill="#111113"
-            stroke={activeId === "agent-hotel" ? "#3b82f6" : "rgba(255,255,255,0.1)"}
-            strokeWidth={activeId === "agent-hotel" ? "1.5" : "0.5"}
-            className="transition-colors group-hover:stroke-blue-400/80"
-          />
-          <text
-            x="620"
-            y="135"
-            textAnchor="middle"
-            fontSize="11"
-            fill="rgba(255,255,255,0.9)"
-            fontFamily="system-ui"
-            fontWeight="500"
-          >
-            {hotelAgent?.name ?? "Hotel Agent"}
-          </text>
-          <text
-            x="620"
-            y="150"
-            textAnchor="middle"
-            fontSize="9"
-            fill="rgba(255,255,255,0.4)"
-            fontFamily="monospace"
-          >
-            {formatMinorUnits(hotelAgent?.allocatedMinor ?? 400000, currency)} limit
-          </text>
-          <StatusIndicator cx={678} cy={128} color="#3b82f6" />
-        </g>
+            const displayName =
+              agent.name.length > 17 ? `${agent.name.slice(0, 16)}...` : agent.name;
 
-        {/* ─── NODE 7: Booking Gateway ─── */}
-        <g
-          onClick={() => handleNodeClick("agent-booking-gw")}
-          className="cursor-pointer group"
-        >
-          <rect
-            x="734"
-            y="116"
-            width="150"
-            height="48"
-            rx="8"
-            fill="#111113"
-            stroke={activeId === "agent-booking-gw" ? "#3b82f6" : "rgba(255,255,255,0.1)"}
-            strokeWidth={activeId === "agent-booking-gw" ? "1.5" : "0.5"}
-            className="transition-colors group-hover:stroke-blue-400/80"
-          />
-          <text
-            x="806"
-            y="135"
-            textAnchor="middle"
-            fontSize="11"
-            fill="rgba(255,255,255,0.9)"
-            fontFamily="system-ui"
-            fontWeight="500"
-          >
-            {bookingGw?.name ?? "Booking Gateway"}
-          </text>
-          <text
-            x="806"
-            y="150"
-            textAnchor="middle"
-            fontSize="9"
-            fill="rgba(255,255,255,0.4)"
-            fontFamily="monospace"
-          >
-            {formatMinorUnits(bookingGw?.allocatedMinor ?? 100000, currency)} limit
-          </text>
-          <StatusIndicator cx={868} cy={128} color="#3b82f6" pulsing duration={1.8} delay={0.3} />
-        </g>
+            return (
+              <g
+                key={agent.id}
+                onClick={() => handleNodeClick(agent.id)}
+                className="cursor-pointer group"
+              >
+                <rect
+                  x={pos.x}
+                  y={pos.y}
+                  width={pos.w}
+                  height={pos.h}
+                  rx="8"
+                  fill="#111113"
+                  stroke={strokeColor}
+                  strokeWidth={isSelected ? "1.5" : "0.75"}
+                  strokeDasharray={isUnfunded ? "3 3" : undefined}
+                  className="transition-colors group-hover:stroke-blue-400/80"
+                />
+                <text
+                  x={pos.x + pos.w / 2}
+                  y={pos.y + 19}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="rgba(255,255,255,0.9)"
+                  fontFamily="system-ui"
+                  fontWeight="500"
+                >
+                  {displayName}
+                </text>
+                <text
+                  x={pos.x + pos.w / 2}
+                  y={pos.y + 34}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill={isUnfunded ? "rgba(245,158,11,0.8)" : "rgba(255,255,255,0.4)"}
+                  fontFamily="monospace"
+                >
+                  {isUnfunded
+                    ? "Unfunded / Ready"
+                    : `${formatMinorUnits(agent.allocatedMinor, currency)} limit`}
+                </text>
+                <StatusIndicator
+                  cx={pos.x + pos.w - 14}
+                  cy={pos.y + 12}
+                  color={isUnfunded ? "#f59e0b" : "#3b82f6"}
+                  pulsing={isUnfunded}
+                />
+              </g>
+            );
+          })
+        )}
       </svg>
     </div>
   );
@@ -590,8 +534,8 @@ export function PipelineTicker({ className = "" }: { className?: string }) {
   const env = store.currentEnvironment;
   const currency = env?.currency ?? "USD";
   const nodes = store.graphNodes;
-  const subagentsCount = nodes.filter((n) => n.role === "subagent").length || 4;
-  const activeSubagentsCount = nodes.filter((n) => n.role === "subagent" && n.status === "active").length || 2;
+  const subagentsCount = nodes.filter((n) => n.role === "subagent").length;
+  const activeSubagentsCount = nodes.filter((n) => n.role === "subagent" && n.status === "active").length;
   const limitMinor = env?.budgetLimitMinor ?? 0;
 
   const currentMessage = useMemo(() => {
@@ -630,7 +574,7 @@ export function PipelineStats({ className = "" }: { className?: string }) {
   const reservedMinor = env?.reservedMinor ?? 0;
   const availableMinor = calculateAvailableMinor(limitMinor, spentMinor, reservedMinor);
 
-  const workflows = store.graphNodes.length > 0 ? store.graphNodes.length : (env?.agentCount ?? 0);
+  const workflows = store.graphNodes.length;
 
   return (
     <div className={`border-t border-zinc-800/80 px-4 py-3 flex flex-wrap gap-8 items-center w-full bg-zinc-950/80 ${className}`}>

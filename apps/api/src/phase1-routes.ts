@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
-import type { AgentKind, Registry } from "./phase1.js";
+import type { AgentKind, Principal, Registry } from "./phase1.js";
 import type { AuditEventStore } from "./audit.js";
 
-type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
+type AppRequest = FastifyRequest & { principal?: Principal };
 
 function getBody<T>(request: FastifyRequest): T {
   return request.body as T;

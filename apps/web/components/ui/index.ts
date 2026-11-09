@@ -12,3 +12,8 @@ export { Integrations, type IntegrationsProps } from "./integrations-4-2";
 export { Integrations as AgentGridIntegrations } from "./integrations-4";
 export { SecureAgentDelegationVisual, type AgentNodeData } from "./secure-agent-delegation";
 export { LetsWorkTogether, type LetsWorkTogetherProps } from "./lets-work-section";
+export * from "./agent-progress";
+export * from "./reasoning-thread";
+export * from "./background-inbox";
+export * from "./oauth-consent-card";
+

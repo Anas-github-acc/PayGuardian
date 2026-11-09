@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
 import type { AuditEventStore } from "./audit.js";
-import type { Registry } from "./phase1.js";
+import type { Principal, Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
 
-type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
+type AppRequest = FastifyRequest & { principal?: Principal };
 type EnvironmentControl = "active" | "paused" | "revoked";
 type AgentControl = "disabled" | "revoked";
 
@@ -37,6 +37,12 @@ async function environmentFor(
 ) {
   const owner = await principal(request, reply, resolvePrincipal);
   if (!owner) return null;
+  if (owner.kind !== "user") {
+    await reply
+      .code(403)
+      .send({ code: "USER_AUTHORITY_REQUIRED", message: "This operation requires user authority." });
+    return null;
+  }
   const environment = await registry.getEnvironment(owner.userId, environmentId);
   if (!environment) {
     await reply

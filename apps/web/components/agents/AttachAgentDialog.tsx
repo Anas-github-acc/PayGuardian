@@ -95,10 +95,13 @@ export function AttachAgentDialog({
 
     try {
       // 1. Sequential Backend Command: Register child agent on gateway
+      const validKinds = ["personal", "travel", "hotel", "transport", "food", "activities", "custom"];
+      const resolvedKind = validKinds.includes(agent.specialty) ? (agent.specialty as any) : "custom";
+
       const childAgent = await apiClient.agents.registerChild(currentEnv.id, {
         parentAgentId: selectedParentId,
         name: agent.name,
-        kind: agent.specialty || "worker",
+        kind: resolvedKind,
         capabilities: agent.permissions,
       });
 

@@ -238,59 +238,9 @@ export function FirstTimeEnvironmentSlideFlow() {
         approvalRequired: true,
       });
 
-      let agentCount = 1;
-      // If starter budget allows, bootstrap two child agents for instant capability
-      if (calculatedBudgetMinor >= 400000) {
-        try {
-          const travelChild = await apiClient.agents.registerChild(createdEnv.id, {
-            parentAgentId: rootAgent.id,
-            name: "Travel Subagent",
-            kind: "specialist",
-            capabilities: ["flight.search", "flight.book"],
-          });
-          agentCount++;
-
-          const travelLimit = Math.min(
-            400000,
-            Math.floor(calculatedBudgetMinor * 0.4)
-          );
-          await apiClient.mandates.delegate(rootMandate.id, {
-            holderAgentId: travelChild.id,
-            budgetLimitMinor: travelLimit,
-            currency,
-            permittedActions: ["flight.*"],
-            expiresAt: calculatedExpiryDate,
-            canDelegate: true,
-            maxDelegationDepth: 1,
-            approvalRequired: false,
-          });
-
-          const hotelChild = await apiClient.agents.registerChild(createdEnv.id, {
-            parentAgentId: rootAgent.id,
-            name: "Hotel Subagent",
-            kind: "specialist",
-            capabilities: ["hotel.search", "hotel.book"],
-          });
-          agentCount++;
-
-          const hotelLimit = Math.min(
-            300000,
-            Math.floor(calculatedBudgetMinor * 0.3)
-          );
-          await apiClient.mandates.delegate(rootMandate.id, {
-            holderAgentId: hotelChild.id,
-            budgetLimitMinor: hotelLimit,
-            currency,
-            permittedActions: ["hotel.*"],
-            expiresAt: calculatedExpiryDate,
-            canDelegate: true,
-            maxDelegationDepth: 1,
-            approvalRequired: false,
-          });
-        } catch (subErr) {
-          console.warn("Child agent bootstrap note:", subErr);
-        }
-      }
+      // Clean bootstrap: only the Root Agent and Root Mandate are created upfront.
+      // Child specialist agents and delegated sub-mandates are created on-demand when agent delegation occurs.
+      const agentCount = 1;
 
       // Assemble confirmed Environment domain model
       const finalEnv: Environment = mapEnvironmentDto(createdEnv, {

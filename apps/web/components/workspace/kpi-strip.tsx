@@ -25,9 +25,9 @@ export function KpiStrip({
   const env = store.currentEnvironment;
 
   const currency = propCurrency ?? env?.currency ?? "USD";
-  const limitMinor = propLimit ?? env?.budgetLimitMinor ?? 1000000;
-  const spentMinor = propSpent ?? env?.spentMinor ?? 245000;
-  const reservedMinor = propReserved ?? env?.reservedMinor ?? 150000;
+  const limitMinor = propLimit ?? env?.budgetLimitMinor ?? 0;
+  const spentMinor = propSpent ?? env?.spentMinor ?? 0;
+  const reservedMinor = propReserved ?? env?.reservedMinor ?? 0;
 
   const availableMinor = calculateAvailableMinor(limitMinor, spentMinor, reservedMinor);
 

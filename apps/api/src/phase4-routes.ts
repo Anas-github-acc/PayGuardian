@@ -1,18 +1,19 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
-import type { Registry } from "./phase1.js";
+import type { Principal, Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
 import type { AuditEventStore } from "./audit.js";
 import type { JsonObject } from "@payguardian/observability";
 import type {
   ApprovalStore,
   ApprovalStatus,
+  ApprovalDecision,
   SessionStore,
   SessionStatus,
   RunStatus,
 } from "./phase4.js";
 
-type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
+type AppRequest = FastifyRequest & { principal?: Principal };
 
 async function principal(
   request: AppRequest,
@@ -183,6 +184,14 @@ export function registerPhase4Routes(
 
   app.post<{
     Params: { environmentId: string; approvalId: string };
+    Body: {
+      decision?: "allow_once" | "allow" | "deny";
+      allowedChildAgents?: string[];
+      permittedActions?: string[];
+      maxBudgetMinor?: number;
+      maxDepth?: number;
+      expiresAt?: string;
+    };
   }>("/v1/environments/:environmentId/approvals/:approvalId/approve", async (request, reply) => {
     const scoped = await environmentFor(
       request as AppRequest,
@@ -193,11 +202,74 @@ export function registerPhase4Routes(
     );
     if (!scoped) return;
 
+    if (scoped.owner.kind !== "user") {
+      return reply.code(403).send({
+        code: "USER_AUTHORITY_REQUIRED",
+        message: "Approving requests is user-only.",
+      });
+    }
+
     try {
+      const existing = await dependencies.approvals.get(
+        scoped.environment.id,
+        request.params.approvalId,
+      );
+      if (!existing) {
+        return reply
+          .code(404)
+          .send({ code: "APPROVAL_NOT_FOUND", message: "Approval request not found." });
+      }
+
+      let grantJti: string | undefined;
+      const decisionType = request.body?.decision ?? "allow_once";
+
+      // If approval is for a delegation request, create/bind a delegation grant
+      if (existing.action.startsWith("mandate.delegate") || existing.action.startsWith("delegat")) {
+        const parentMandate = await dependencies.authority.get(existing.mandateId, scoped.owner.userId);
+        if (!parentMandate) {
+          return reply
+            .code(404)
+            .send({ code: "MANDATE_NOT_FOUND", message: "Parent mandate not found." });
+        }
+        if (parentMandate.state === "revoked") {
+          return reply
+            .code(403)
+            .send({ code: "MANDATE_REVOKED", message: "Parent mandate is revoked." });
+        }
+        if (new Date(parentMandate.expiresAt) <= new Date()) {
+          return reply
+            .code(403)
+            .send({ code: "MANDATE_EXPIRED", message: "Parent mandate has expired." });
+        }
+
+        // Expiry capped at parent expiry
+        let grantExpiresAt = request.body?.expiresAt ?? parentMandate.expiresAt;
+        if (new Date(grantExpiresAt) > new Date(parentMandate.expiresAt)) {
+          grantExpiresAt = parentMandate.expiresAt;
+        }
+
+        const grantMaxBudget = request.body?.maxBudgetMinor ?? existing.amountMinor;
+        const grant = await dependencies.authority.createGrant({
+          environmentId: scoped.environment.id,
+          agentId: existing.agentId,
+          parentMandateId: parentMandate.id,
+          allowedChildAgents: request.body?.allowedChildAgents ?? ["*"],
+          permittedActions: request.body?.permittedActions ?? parentMandate.permittedActions,
+          maxBudgetMinor: grantMaxBudget,
+          maxDepth: request.body?.maxDepth ?? parentMandate.maxDelegationDepth,
+          approvalStrictness: decisionType === "allow" ? "allow" : "allow_once",
+          expiresAt: grantExpiresAt,
+          requestHash: existing.requestHash,
+        });
+        grantJti = grant.jti;
+      }
+
       const approval = await dependencies.approvals.approve(
         scoped.environment.id,
         request.params.approvalId,
         scoped.owner.userId,
+        decisionType,
+        grantJti,
       );
 
       await dependencies.audit.append({
@@ -212,10 +284,12 @@ export function registerPhase4Routes(
           action: approval.action,
           amountMinor: approval.amountMinor,
           requestHash: approval.requestHash,
+          decision: decisionType,
+          grantJti: grantJti ?? null,
         },
       });
 
-      return { approval };
+      return { approval, ...(grantJti ? { grantJti } : {}) };
     } catch (error) {
       return reply.code(400).send({
         code: error instanceof Error ? error.message : "APPROVAL_ACTION_FAILED",
@@ -236,6 +310,13 @@ export function registerPhase4Routes(
       request.params.environmentId,
     );
     if (!scoped) return;
+
+    if (scoped.owner.kind !== "user") {
+      return reply.code(403).send({
+        code: "USER_AUTHORITY_REQUIRED",
+        message: "Rejecting requests is user-only.",
+      });
+    }
 
     try {
       const approval = await dependencies.approvals.reject(

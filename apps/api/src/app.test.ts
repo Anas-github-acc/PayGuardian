@@ -41,4 +41,19 @@ describe("Phase 0 gateway", () => {
       "/v1/system/status": expect.any(Object),
     });
   });
+
+  it("exposes the agent catalog endpoint with pre-audited templates", async () => {
+    const app = buildApp();
+    apps.add(app);
+
+    const response = await app.inject({ method: "GET", url: "/v1/agents/catalog" });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body).toHaveProperty("catalog");
+    expect(Array.isArray(body.catalog)).toBe(true);
+    expect(body.catalog.length).toBeGreaterThan(0);
+    expect(body.catalog.some((a: any) => a.id === "agent-travel-concierge")).toBe(true);
+    expect(body.catalog.some((a: any) => a.id === "agent-merchant-attach")).toBe(true);
+  });
 });

@@ -1,11 +1,19 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
-export type Principal = {
-  userId: string;
-  kind: "user";
-  agentId?: string;
-};
+export type Principal =
+  | {
+      userId: string;
+      kind: "user";
+      agentId?: undefined;
+    }
+  | {
+      userId: string;
+      kind: "agent";
+      agentId: string;
+    };
 
 export type EnvironmentStatus = "active" | "paused" | "closed" | "revoked";
 export type AgentStatus = "active" | "disabled" | "revoked";
@@ -101,6 +109,57 @@ export class InMemoryRegistry implements Registry {
   private readonly environments = new Map<string, Environment>();
   private readonly agents = new Map<string, Agent>();
   private readonly credentials = new Map<string, AgentCredential>();
+  private readonly filePath?: string;
+
+  constructor(filePath?: string) {
+    this.filePath = filePath;
+    this.load();
+  }
+
+  private load(): void {
+    if (!this.filePath) return;
+    try {
+      if (existsSync(this.filePath)) {
+        const raw = readFileSync(this.filePath, "utf-8");
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.environments)) {
+          for (const env of data.environments) {
+            this.environments.set(env.id, env);
+          }
+        }
+        if (Array.isArray(data.agents)) {
+          for (const ag of data.agents) {
+            this.agents.set(ag.id, ag);
+          }
+        }
+        if (Array.isArray(data.credentials)) {
+          for (const cr of data.credentials) {
+            this.credentials.set(cr.id, cr);
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  private persist(): void {
+    if (!this.filePath) return;
+    try {
+      const dir = path.dirname(this.filePath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+      const data = {
+        environments: [...this.environments.values()],
+        agents: [...this.agents.values()],
+        credentials: [...this.credentials.values()],
+      };
+      writeFileSync(this.filePath, JSON.stringify(data, null, 2), "utf-8");
+    } catch {
+      // ignore
+    }
+  }
 
   async listEnvironments(userId: string): Promise<Environment[]> {
     return [...this.environments.values()].filter((item) => item.ownerUserId === userId);
@@ -116,6 +175,7 @@ export class InMemoryRegistry implements Registry {
       status: "active",
     };
     this.environments.set(environment.id, environment);
+    this.persist();
     return environment;
   }
 
@@ -139,6 +199,7 @@ export class InMemoryRegistry implements Registry {
     if (environment.status === "paused" && status === "paused") return environment;
     environment.status = status;
     this.environments.set(environment.id, environment);
+    this.persist();
     return environment;
   }
 
@@ -189,6 +250,7 @@ export class InMemoryRegistry implements Registry {
       candidate.status = status;
       this.agents.set(candidate.id, candidate);
     }
+    this.persist();
     return this.agents.get(agent.id) ?? null;
   }
 
@@ -197,6 +259,7 @@ export class InMemoryRegistry implements Registry {
     const { credential, created } = createCredential(agent.id);
     this.agents.set(agent.id, agent);
     this.credentials.set(credential.id, credential);
+    this.persist();
     return { agent, credential: created };
   }
 
@@ -205,6 +268,7 @@ export class InMemoryRegistry implements Registry {
     if (!agent || agent.status !== "active") return null;
     const { credential, created } = createCredential(agent.id);
     this.credentials.set(credential.id, credential);
+    this.persist();
     return created;
   }
 
@@ -219,6 +283,7 @@ export class InMemoryRegistry implements Registry {
     if (!credential || credential.agentId !== agent.id) return false;
     credential.revokedAt = now();
     this.credentials.set(credential.id, credential);
+    this.persist();
     return true;
   }
 
@@ -499,5 +564,6 @@ export function createRegistry(): Registry {
       throw new Error("DATABASE_MODE=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
     return new SupabaseRegistry(client);
   }
-  return new InMemoryRegistry();
+  const defaultPath = path.resolve(process.cwd(), ".data/registry.json");
+  return new InMemoryRegistry(process.env.REGISTRY_STORAGE_FILE ?? defaultPath);
 }

@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { InMemoryLedger, type LedgerAccount, type Reservation } from "@payguardian/domain";
+import {
+  InMemoryLedger,
+  type IntegrityVerificationResult,
+  type LedgerAccount,
+  type LedgerTransition,
+  type Reservation,
+} from "@payguardian/domain";
 
 export type ProtectedAction = {
   id: string;
@@ -26,6 +32,7 @@ export type LedgerStore = {
     availableMinor: number;
   }): Promise<LedgerAccount>;
   getAccount(environmentId: string, accountId: string): Promise<LedgerAccount | null>;
+  getAccountByMandate(environmentId: string, mandateId: string): Promise<LedgerAccount | null>;
   listAccounts(environmentId: string): Promise<LedgerAccount[]>;
   allocate(input: {
     environmentId: string;
@@ -58,6 +65,10 @@ export type LedgerStore = {
   capture(environmentId: string, actionId: string): Promise<Reservation>;
   release(environmentId: string, actionId: string, reason: string): Promise<Reservation>;
   getReservation(environmentId: string, actionId: string): Promise<Reservation | null>;
+  verifyAccountIntegrity(environmentId: string, accountId: string): Promise<IntegrityVerificationResult>;
+  verifyEnvironmentIntegrity(environmentId: string): Promise<IntegrityVerificationResult>;
+  getTransitions(environmentId: string, accountId: string): Promise<LedgerTransition[]>;
+  tamperAccount?(environmentId: string, accountId: string, mutator: (acc: LedgerAccount) => void): Promise<void>;
 };
 
 function validateAmount(amountMinor: number): void {
@@ -69,6 +80,7 @@ function validateAmount(amountMinor: number): void {
 export class InMemoryLedgerStore implements LedgerStore {
   private readonly ledger = new InMemoryLedger();
   private readonly accountEnvironments = new Map<string, string>();
+  private readonly mandateAccounts = new Map<string, string>();
   private readonly actions = new Map<string, ProtectedAction>();
   private readonly actionKeys = new Map<string, string>();
 
@@ -83,8 +95,10 @@ export class InMemoryLedgerStore implements LedgerStore {
       id: randomUUID(),
       parentId: input.parentAccountId,
       availableMinor: input.availableMinor,
+      environmentId: input.environmentId,
     });
     this.accountEnvironments.set(account.id, input.environmentId);
+    this.mandateAccounts.set(`${input.environmentId}:${input.mandateId}`, account.id);
     return account;
   }
 
@@ -95,6 +109,48 @@ export class InMemoryLedgerStore implements LedgerStore {
     } catch {
       return null;
     }
+  }
+
+  async getAccountByMandate(environmentId: string, mandateId: string): Promise<LedgerAccount | null> {
+    const accountId = this.mandateAccounts.get(`${environmentId}:${mandateId}`);
+    if (!accountId) return null;
+    return this.getAccount(environmentId, accountId);
+  }
+
+  async verifyAccountIntegrity(
+    environmentId: string,
+    accountId: string,
+  ): Promise<IntegrityVerificationResult> {
+    if (this.accountEnvironments.get(accountId) !== environmentId) {
+      return { valid: false, reason: "Account not found in environment.", transitionsVerified: 0 };
+    }
+    return this.ledger.verifyAccountIntegrity(accountId);
+  }
+
+  async verifyEnvironmentIntegrity(environmentId: string): Promise<IntegrityVerificationResult> {
+    let total = 0;
+    for (const [id, envId] of this.accountEnvironments.entries()) {
+      if (envId === environmentId) {
+        const res = this.ledger.verifyAccountIntegrity(id);
+        if (!res.valid) return res;
+        total += res.transitionsVerified;
+      }
+    }
+    return { valid: true, transitionsVerified: total };
+  }
+
+  async getTransitions(environmentId: string, accountId: string): Promise<LedgerTransition[]> {
+    if (this.accountEnvironments.get(accountId) !== environmentId) return [];
+    return this.ledger.getTransitions(accountId);
+  }
+
+  async tamperAccount(
+    environmentId: string,
+    accountId: string,
+    mutator: (acc: LedgerAccount) => void,
+  ): Promise<void> {
+    if (this.accountEnvironments.get(accountId) !== environmentId) throw new Error("ACCOUNT_NOT_FOUND");
+    this.ledger.tamperAccount(accountId, mutator);
   }
 
   async listAccounts(environmentId: string): Promise<LedgerAccount[]> {
@@ -210,6 +266,11 @@ export class InMemoryLedgerStore implements LedgerStore {
     amountMinor: number;
     currency: string;
   }): Promise<{ action: ProtectedAction; reservation: Reservation }> {
+    const integrity = await this.verifyAccountIntegrity(input.environmentId, input.ledgerAccountId);
+    if (!integrity.valid) {
+      throw new Error(`WALLET_INTEGRITY_VIOLATION: ${integrity.reason}`);
+    }
+
     const key = `${input.agentId}:${input.idempotencyKey}`;
     const existingId = this.actionKeys.get(key);
     if (existingId) {
@@ -306,6 +367,62 @@ export class SupabaseLedgerStore implements LedgerStore {
       .maybeSingle();
     if (error) throw error;
     return data ? mapAccount(data as Row) : null;
+  }
+
+  async getAccountByMandate(environmentId: string, mandateId: string): Promise<LedgerAccount | null> {
+    const { data, error } = await this.client
+      .from("ledger_accounts")
+      .select("id,parent_account_id,available_minor,reserved_minor,captured_minor")
+      .eq("environment_id", environmentId)
+      .eq("mandate_id", mandateId)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? mapAccount(data as Row) : null;
+  }
+
+  async verifyAccountIntegrity(
+    environmentId: string,
+    accountId: string,
+  ): Promise<IntegrityVerificationResult> {
+    const { data, error } = await this.client.rpc("verify_ledger_account_integrity", {
+      p_environment_id: environmentId,
+      p_account_id: accountId,
+    });
+    if (error) throw error;
+    if (data !== true) {
+      return {
+        valid: false,
+        reason: "Cryptographic ledger balance record verification failed.",
+        transitionsVerified: 0,
+      };
+    }
+    return { valid: true, transitionsVerified: 1 };
+  }
+
+  async verifyEnvironmentIntegrity(environmentId: string): Promise<IntegrityVerificationResult> {
+    const { data, error } = await this.client.rpc("verify_wallet_integrity", {
+      p_environment_id: environmentId,
+    });
+    if (error) throw error;
+    if (data !== true) {
+      return {
+        valid: false,
+        reason: "Cryptographic ledger balance record verification failed for environment.",
+        transitionsVerified: 0,
+      };
+    }
+    return { valid: true, transitionsVerified: 1 };
+  }
+
+  async getTransitions(environmentId: string, accountId: string): Promise<LedgerTransition[]> {
+    const { data, error } = await this.client
+      .from("ledger_balance_transitions")
+      .select("*")
+      .eq("environment_id", environmentId)
+      .eq("account_id", accountId)
+      .order("sequence", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map(mapTransition);
   }
 
   async listAccounts(environmentId: string): Promise<LedgerAccount[]> {
@@ -478,6 +595,23 @@ function mapReservation(row: Row): Reservation {
     accountId: String(row.ledger_account_id ?? row.account_id),
     amountMinor: Number(row.amount_minor),
     state: row.state as Reservation["state"],
+  };
+}
+
+function mapTransition(row: Row): LedgerTransition {
+  return {
+    id: String(row.id),
+    environmentId: row.environment_id ? String(row.environment_id) : undefined,
+    accountId: String(row.account_id),
+    sequence: Number(row.sequence),
+    transitionType: row.transition_type as LedgerTransition["transitionType"],
+    amountMinor: Number(row.amount_minor),
+    balanceBefore: row.balance_before as LedgerTransition["balanceBefore"],
+    balanceAfter: row.balance_after as LedgerTransition["balanceAfter"],
+    referenceId: row.reference_id ? String(row.reference_id) : null,
+    createdAt: String(row.created_at),
+    previousHash: row.previous_hash ? String(row.previous_hash) : null,
+    transitionHash: String(row.transition_hash),
   };
 }
 

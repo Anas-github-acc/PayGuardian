@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
-import type { Registry } from "./phase1.js";
+import type { Principal, Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
 import type { LedgerStore } from "./phase3.js";
 import type { AuditEventStore } from "./audit.js";
 import type { ApprovalStore } from "./phase4.js";
 
-type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
+type AppRequest = FastifyRequest & { principal?: Principal };
 
 async function principal(
   request: AppRequest,
@@ -248,7 +248,7 @@ export function registerPhase3Routes(
   app.post<{
     Params: { environmentId: string };
     Body: {
-      agentId: string;
+      agentId?: string;
       mandateId: string;
       ledgerAccountId: string;
       idempotencyKey: string;
@@ -265,10 +265,43 @@ export function registerPhase3Routes(
       owner.userId,
       request.params.environmentId,
     );
-    const agent = await dependencies.registry.getAgent(owner.userId, request.body.agentId);
+    if (!environment) {
+      return reply
+        .code(404)
+        .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Action target not found." });
+    }
+
+    if (owner.agentId && request.body.agentId && request.body.agentId !== owner.agentId) {
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: request.body.mandateId ?? null,
+        eventType: "action.denied",
+        outcome: "denied",
+        reasonCode: "AGENT_IDENTITY_MISMATCH",
+        payload: {
+          authenticatedAgentId: owner.agentId,
+          suppliedAgentId: request.body.agentId,
+        },
+      });
+      return reply.code(403).send({
+        code: "AGENT_IDENTITY_MISMATCH",
+        message: "Supplied agentId does not match authenticated agent credentials.",
+      });
+    }
+
+    const resolvedAgentId = owner.agentId ?? request.body.agentId;
+    if (!resolvedAgentId) {
+      return reply.code(400).send({
+        code: "AGENT_ID_REQUIRED",
+        message: "Agent ID is required.",
+      });
+    }
+
+    const agent = await dependencies.registry.getAgent(owner.userId, resolvedAgentId);
     const mandate = await dependencies.authority.get(request.body.mandateId, owner.userId);
     if (
-      !environment ||
       !agent ||
       agent.environmentId !== environment.id ||
       agent.status !== "active" ||
@@ -363,10 +396,39 @@ export function registerPhase3Routes(
         ...(createdApprovalId ? { approvalId: createdApprovalId } : {}),
       });
     }
+
+    // Wallet integrity verification against current account state before allowing spending
+    const integrity = await dependencies.ledger.verifyAccountIntegrity(
+      environment.id,
+      request.body.ledgerAccountId,
+    );
+    if (!integrity.valid) {
+      const integrityDecision = {
+        allowed: false,
+        code: "WALLET_INTEGRITY_VIOLATION",
+        reason: `Wallet integrity verification failed: ${integrity.reason}`,
+      };
+      await dependencies.audit.append({
+        environmentId: environment.id,
+        actorType: "user",
+        actorId: owner.userId,
+        mandateId: mandate.id,
+        eventType: "action.denied",
+        outcome: "denied",
+        reasonCode: "WALLET_INTEGRITY_VIOLATION",
+        payload: {
+          action: request.body.action,
+          amountMinor: request.body.amountMinor,
+          integrityFailureReason: integrity.reason ?? null,
+        },
+      });
+      return reply.code(403).send({ decision: integrityDecision });
+    }
     try {
       const result = await dependencies.ledger.authorizeAndReserve({
         environmentId: environment.id,
         ...request.body,
+        agentId: agent.id,
         currency: request.body.currency.toUpperCase(),
       });
       await dependencies.audit.append({
@@ -381,9 +443,19 @@ export function registerPhase3Routes(
       });
       return reply.code(201).send(result);
     } catch (error) {
+      const code = errorCode(error);
+      if (code.includes("WALLET_INTEGRITY_VIOLATION")) {
+        return reply.code(403).send({
+          decision: {
+            allowed: false,
+            code: "WALLET_INTEGRITY_VIOLATION",
+            reason: error instanceof Error ? error.message : "Wallet integrity verification failed.",
+          },
+        });
+      }
       return reply
         .code(400)
-        .send({ code: errorCode(error), message: "Action reservation failed." });
+        .send({ code, message: "Action reservation failed." });
     }
   });
 
@@ -508,5 +580,65 @@ export function registerPhase3Routes(
       mandateChain,
       rootMandate: mandateChain[0] ?? null,
     };
+  });
+
+  app.get<{
+    Params: { environmentId: string };
+  }>("/v1/environments/:environmentId/ledger/integrity", async (request, reply) => {
+    const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+    if (!owner) return;
+    const environment = await dependencies.registry.getEnvironment(
+      owner.userId,
+      request.params.environmentId,
+    );
+    if (!environment) {
+      return reply
+        .code(404)
+        .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+    }
+    const result = await dependencies.ledger.verifyEnvironmentIntegrity(environment.id);
+    return { environmentId: environment.id, ...result };
+  });
+
+  app.get<{
+    Params: { environmentId: string; accountId: string };
+  }>("/v1/environments/:environmentId/ledger/accounts/:accountId/integrity", async (request, reply) => {
+    const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+    if (!owner) return;
+    const environment = await dependencies.registry.getEnvironment(
+      owner.userId,
+      request.params.environmentId,
+    );
+    if (!environment) {
+      return reply
+        .code(404)
+        .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+    }
+    const result = await dependencies.ledger.verifyAccountIntegrity(
+      environment.id,
+      request.params.accountId,
+    );
+    return { accountId: request.params.accountId, ...result };
+  });
+
+  app.get<{
+    Params: { environmentId: string; accountId: string };
+  }>("/v1/environments/:environmentId/ledger/accounts/:accountId/transitions", async (request, reply) => {
+    const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+    if (!owner) return;
+    const environment = await dependencies.registry.getEnvironment(
+      owner.userId,
+      request.params.environmentId,
+    );
+    if (!environment) {
+      return reply
+        .code(404)
+        .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+    }
+    const transitions = await dependencies.ledger.getTransitions(
+      environment.id,
+      request.params.accountId,
+    );
+    return { transitions };
   });
 }

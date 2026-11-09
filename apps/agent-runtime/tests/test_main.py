@@ -33,6 +33,8 @@ def test_all_dummy_agents_are_discoverable() -> None:
         "transport",
         "food",
         "activities",
+        "merchant_attach",
+        "merchantattach",
     ]
 
 

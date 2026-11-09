@@ -213,6 +213,85 @@ const INITIAL_STATE: WorkspaceState = {
   },
 };
 
+const STORAGE_KEY_ENVS = "payguardian_environments";
+const STORAGE_KEY_ACTIVE_ID = "payguardian_active_env_id";
+export const COOKIE_ACTIVE_ENV_ID = "payguardian_active_env_id";
+export const COOKIE_ACTIVE_ENV = "payguardian_active_env";
+
+export function setCookie(name: string, value: string, days = 365): void {
+  if (typeof document === "undefined") return;
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+export function removeCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+export function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(
+    new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/+^])/g, "\\$1") + "=([^;]*)")
+  );
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function getStoredEnvironments(): { list: Environment[]; activeId: string | null } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cookieEnvId = getCookie(COOKIE_ACTIVE_ENV_ID);
+    const cookieActiveEnv = getCookie(COOKIE_ACTIVE_ENV);
+    let cookieEnv: Environment | null = null;
+    if (cookieActiveEnv) {
+      try {
+        cookieEnv = JSON.parse(cookieActiveEnv);
+      } catch {
+        // ignore malformed cookie
+      }
+    }
+
+    const rawList = window.localStorage.getItem(STORAGE_KEY_ENVS);
+    const activeId = cookieEnvId || window.localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+    if (rawList) {
+      const parsed = JSON.parse(rawList);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return { list: parsed, activeId };
+      }
+    }
+    if (cookieEnv) {
+      return { list: [cookieEnv], activeId: cookieEnv.id };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function persistEnvironments(list: Environment[], activeId: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (list.length > 0) {
+      window.localStorage.setItem(STORAGE_KEY_ENVS, JSON.stringify(list));
+      if (activeId) {
+        window.localStorage.setItem(STORAGE_KEY_ACTIVE_ID, activeId);
+        setCookie(COOKIE_ACTIVE_ENV_ID, activeId);
+        const activeEnv = list.find((e) => e.id === activeId);
+        if (activeEnv) {
+          setCookie(COOKIE_ACTIVE_ENV, JSON.stringify(activeEnv));
+        }
+      }
+    } else {
+      window.localStorage.removeItem(STORAGE_KEY_ENVS);
+      window.localStorage.removeItem(STORAGE_KEY_ACTIVE_ID);
+      removeCookie(COOKIE_ACTIVE_ENV_ID);
+      removeCookie(COOKIE_ACTIVE_ENV);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 type Listener = () => void;
 
 class WorkspaceStore {
@@ -221,6 +300,17 @@ class WorkspaceStore {
 
   constructor(initial: WorkspaceState = INITIAL_STATE) {
     this.state = initial;
+    const stored = getStoredEnvironments();
+    if (stored) {
+      const active = stored.list.find((e) => e.id === stored.activeId) ?? stored.list[0] ?? null;
+      this.state = {
+        ...this.state,
+        environmentsList: stored.list,
+        currentEnvironment: active,
+        currentEnvironmentId: active?.id ?? null,
+        isEnvironmentsLoaded: true,
+      };
+    }
   }
 
   public getState = (): WorkspaceState => {
@@ -286,20 +376,46 @@ class WorkspaceStore {
       currentEnvironment: targetEnv,
     });
 
+    persistEnvironments(this.state.environmentsList, envId);
+
     // In a browser environment, notify or fetch fresh environment data
     if (typeof window !== "undefined") {
       void this.refreshEnvironmentData(envId);
     }
   };
 
+  /**
+   * Initializes or hydrates the store from server-provided environment cookie.
+   * Eliminates the need for client-side loading flashes or hydration mismatches.
+   */
+  public hydrateInitialEnvironment = (env: Environment): void => {
+    const existing = this.state.environmentsList;
+    const exists = existing.some((e) => e.id === env.id);
+    const updatedList = exists ? existing : [env, ...existing];
+    this.state = {
+      ...this.state,
+      environmentsList: updatedList,
+      currentEnvironment: env,
+      currentEnvironmentId: env.id,
+      isEnvironmentsLoaded: true,
+    };
+    if (typeof window !== "undefined") {
+      persistEnvironments(updatedList, env.id);
+    }
+  };
+
   public setEnvironmentsList = (list: Environment[]): void => {
-    const current = list.find((e) => e.id === this.state.currentEnvironmentId) ?? list[0] ?? null;
+    const targetId =
+      this.state.currentEnvironmentId ||
+      (typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY_ACTIVE_ID) : null);
+    const current = list.find((e) => e.id === targetId) ?? list[0] ?? null;
     this.setState({
       environmentsList: list,
       currentEnvironment: current,
       currentEnvironmentId: current?.id ?? null,
       isEnvironmentsLoaded: true,
     });
+    persistEnvironments(list, current?.id ?? null);
   };
 
   public setEnvironmentsLoaded = (loaded: boolean): void => {
@@ -307,11 +423,12 @@ class WorkspaceStore {
   };
 
   public addEnvironment = (newEnv: Environment): void => {
-    const updated = [newEnv, ...this.state.environmentsList];
+    const updated = [newEnv, ...this.state.environmentsList.filter((e) => e.id !== newEnv.id)];
     this.setState({
       environmentsList: updated,
       isEnvironmentsLoaded: true,
     });
+    persistEnvironments(updated, newEnv.id);
     // Automatically switch into the freshly created environment with clean state
     this.switchEnvironment(newEnv.id);
   };
@@ -325,6 +442,7 @@ class WorkspaceStore {
       environmentsList: updated,
       currentEnvironment: current,
     });
+    persistEnvironments(updated, current?.id ?? null);
   };
 
   public setConnectionStatus = (status: ConnectionStatus): void => {

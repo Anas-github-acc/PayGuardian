@@ -16,6 +16,8 @@ __pycache__/
 *.pyc
 .DS_Store
 .agent-tasks/
+.data/
+apps/api/.data/
 *.tsbuildinfo
 supabase/.temp/
 supabase/.branches/

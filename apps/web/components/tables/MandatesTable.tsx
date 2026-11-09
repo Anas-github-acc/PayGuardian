@@ -11,13 +11,15 @@ import {
   themeQuartz,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { Search, RefreshCw, ExternalLink } from "lucide-react";
+import { Search, RefreshCw, ExternalLink, Shield, AlertCircle } from "lucide-react";
+import type { AgentDto, MandateDto, LedgerAccountDto } from "@payguardian/contracts";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { cn } from "../../lib/utils";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
+import { apiClient } from "../../lib/api/client";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { DEFAULT_MANDATES, type MandateRow } from "./types";
+import { type MandateRow } from "./types";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -37,62 +39,133 @@ export function MandatesTable({
   className = "",
 }: MandatesTableProps) {
   const store = useWorkspaceStore();
-  const activeEnvId = environmentId ?? store.currentEnvironmentId ?? "env-sandbox-travel-01";
+  const activeEnv = store.currentEnvironment;
+  const activeEnvId = environmentId ?? activeEnv?.id ?? store.currentEnvironmentId;
 
-  const [mandates, setMandates] = React.useState<MandateRow[]>(DEFAULT_MANDATES);
+  const [mandates, setMandates] = React.useState<MandateRow[]>([]);
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
   const gridApiRef = React.useRef<GridApi<MandateRow> | null>(null);
 
-  // Fetch mandates from API or fall back
+  // Fetch dynamic mandates and assigned agents from API for the active environment
   const fetchMandates = React.useCallback(async () => {
+    if (!activeEnvId) {
+      setMandates([]);
+      return;
+    }
+
     setIsRefreshing(true);
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
-      const res = await fetch(`${apiBaseUrl}/v1/environments/${activeEnvId}/mandates`, {
-        headers: { "x-local-user-id": "local-user" },
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { mandates: Array<Record<string, unknown>> };
-        if (data.mandates && data.mandates.length > 0) {
-          const mapped: MandateRow[] = data.mandates.map((m) => {
-            const existing = DEFAULT_MANDATES.find((d) => d.id === m.id);
-            const budgetLimitMinor = typeof m.budgetLimitMinor === "number" ? m.budgetLimitMinor : 0;
-            const allocatedMinor = typeof m.allocatedMinor === "number" ? m.allocatedMinor : 0;
-            const spentMinor = typeof m.spentMinor === "number" ? m.spentMinor : 0;
-            const reservedMinor = typeof m.reservedMinor === "number" ? m.reservedMinor : 0;
-            const availableMinor = Math.max(0, budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor);
-            return {
-              id: String(m.id),
-              holderAgentId: String(m.holderAgentId || "agent-unknown"),
-              agentName: existing?.agentName || String(m.holderAgentId || "Agent"),
-              role: existing?.role || "subagent",
-              parentMandateId: (m.parentMandateId as string) || null,
-              parentAgentName: existing?.parentAgentName || (m.parentMandateId ? "Parent Mandate" : "Root User"),
-              budgetLimitMinor,
-              allocatedMinor,
-              spentMinor,
-              reservedMinor,
-              availableMinor,
-              currency: String(m.currency || "USD"),
-              state: (m.state as MandateRow["state"]) || "active",
-              expiresAt: String(m.expiresAt || new Date().toISOString()),
-              canDelegate: Boolean(m.canDelegate),
-              maxDelegationDepth: typeof m.maxDelegationDepth === "number" ? m.maxDelegationDepth : 0,
-              permittedActions: Array.isArray(m.permittedActions) ? (m.permittedActions as string[]) : ["*"],
-            };
+      const [mandatesList, agentsList, accountsList] = await Promise.all([
+        apiClient.mandates.list(activeEnvId).catch(() => [] as MandateDto[]),
+        apiClient.agents.list(activeEnvId).catch(() => [] as AgentDto[]),
+        apiClient.ledger.listAccounts(activeEnvId).catch(() => [] as LedgerAccountDto[]),
+      ]);
+
+      const agentById = new Map<string, AgentDto>();
+      for (const a of agentsList) {
+        agentById.set(a.id, a);
+      }
+
+      const mandateById = new Map<string, MandateDto>();
+      for (const m of mandatesList) {
+        mandateById.set(m.id, m);
+      }
+
+      const accountByMandate = new Map<string, LedgerAccountDto>();
+      for (const acc of accountsList) {
+        accountByMandate.set(acc.mandateId, acc);
+      }
+
+      const rows: MandateRow[] = [];
+
+      // 1. Map existing dynamic mandates for this environment
+      for (const m of mandatesList) {
+        const agent = agentById.get(m.holderAgentId);
+        const parentMandate = m.parentMandateId ? mandateById.get(m.parentMandateId) : null;
+        const parentAgent = parentMandate ? agentById.get(parentMandate.holderAgentId) : null;
+        const account = accountByMandate.get(m.id);
+
+        const budgetLimitMinor = typeof m.budgetLimitMinor === "number" ? m.budgetLimitMinor : 0;
+        const allocatedMinor = typeof m.allocatedMinor === "number" ? m.allocatedMinor : 0;
+        const spentMinor = account ? account.capturedMinor : typeof m.spentMinor === "number" ? m.spentMinor : 0;
+        const reservedMinor = account ? account.reservedMinor : typeof m.reservedMinor === "number" ? m.reservedMinor : 0;
+        const availableMinor = Math.max(0, budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor);
+
+        const isRoot = !m.parentMandateId || !agent?.parentAgentId || agent?.kind === "root";
+        const agentName =
+          agent?.name ||
+          (isRoot
+            ? activeEnv?.name
+              ? `${activeEnv.name} Orchestrator`
+              : "Main Orchestrator"
+            : "Specialist Subagent");
+        const role: "orchestrator" | "subagent" = isRoot ? "orchestrator" : "subagent";
+        const parentAgentName = parentAgent?.name || (isRoot ? "Lead Operator (You)" : "Main Orchestrator");
+
+        rows.push({
+          id: String(m.id),
+          holderAgentId: String(m.holderAgentId),
+          agentName,
+          role,
+          parentMandateId: m.parentMandateId ? String(m.parentMandateId) : null,
+          parentAgentName,
+          budgetLimitMinor,
+          allocatedMinor,
+          spentMinor,
+          reservedMinor,
+          availableMinor,
+          currency: String(m.currency || activeEnv?.currency || "USD"),
+          state: (m.state as MandateRow["state"]) || "active",
+          expiresAt: String(m.expiresAt || activeEnv?.expiresAt || new Date().toISOString()),
+          canDelegate: Boolean(m.canDelegate),
+          maxDelegationDepth:
+            typeof m.maxDelegationDepth === "number" ? m.maxDelegationDepth : isRoot ? 2 : 0,
+          permittedActions:
+            Array.isArray(m.permittedActions) && m.permittedActions.length > 0
+              ? (m.permittedActions as string[])
+              : ["*"],
+        });
+      }
+
+      // 2. Ensure every agent & subagent assigned to this environment is dynamically represented
+      const rootMandate = mandatesList.find((m) => !m.parentMandateId);
+      const rootAgent = agentsList.find((a) => !a.parentAgentId || a.kind === "root");
+
+      for (const agent of agentsList) {
+        const alreadyHasMandate = rows.some((r) => r.holderAgentId === agent.id);
+        if (!alreadyHasMandate) {
+          const isRoot = !agent.parentAgentId || agent.kind === "root";
+          rows.push({
+            id: `unfunded-${agent.id}`,
+            holderAgentId: agent.id,
+            agentName: agent.name,
+            role: isRoot ? "orchestrator" : "subagent",
+            parentMandateId: isRoot ? null : rootMandate?.id ?? null,
+            parentAgentName: isRoot ? "Lead Operator (You)" : rootAgent?.name ?? "Main Orchestrator",
+            budgetLimitMinor: 0,
+            allocatedMinor: 0,
+            spentMinor: 0,
+            reservedMinor: 0,
+            availableMinor: 0,
+            currency: String(activeEnv?.currency || "USD"),
+            state: agent.status === "revoked" ? "revoked" : "active",
+            expiresAt: String(activeEnv?.expiresAt || new Date().toISOString()),
+            canDelegate: isRoot,
+            maxDelegationDepth: isRoot ? 1 : 0,
+            permittedActions: ["*"],
           });
-          const missing = DEFAULT_MANDATES.filter((d) => !mapped.some((m) => m.id === d.id));
-          setMandates([...mapped, ...missing]);
         }
       }
+
+      setMandates(rows);
     } catch {
-      // Keep state
+      // In case of error, preserve existing or empty state without fake mock overrides
     } finally {
       setIsRefreshing(false);
     }
-  }, [activeEnvId]);
+  }, [activeEnvId, activeEnv]);
 
   React.useEffect(() => {
     void fetchMandates();
@@ -336,25 +409,35 @@ export function MandatesTable({
       </div>
 
       {/* AG Grid Container (auto-height: grid fits rows + pagination) */}
-      <div className="ag-theme-quartz-dark w-full rounded-lg overflow-hidden border border-border">
-        <AgGridReact<MandateRow>
-          rowData={filteredRows}
-          columnDefs={columnDefs}
-          onGridReady={onGridReady}
-          rowSelection={{ mode: "singleRow" }}
-          domLayout="autoHeight"
-          onRowClicked={(event) => {
-            if (event.data && onSelectMandate) {
-              onSelectMandate(event.data.id);
-            }
-          }}
-          pagination={true}
-          paginationPageSize={10}
-          paginationPageSizeSelector={[10, 25, 50]}
-          animateRows={false}
-          theme={themeQuartz}
-        />
-      </div>
+      {mandates.length === 0 && !isRefreshing ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40 py-12 text-center">
+          <Shield className="h-9 w-9 text-muted-foreground/60 mb-2" />
+          <p className="text-sm font-medium text-foreground">No mandates configured</p>
+          <p className="text-xs text-muted-foreground max-w-sm mt-1">
+            This environment has no spending mandates issued yet. Attach an agent or initialize a root mandate in the Workspace to establish authority.
+          </p>
+        </div>
+      ) : (
+        <div className="ag-theme-quartz-dark w-full rounded-lg overflow-hidden border border-border">
+          <AgGridReact<MandateRow>
+            rowData={filteredRows}
+            columnDefs={columnDefs}
+            onGridReady={onGridReady}
+            rowSelection={{ mode: "singleRow" }}
+            domLayout="autoHeight"
+            onRowClicked={(event) => {
+              if (event.data && onSelectMandate) {
+                onSelectMandate(event.data.id);
+              }
+            }}
+            pagination={true}
+            paginationPageSize={10}
+            paginationPageSizeSelector={[10, 25, 50]}
+            animateRows={false}
+            theme={themeQuartz}
+          />
+        </div>
+      )}
     </div>
   );
 }

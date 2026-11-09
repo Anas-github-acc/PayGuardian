@@ -113,7 +113,16 @@ export type PolicyDecisionDto = {
     | "DELEGATION_NOT_PERMITTED"
     | "DELEGATION_DEPTH_EXCEEDED"
     | "CURRENCY_MISMATCH"
-    | "APPROVAL_REQUIRED";
+    | "APPROVAL_REQUIRED"
+    | "WALLET_INTEGRITY_VIOLATION"
+    | "GRANT_NOT_FOUND"
+    | "GRANT_INACTIVE"
+    | "GRANT_EXPIRED"
+    | "GRANT_BUDGET_EXCEEDED"
+    | "CHILD_AGENT_NOT_ALLOWED_BY_GRANT"
+    | "ACTION_NOT_PERMITTED_BY_GRANT"
+    | "AGENT_IDENTITY_MISMATCH"
+    | "AUTHORITY_TARGET_NOT_FOUND";
   reason: string;
 };
 
@@ -165,6 +174,28 @@ export type ActionReserveResponse = {
 };
 
 // --- Approvals ---
+export type ApprovalDecision = "allow_once" | "allow" | "deny";
+
+export type DelegationGrantStatus = "active" | "consumed" | "revoked" | "expired";
+
+export type DelegationGrantDto = {
+  jti: string;
+  environmentId: string;
+  agentId: string;
+  parentMandateId: string;
+  allowedChildAgents: string[];
+  permittedActions: string[];
+  maxBudgetMinor: number;
+  amountUsedMinor: number;
+  maxDepth: number;
+  approvalStrictness: "allow_once" | "allow";
+  expiresAt: string;
+  status: DelegationGrantStatus;
+  requestHash: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ApprovalDto = {
   id: string;
   environmentId: string;

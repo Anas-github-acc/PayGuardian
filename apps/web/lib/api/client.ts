@@ -20,6 +20,7 @@ import type {
   HealthResponse,
   SystemStatusResponse,
 } from "@payguardian/contracts";
+import type { SpecialistAgent } from "@/components/agents/types";
 import type { paths, components } from "./generated-schema";
 
 export type { paths, components };
@@ -191,6 +192,10 @@ export class ApiClient {
   };
 
   readonly agents = {
+    catalog: async (options?: RequestOptions): Promise<SpecialistAgent[]> => {
+      const res = await this.get<unknown>("/v1/agents/catalog", options);
+      return this.unwrapArray<SpecialistAgent>(res, "catalog");
+    },
     list: async (environmentId: string, options?: RequestOptions): Promise<AgentDto[]> => {
       const res = await this.get<unknown>(
         `/v1/environments/${encodeURIComponent(environmentId)}/agents`,

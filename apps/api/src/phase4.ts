@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
+export type ApprovalDecision = "allow_once" | "allow" | "deny";
 
 export type Approval = {
   id: string;
@@ -13,6 +14,8 @@ export type Approval = {
   currency: string;
   requestHash: string;
   status: ApprovalStatus;
+  decision?: ApprovalDecision | null;
+  grantJti?: string | null;
   approvedBy: string | null;
   approvedAt: string | null;
   rejectionReason: string | null;
@@ -37,7 +40,13 @@ export interface ApprovalStore {
     environmentId: string,
     filter?: { status?: ApprovalStatus; mandateId?: string },
   ): Promise<Approval[]>;
-  approve(environmentId: string, id: string, userId: string): Promise<Approval>;
+  approve(
+    environmentId: string,
+    id: string,
+    userId: string,
+    decision?: ApprovalDecision,
+    grantJti?: string,
+  ): Promise<Approval>;
   reject(environmentId: string, id: string, userId: string, reason?: string): Promise<Approval>;
   findByRequestHash(environmentId: string, requestHash: string): Promise<Approval | null>;
 }
@@ -60,6 +69,8 @@ export class InMemoryApprovalStore implements ApprovalStore {
       currency: input.currency.toUpperCase(),
       requestHash: input.requestHash,
       status: "pending",
+      decision: null,
+      grantJti: null,
       approvedBy: null,
       approvedAt: null,
       rejectionReason: null,
@@ -88,7 +99,13 @@ export class InMemoryApprovalStore implements ApprovalStore {
     });
   }
 
-  async approve(environmentId: string, id: string, userId: string): Promise<Approval> {
+  async approve(
+    environmentId: string,
+    id: string,
+    userId: string,
+    decision: ApprovalDecision = "allow_once",
+    grantJti?: string,
+  ): Promise<Approval> {
     const approval = await this.get(environmentId, id);
     if (!approval) throw new Error("APPROVAL_NOT_FOUND");
     if (approval.status !== "pending") throw new Error("APPROVAL_ALREADY_DECIDED");
@@ -97,6 +114,8 @@ export class InMemoryApprovalStore implements ApprovalStore {
     const updated: Approval = {
       ...approval,
       status: "approved",
+      decision,
+      grantJti: grantJti ?? approval.grantJti ?? null,
       approvedBy: userId,
       approvedAt: now,
       updatedAt: now,

@@ -32,13 +32,21 @@ export function WorkspaceLayout({
   const {
     nodes,
     edges,
+    ledgerAccounts,
     isLoading: isGraphLoading,
     error: graphError,
     refetch: refetchGraph,
     revokeAgent,
   } = useWorkspaceGraph(env?.id, { pollingIntervalMs: 8000 });
 
+  const rootAgentNode = nodes.find((n) => n.role === "orchestrator") || nodes[0];
   const [selectedNodeId, setSelectedNodeId] = React.useState<string>("orchestrator-root");
+  const effectiveSelectedNodeId =
+    nodes.some((n) => n.id === selectedNodeId) ? selectedNodeId : rootAgentNode?.id ?? "orchestrator-root";
+
+  const dynamicSpentMinor = ledgerAccounts.reduce((sum, a) => sum + (a.capturedMinor || 0), 0);
+  const dynamicReservedMinor = ledgerAccounts.reduce((sum, a) => sum + (a.reservedMinor || 0), 0);
+  const totalLimitMinor = env?.budgetLimitMinor ?? 0;
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = React.useState(false);
 
@@ -121,11 +129,17 @@ export function WorkspaceLayout({
         </header>
 
         {/* 2. KPI Metrics Strip */}
-        <KpiStrip />
+        <KpiStrip
+          totalLimitMinor={totalLimitMinor}
+          spentMinor={dynamicSpentMinor}
+          reservedMinor={dynamicReservedMinor}
+          currency={env?.currency ?? "USD"}
+          rootAgentCount={nodes.filter((n) => n.role === "orchestrator").length || 1}
+        />
 
         {/* 3. Delegation Topology Container */}
         <DelegationTopology
-          selectedNodeId={selectedNodeId}
+          selectedNodeId={effectiveSelectedNodeId}
           onSelectNode={handleSelectNode}
           nodes={nodes}
           edges={edges}
@@ -138,7 +152,7 @@ export function WorkspaceLayout({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Left: Agent Inspector */}
           <AgentInspector
-            selectedNodeId={selectedNodeId}
+            selectedNodeId={effectiveSelectedNodeId}
             onRevoke={handleRevokeNode}
             onViewTrace={onViewTrace}
           />

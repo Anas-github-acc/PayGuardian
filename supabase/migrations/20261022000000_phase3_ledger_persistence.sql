@@ -226,7 +226,7 @@ begin
   if not found then
     raise exception using message = 'MANDATE_NOT_FOUND';
   end if;
-  if not mandate_row.permitted_actions @> jsonb_build_array(p_action) then
+  if not (mandate_row.permitted_actions @> '["*"]'::jsonb or mandate_row.permitted_actions @> jsonb_build_array(p_action)) then
     raise exception using message = 'ACTION_NOT_PERMITTED';
   end if;
   if mandate_row.currency <> upper(p_currency) then
@@ -261,6 +261,10 @@ begin
   set available_minor = available_minor - p_amount_minor,
       reserved_minor = reserved_minor + p_amount_minor
   where id = account_row.id;
+
+  update public.mandates
+  set reserved_minor = reserved_minor + p_amount_minor
+  where id = p_mandate_id;
 
   insert into public.reservations (action_id, ledger_account_id, amount_minor)
   values (action_row.id, account_row.id, p_amount_minor)
@@ -304,6 +308,12 @@ begin
   set reserved_minor = reserved_minor - reservation_row.amount_minor,
       captured_minor = captured_minor + reservation_row.amount_minor
   where id = reservation_row.ledger_account_id;
+
+  update public.mandates
+  set reserved_minor = greatest(0, reserved_minor - reservation_row.amount_minor),
+      spent_minor = spent_minor + reservation_row.amount_minor
+  where id = action_row.mandate_id;
+
   update public.reservations
   set state = 'captured', updated_at = now()
   where id = reservation_row.id
@@ -330,6 +340,7 @@ set search_path = public
 as $$
 declare
   reservation_row public.reservations;
+  action_row public.protected_actions;
 begin
   select reservation.* into reservation_row
   from public.reservations reservation
@@ -344,10 +355,15 @@ begin
     raise exception using message = 'INVALID_STATE';
   end if;
 
+  select * into action_row from public.protected_actions where id = p_action_id for update;
   update public.ledger_accounts
   set reserved_minor = reserved_minor - reservation_row.amount_minor,
       available_minor = available_minor + reservation_row.amount_minor
   where id = reservation_row.ledger_account_id;
+
+  update public.mandates
+  set reserved_minor = greatest(0, reserved_minor - reservation_row.amount_minor)
+  where id = action_row.mandate_id;
   update public.reservations
   set state = 'released', updated_at = now()
   where id = reservation_row.id

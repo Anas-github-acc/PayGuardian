@@ -1,10 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
-import type { Registry } from "./phase1.js";
+import type { Principal, Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
+import type { LedgerStore } from "./phase3.js";
+import type { ApprovalStore } from "./phase4.js";
 import type { AuditEventStore } from "./audit.js";
 
-type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
+type AppRequest = FastifyRequest & { principal?: Principal };
 
 async function principal(
   request: AppRequest,
@@ -31,6 +33,8 @@ export function registerPhase2Routes(
   dependencies: {
     registry: Registry;
     authority: AuthorityStore;
+    ledger?: LedgerStore;
+    approvals?: ApprovalStore;
     resolvePrincipal: PrincipalResolver;
     audit: AuditEventStore;
   },
@@ -50,6 +54,12 @@ export function registerPhase2Routes(
   }>("/v1/environments/:environmentId/mandates/root", async (request, reply) => {
     const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
     if (!owner) return;
+    if (owner.kind !== "user") {
+      return reply.code(403).send({
+        code: "USER_AUTHORITY_REQUIRED",
+        message: "Root mandate creation is user-only.",
+      });
+    }
     const environment = await dependencies.registry.getEnvironment(
       owner.userId,
       request.params.environmentId,
@@ -109,6 +119,7 @@ export function registerPhase2Routes(
   app.post<{
     Params: { mandateId: string };
     Body: {
+      agentId?: string;
       holderAgentId: string;
       budgetLimitMinor: number;
       currency: string;
@@ -117,45 +128,172 @@ export function registerPhase2Routes(
       canDelegate: boolean;
       maxDelegationDepth: number;
       approvalRequired: boolean;
+      idempotencyKey?: string;
+      grantJti?: string;
     };
   }>("/v1/mandates/:mandateId/delegations", async (request, reply) => {
     const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
     if (!owner) return;
-    const child = await dependencies.registry.getAgent(owner.userId, request.body.holderAgentId);
-    if (!child)
-      return reply.code(404).send({ code: "AGENT_NOT_FOUND", message: "Child agent not found." });
+
+    // STAGE 1: Agent identity derivation & spoofing check
+    if (owner.kind === "agent") {
+      if (request.body.agentId && request.body.agentId !== owner.agentId) {
+        return reply.code(403).send({
+          code: "AGENT_IDENTITY_MISMATCH",
+          message: "Supplied agentId does not match authenticated agent credentials.",
+        });
+      }
+    }
+
     const parent = await dependencies.authority.get(request.params.mandateId, owner.userId);
-    if (!parent || child.environmentId !== parent.environmentId || child.status !== "active") {
+    if (!parent) {
+      return reply
+        .code(404)
+        .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Parent mandate not found." });
+    }
+
+    // Agent caller must equal the parent mandate's holderAgentId
+    if (owner.kind === "agent") {
+      if (owner.agentId !== parent.holderAgentId) {
+        return reply.code(403).send({
+          code: "AGENT_IDENTITY_MISMATCH",
+          message: "Authenticated agent does not hold the parent mandate.",
+        });
+      }
+    }
+
+    const child = await dependencies.registry.getAgent(owner.userId, request.body.holderAgentId);
+    if (!child || child.environmentId !== parent.environmentId) {
+      return reply.code(404).send({
+        code: "AUTHORITY_TARGET_NOT_FOUND",
+        message: "Child agent not found in mandate environment.",
+      });
+    }
+    if (child.status !== "active") {
       return reply.code(403).send({
         code: "DELEGATION_TARGET_INVALID",
         message: "Child agent is not active in the mandate environment.",
       });
     }
+
+    // Enforce hierarchical child relationships at Gateway level:
+    // 1. A sub-mandate can only delegate to agents registered directly under its holder agent.
+    if (parent.parentMandateId && child.parentAgentId !== parent.holderAgentId) {
+      return reply.code(403).send({
+        code: "DELEGATION_TARGET_INVALID",
+        message: "Child agent must be registered under the delegating parent agent.",
+      });
+    }
+    // 2. Root orchestrator cannot directly delegate to nested sub-agents (prevent bypassing parent coordinator)
+    if (!parent.parentMandateId && child.parentAgentId) {
+      const parentAgent = await dependencies.registry.getAgent(owner.userId, child.parentAgentId);
+      if (parentAgent && parentAgent.kind !== "personal" && parentAgent.parentAgentId !== null) {
+        return reply.code(403).send({
+          code: "DELEGATION_TARGET_INVALID",
+          message: "Root mandate cannot directly delegate to nested child agents; delegate through the parent coordinator.",
+        });
+      }
+    }
+
     const environment = await dependencies.registry.getEnvironment(
       owner.userId,
       parent.environmentId,
     );
-    if (!environment || environment.status !== "active") {
+    if (!environment) {
+      return reply.code(404).send({
+        code: "AUTHORITY_TARGET_NOT_FOUND",
+        message: "Environment not found.",
+      });
+    }
+    if (environment.status !== "active") {
       return reply.code(409).send({
         code: "ENVIRONMENT_NOT_ACTIVE",
         message: "Delegation requires an active environment.",
       });
     }
+
+    // Fail-closed authorization: verify wallet integrity before allowing delegation
+    if (dependencies.ledger) {
+      const parentAccount = await dependencies.ledger.getAccountByMandate(
+        parent.environmentId,
+        parent.id,
+      );
+      if (parentAccount) {
+        const integrity = await dependencies.ledger.verifyAccountIntegrity(
+          parent.environmentId,
+          parentAccount.id,
+        );
+        if (!integrity.valid) {
+          const decision = {
+            allowed: false,
+            code: "WALLET_INTEGRITY_VIOLATION" as const,
+            reason: `Wallet integrity verification failed: ${integrity.reason}`,
+          };
+          await dependencies.audit.append({
+            environmentId: parent.environmentId,
+            actorType: owner.kind,
+            actorId: owner.kind === "agent" ? owner.agentId : owner.userId,
+            mandateId: parent.id,
+            eventType: "mandate.delegation_denied",
+            outcome: "denied",
+            reasonCode: "WALLET_INTEGRITY_VIOLATION",
+            payload: {
+              holderAgentId: child.id,
+              budgetLimitMinor: request.body.budgetLimitMinor,
+              integrityFailureReason: integrity.reason ?? null,
+            },
+          });
+          return reply.code(403).send({ decision });
+        }
+      }
+
+      const envIntegrity = await dependencies.ledger.verifyEnvironmentIntegrity(parent.environmentId);
+      if (!envIntegrity.valid) {
+        const decision = {
+          allowed: false,
+          code: "WALLET_INTEGRITY_VIOLATION" as const,
+          reason: `Environment wallet integrity verification failed: ${envIntegrity.reason}`,
+        };
+        await dependencies.audit.append({
+          environmentId: parent.environmentId,
+          actorType: owner.kind,
+          actorId: owner.kind === "agent" ? owner.agentId : owner.userId,
+          mandateId: parent.id,
+          eventType: "mandate.delegation_denied",
+          outcome: "denied",
+          reasonCode: "WALLET_INTEGRITY_VIOLATION",
+          payload: {
+            holderAgentId: child.id,
+            budgetLimitMinor: request.body.budgetLimitMinor,
+            integrityFailureReason: envIntegrity.reason ?? null,
+          },
+        });
+        return reply.code(403).send({ decision });
+      }
+    }
+
     const result = await dependencies.authority.delegate(request.params.mandateId, {
       issuerUserId: owner.userId,
       ...request.body,
       holderAgentId: child.id,
       currency: request.body.currency.toUpperCase(),
+      caller: owner,
+      idempotencyKey: request.body.idempotencyKey,
+      grantJti: request.body.grantJti,
     });
     await dependencies.audit.append({
       environmentId: parent.environmentId,
-      actorType: "user",
-      actorId: owner.userId,
+      actorType: owner.kind,
+      actorId: owner.kind === "agent" ? owner.agentId : owner.userId,
       mandateId: result.mandate?.id ?? parent.id,
       eventType: result.mandate ? "mandate.delegated" : "mandate.delegation_denied",
       outcome: result.mandate ? "success" : "denied",
       reasonCode: result.decision.code,
-      payload: { holderAgentId: child.id, budgetLimitMinor: request.body.budgetLimitMinor },
+      payload: {
+        holderAgentId: child.id,
+        budgetLimitMinor: request.body.budgetLimitMinor,
+        grantJti: request.body.grantJti ?? null,
+      },
     });
     return reply
       .code(result.decision.allowed ? 201 : 403)
@@ -171,6 +309,12 @@ export function registerPhase2Routes(
     async (request, reply) => {
       const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
       if (!owner) return;
+      if (owner.kind !== "user") {
+        return reply.code(403).send({
+          code: "USER_AUTHORITY_REQUIRED",
+          message: "Mandate revocation is user-only.",
+        });
+      }
       const mandate = await dependencies.authority.revoke(request.params.mandateId, owner.userId);
       if (!mandate)
         return reply.code(404).send({ code: "MANDATE_NOT_FOUND", message: "Mandate not found." });
@@ -193,6 +337,32 @@ export function registerPhase2Routes(
   }>("/v1/mandates/:mandateId/check", async (request, reply) => {
     const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
     if (!owner) return;
+
+    if (dependencies.ledger) {
+      const targetMandate = await dependencies.authority.get(request.params.mandateId, owner.userId);
+      if (targetMandate) {
+        const targetAccount = await dependencies.ledger.getAccountByMandate(
+          targetMandate.environmentId,
+          targetMandate.id,
+        );
+        if (targetAccount) {
+          const integrity = await dependencies.ledger.verifyAccountIntegrity(
+            targetMandate.environmentId,
+            targetAccount.id,
+          );
+          if (!integrity.valid) {
+            return reply.code(403).send({
+              decision: {
+                allowed: false,
+                code: "WALLET_INTEGRITY_VIOLATION",
+                reason: `Wallet integrity verification failed: ${integrity.reason}`,
+              },
+            });
+          }
+        }
+      }
+    }
+
     const decision = await dependencies.authority.evaluate(
       request.params.mandateId,
       {

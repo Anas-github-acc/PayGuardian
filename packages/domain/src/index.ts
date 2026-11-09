@@ -36,7 +36,16 @@ export type PolicyDecision = {
     | "DELEGATION_NOT_PERMITTED"
     | "DELEGATION_DEPTH_EXCEEDED"
     | "CURRENCY_MISMATCH"
-    | "APPROVAL_REQUIRED";
+    | "APPROVAL_REQUIRED"
+    | "WALLET_INTEGRITY_VIOLATION"
+    | "GRANT_NOT_FOUND"
+    | "GRANT_INACTIVE"
+    | "GRANT_EXPIRED"
+    | "GRANT_BUDGET_EXCEEDED"
+    | "CHILD_AGENT_NOT_ALLOWED_BY_GRANT"
+    | "ACTION_NOT_PERMITTED_BY_GRANT"
+    | "AGENT_IDENTITY_MISMATCH"
+    | "AUTHORITY_TARGET_NOT_FOUND";
   reason: string;
 };
 
@@ -63,8 +72,17 @@ function unique(values: string[]): string[] {
 }
 
 function isSubset(child: string[], parent: string[]): boolean {
+  if (parent.includes("*")) return true;
   const parentSet = new Set(parent);
-  return child.every((item) => parentSet.has(item));
+  return child.every((item) => {
+    if (parentSet.has(item)) return true;
+    for (const p of parent) {
+      if (p.endsWith(".*") && item.startsWith(p.slice(0, -1))) {
+        return true;
+      }
+    }
+    return false;
+  });
 }
 
 export function availableBudget(mandate: Mandate): number {
@@ -122,7 +140,7 @@ export function evaluateMandate(
     return { allowed: false, code: "MANDATE_REVOKED", reason: "Mandate is revoked." };
   if (isExpired(mandate, input.at))
     return { allowed: false, code: "MANDATE_EXPIRED", reason: "Mandate has expired." };
-  if (!mandate.permittedActions.includes(input.action)) {
+  if (!isSubset([input.action], mandate.permittedActions)) {
     return {
       allowed: false,
       code: "ACTION_NOT_PERMITTED",

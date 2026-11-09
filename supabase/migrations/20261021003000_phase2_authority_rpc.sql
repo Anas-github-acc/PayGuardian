@@ -186,7 +186,7 @@ begin
     or p_budget_limit_minor > parent_row.budget_limit_minor - parent_row.allocated_minor - parent_row.spent_minor - parent_row.reserved_minor then
     decision_code := 'BUDGET_EXCEEDED';
     decision_reason := 'Child allocation exceeds parent available budget.';
-  elsif not (parent_row.permitted_actions @> p_permitted_actions) then
+  elsif not (parent_row.permitted_actions @> '["*"]'::jsonb or parent_row.permitted_actions @> p_permitted_actions) then
     decision_code := 'ACTION_NOT_PERMITTED';
     decision_reason := 'Child scope broadens parent scope.';
   elsif p_expires_at > parent_row.expires_at then

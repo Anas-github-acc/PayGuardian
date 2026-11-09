@@ -8,10 +8,9 @@ import {
   ArrowRight,
   ArrowLeft,
   TestTube2,
-  Lock,
+  ShieldCheck,
   AlertCircle,
   Clock,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatMinorUnits, parseMajorToMinor, getCurrencySymbol } from "../../app/lib/currency";
@@ -19,8 +18,6 @@ import { useWorkspaceStore, workspaceStore, type Environment } from "../../app/l
 import { apiClient } from "../../lib/api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
 
 export interface CreateEnvironmentWizardProps {
   open?: boolean;
@@ -45,7 +42,9 @@ export function CreateEnvironmentWizard({
   const [name, setName] = React.useState("Procurement & Travel");
   const [slug, setSlug] = React.useState("procurement-travel");
   const [envType, setEnvType] = React.useState<"sandbox" | "production">("sandbox");
-  const [purpose, setPurpose] = React.useState("Autonomous flight booking, vendor procurement, and travel logistics");
+  const [purpose, setPurpose] = React.useState(
+    "Autonomous flight booking, vendor procurement, and travel logistics"
+  );
 
   // Step 2: Root Mandate
   const [currency, setCurrency] = React.useState("USD");
@@ -191,7 +190,7 @@ export function CreateEnvironmentWizard({
     setErrorMessage(null);
 
     try {
-      // 1. Create Environment in Gateway backend (routes through /api/proxy/v1/environments with session)
+      // 1. Create Environment in Gateway backend
       const createdEnv = await apiClient.environments.create({
         name,
         purpose,
@@ -244,460 +243,549 @@ export function CreateEnvironmentWizard({
         consentStatement: dynamicConsentText,
       };
 
-      // Add to workspace store and switch into it (executes atomic reset)
+      // Add to workspace store and switch into it
       workspaceStore.addEnvironment(newEnv);
       onCreated?.(newEnv);
       handleClose(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create environment on Gateway";
       setErrorMessage(msg);
-      // Notice: Do NOT register dummy ID to workspace store on failure!
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const stepTitles = [
-    { number: 1, title: "Identity" },
+    { number: 1, title: "Identity & Type" },
     { number: 2, title: "Root Mandate" },
     { number: 3, title: "Guardrails" },
     { number: 4, title: "Dynamic Consent" },
-    { number: 5, title: "Confirm" },
+    { number: 5, title: "Confirm & Deploy" },
   ];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl p-6 sm:p-7 bg-card border border-border rounded-xl text-foreground shadow-2xl top-shade">
-        <DialogHeader className="pb-3 border-b border-border">
+      <DialogContent className="max-w-2xl p-0 bg-zinc-950 border border-zinc-800 rounded-2xl text-white shadow-2xl overflow-hidden top-shade">
+        {/* ─── Header matching Workspace Section ─── */}
+        <DialogHeader className="px-6 py-5 border-b border-zinc-800/80 bg-zinc-950 text-left pr-12 space-y-0">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-success/10 text-success border border-success/30">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div>
-              <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
-                Create Environment & Authorize Root Mandate
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Step {step} of 5: {stepTitles[step - 1]?.title}
-              </DialogDescription>
-            </div>
+            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block animate-pulse shrink-0" />
+            <DialogTitle className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
+              <span>Workspace</span>
+              <span className="text-zinc-600 font-normal">/</span>
+              <span className="text-zinc-300 font-semibold">Create Environment</span>
+            </DialogTitle>
           </div>
 
-          {/* Stepper Progress Bar */}
-          <div className="mt-4 flex items-center justify-between gap-2">
-            {stepTitles.map((s) => {
-              const isPast = s.number < step;
-              const isCurrent = s.number === step;
+          <DialogDescription className="mt-1 text-xs text-zinc-400">
+            Initialize an isolated cryptographic tenant cell and authorize root spending authority.
+          </DialogDescription>
 
-              return (
-                <div key={s.number} className="flex-1 flex flex-col gap-1.5">
-                  <div
-                    className={cn(
-                      "h-1 w-full rounded-full transition-all duration-200",
-                      isPast && "bg-success",
-                      isCurrent && "bg-success shadow-[0_0_8px_oklch(0.751_0.209_154.1)]",
-                      !isPast && !isCurrent && "bg-white/[0.08]"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-[10px] font-mono tracking-tight",
-                      isCurrent ? "text-success font-medium" : isPast ? "text-muted-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {s.number}. {s.title}
-                  </span>
-                </div>
-              );
-            })}
+          {/* Connected Stepper Progress matching Workspace navigation */}
+          <div className="mt-4 space-y-2 pt-1">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="font-medium text-zinc-400">
+                Step {step} of 5 · <span className="text-zinc-200">{stepTitles[step - 1]?.title}</span>
+              </span>
+              <span className="font-semibold text-zinc-300 font-mono">
+                {step * 20}%
+              </span>
+            </div>
+
+            <div className="grid grid-cols-5 gap-1.5">
+              {stepTitles.map((s) => {
+                const isPast = s.number < step;
+                const isCurrent = s.number === step;
+
+                return (
+                  <div key={s.number} className="flex flex-col gap-1.5">
+                    <div
+                      className={cn(
+                        "h-1 w-full rounded-full transition-all duration-200",
+                        isCurrent && "bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]",
+                        isPast && "bg-zinc-500",
+                        !isPast && !isCurrent && "bg-zinc-800"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "text-[9px] font-mono truncate hidden sm:block",
+                        isCurrent
+                          ? "text-white font-medium"
+                          : isPast
+                          ? "text-zinc-400"
+                          : "text-zinc-600"
+                      )}
+                    >
+                      {s.number}. {s.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </DialogHeader>
 
-        {/* Step 1: Identity */}
-        {step === 1 && (
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Environment Name
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Travel & Logistics"
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Slug Identifier
-              </label>
-              <Input
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="e.g. travel-logistics"
-                className="h-9 font-mono text-xs"
-              />
-              <span className="text-[10px] text-muted-foreground mt-1 block">
-                Scoped route prefix: `/e/{slug}`
-              </span>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-2">
-                Environment Isolation Type
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div
-                  onClick={() => setEnvType("sandbox")}
-                  className={cn(
-                    "cursor-pointer rounded-lg border p-3 transition-all",
-                    envType === "sandbox"
-                      ? "border-warning bg-warning/[0.08] top-shade"
-                      : "border-border bg-card hover:border-border"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
-                      <TestTube2 className="h-3.5 w-3.5 text-warning" />
-                      Sandbox
-                    </span>
-                    <Badge variant="pending" className="text-[9px]">
-                      Safe
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Test simulated payment rails and attack scenarios with zero financial risk.
-                  </p>
-                </div>
-
-                <div
-                  onClick={() => setEnvType("production")}
-                  className={cn(
-                    "cursor-pointer rounded-lg border p-3 transition-all",
-                    envType === "production"
-                      ? "border-success bg-success/10 top-shade"
-                      : "border-border bg-card hover:border-border"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5 text-success" />
-                      Production
-                    </span>
-                    <Badge variant="authorized" className="text-[9px]">
-                      Live
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Live financial execution via PayPal credentials with real cardholder settlement.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Purpose & Scope
-              </label>
-              <Input
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                placeholder="Describe intended operations for this environment"
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Root Mandate */}
-        {step === 2 && (
-          <div className="py-4 space-y-4">
-            <div className="grid grid-cols-3 gap-3">
+        {/* ─── Body Content ─── */}
+        <div className="px-6 py-5 max-h-[60vh] overflow-y-auto space-y-5 bg-zinc-950/60">
+          {/* Step 1: Identity & Isolation */}
+          {step === 1 && (
+            <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-foreground block mb-1.5">
-                  Currency
+                <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                  Environment Name
                 </label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-border bg-card px-3 py-1 text-xs text-foreground focus-visible:outline-none"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="JPY">JPY (¥)</option>
-                  <option value="INR">INR (₹)</option>
-                </select>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Procurement & Travel"
+                  className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3.5 text-xs text-white placeholder:text-zinc-600 transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                />
               </div>
 
-              <div className="col-span-2">
-                <label className="text-xs font-medium text-foreground block mb-1.5">
-                  Root Budget Limit
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                  Slug Identifier
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
-                    {getCurrencySymbol(currency)}
-                  </span>
-                  <Input
-                    value={budgetString}
-                    onChange={(e) => setBudgetString(e.target.value)}
-                    placeholder="10,000"
-                    className="pl-8 font-mono text-xs h-9 tabular-nums"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="procurement-travel"
+                  className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3.5 font-mono text-xs text-white placeholder:text-zinc-600 transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                />
+                <span className="text-[11px] font-mono text-zinc-500 mt-1 block">
+                  Scoped route prefix: /e/{slug || "env"}
+                </span>
               </div>
-            </div>
 
-            <div className="rounded-md border border-border bg-card p-2.5 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Deterministic Minor Unit Integer:</span>
-              <span className="font-mono font-medium text-success tabular-nums">
-                {budgetLimitMinor.toLocaleString()} {currency === "JPY" ? "yen" : "cents/minor"}
-              </span>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Mandate Validity & Expiry
-              </label>
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {(["7d", "30d", "90d", "custom"] as const).map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setExpiryPreset(preset)}
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-2">
+                  Environment Isolation Type
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Sandbox Card */}
+                  <div
+                    onClick={() => setEnvType("sandbox")}
                     className={cn(
-                      "rounded-md border py-1.5 text-xs font-medium transition-all",
-                      expiryPreset === preset
-                        ? "border-success bg-success/10 text-success"
-                        : "border-border bg-card text-muted-foreground hover:bg-white/[0.04]"
+                      "cursor-pointer rounded-xl border p-4 transition-all duration-150 select-none",
+                      envType === "sandbox"
+                        ? "border-zinc-600 bg-zinc-900/90 shadow-sm ring-1 ring-zinc-700"
+                        : "border-zinc-800/80 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
                     )}
                   >
-                    {preset === "7d" && "7 Days"}
-                    {preset === "30d" && "30 Days"}
-                    {preset === "90d" && "90 Days"}
-                    {preset === "custom" && "Custom"}
-                  </button>
-                ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-xs text-white flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300">
+                          <TestTube2 className="h-3.5 w-3.5" />
+                        </div>
+                        Sandbox
+                      </span>
+                      <span className="font-mono text-[10px] rounded border border-zinc-800 bg-zinc-900/80 px-2 py-0.5 text-zinc-400">
+                        Simulated
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Safe mock rails and synthetic attack simulation with zero real financial risk.
+                    </p>
+                  </div>
+
+                  {/* Production Card */}
+                  <div
+                    onClick={() => setEnvType("production")}
+                    className={cn(
+                      "cursor-pointer rounded-xl border p-4 transition-all duration-150 select-none",
+                      envType === "production"
+                        ? "border-blue-500/60 bg-blue-950/20 shadow-sm ring-1 ring-blue-500/40"
+                        : "border-zinc-800/80 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-xs text-white flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-950 border border-blue-900/60 text-blue-400">
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                        </div>
+                        Production
+                      </span>
+                      <span className="font-mono text-[10px] rounded border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-blue-400">
+                        Live Rails
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Live settlement via PayPal API with real cardholder transactions and WebAuthn.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {expiryPreset === "custom" ? (
-                <Input
-                  type="date"
-                  value={customExpiry}
-                  onChange={(e) => setCustomExpiry(e.target.value)}
-                  className="h-9 text-xs font-mono"
-                />
-              ) : (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono mt-1">
-                  <Clock className="h-3.5 w-3.5 text-success" />
-                  <span>Authority expires on: {formattedExpiryDisplay}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Guardrails */}
-        {step === 3 && (
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Authorized Payment Rails
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={allowedRails.includes("PayPal")}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setAllowedRails([...allowedRails, "PayPal"]);
-                      } else {
-                        setAllowedRails(allowedRails.filter((r) => r !== "PayPal"));
-                      }
-                    }}
-                    className="rounded border-border bg-card accent-success"
-                  />
-                  <span>PayPal (Orders & Authorizations API v2)</span>
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                  Primary Purpose & Scope
                 </label>
+                <textarea
+                  rows={2}
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  placeholder="Describe bounded tasks agents in this environment will execute..."
+                  className="w-full resize-none rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-white placeholder:text-zinc-600 transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                />
+              </div>
+            </div>
+          )}
 
-                {envType === "sandbox" && (
-                  <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={allowedRails.includes("Simulation")}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setAllowedRails([...allowedRails, "Simulation"]);
-                        } else {
-                          setAllowedRails(allowedRails.filter((r) => r !== "Simulation"));
-                        }
-                      }}
-                      className="rounded border-border bg-card accent-warning"
-                    />
-                    <span>Simulation Mock Rail (In-memory attack vector testing)</span>
+          {/* Step 2: Root Mandate */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                    Currency
                   </label>
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 text-xs font-medium text-white transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600 cursor-pointer"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="JPY">JPY (¥)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                    Root Spending Ceiling
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-zinc-400">
+                      {getCurrencySymbol(currency)}
+                    </span>
+                    <input
+                      type="text"
+                      value={budgetString}
+                      onChange={(e) => setBudgetString(e.target.value)}
+                      placeholder="10,000"
+                      className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 pl-8 pr-3 font-mono text-xs tabular-nums text-white placeholder:text-zinc-600 transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* KPI Strip style integer breakdown */}
+              <div className="grid grid-cols-2 gap-px rounded-xl border border-zinc-800 bg-zinc-900/60 p-px shadow-sm">
+                <div className="flex flex-col justify-between rounded-l-lg bg-zinc-950 p-3.5">
+                  <span className="text-[11px] text-zinc-400">Deterministic Ceiling</span>
+                  <div className="mt-1">
+                    <div className="text-lg font-bold tracking-tight text-white font-mono tabular-nums">
+                      {formatMinorUnits(budgetLimitMinor, currency)}
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">
+                      Major currency allocation
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-between rounded-r-lg bg-zinc-950 p-3.5">
+                  <span className="text-[11px] text-zinc-400">Integer Minor Units</span>
+                  <div className="mt-1">
+                    <div className="text-lg font-bold tracking-tight text-zinc-300 font-mono tabular-nums">
+                      {budgetLimitMinor.toLocaleString()} {currency === "JPY" ? "yen" : "minor units"}
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">
+                      Zero floating-point drift
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expiry Presets */}
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                  Authority Validity Window
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  {(["7d", "30d", "90d", "custom"] as const).map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setExpiryPreset(preset)}
+                      className={cn(
+                        "rounded-lg border py-2 text-xs font-medium transition-all cursor-pointer text-center select-none",
+                        expiryPreset === preset
+                          ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
+                          : "border-zinc-800/80 bg-zinc-900/40 text-zinc-400 hover:text-white hover:bg-zinc-900/80"
+                      )}
+                    >
+                      {preset === "7d" && "7 Days"}
+                      {preset === "30d" && "30 Days"}
+                      {preset === "90d" && "90 Days"}
+                      {preset === "custom" && "Custom"}
+                    </button>
+                  ))}
+                </div>
+
+                {expiryPreset === "custom" ? (
+                  <input
+                    type="date"
+                    value={customExpiry}
+                    onChange={(e) => setCustomExpiry(e.target.value)}
+                    className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 text-xs font-mono text-white transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-xs text-zinc-400 font-mono">
+                    <Clock className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                    <span>Authority expires on: <strong className="text-zinc-200">{formattedExpiryDisplay}</strong></span>
+                  </div>
                 )}
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-3">
+          {/* Step 3: Guardrails */}
+          {step === 3 && (
+            <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-foreground block mb-1.5">
-                  Max Per-Action Cap
+                <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                  Authorized Payment Rails
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
-                    {getCurrencySymbol(currency)}
-                  </span>
-                  <Input
-                    value={maxPerActionString}
-                    onChange={(e) => setMaxPerActionString(e.target.value)}
-                    placeholder="500"
-                    className="pl-8 font-mono text-xs h-9 tabular-nums"
-                  />
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 rounded-lg border border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700 cursor-pointer transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      checked={allowedRails.includes("PayPal")}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAllowedRails([...allowedRails, "PayPal"]);
+                        } else {
+                          setAllowedRails(allowedRails.filter((r) => r !== "PayPal"));
+                        }
+                      }}
+                      className="size-4 rounded border-zinc-700 bg-zinc-800 text-white accent-white cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-medium text-white">PayPal Rails</div>
+                      <div className="text-[11px] text-zinc-500">Orders & Authorizations API v2 with idempotent capture</div>
+                    </div>
+                    <span className="ml-auto font-mono text-[10px] text-zinc-400 rounded border border-zinc-800 px-2 py-0.5 bg-zinc-900/80">
+                      Standard
+                    </span>
+                  </label>
+
+                  {envType === "sandbox" && (
+                    <label className="flex items-center gap-3 p-3 rounded-lg border border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700 cursor-pointer transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={allowedRails.includes("Simulation")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setAllowedRails([...allowedRails, "Simulation"]);
+                          } else {
+                            setAllowedRails(allowedRails.filter((r) => r !== "Simulation"));
+                          }
+                        }}
+                        className="size-4 rounded border-zinc-700 bg-zinc-800 text-white accent-white cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-medium text-white">Simulation Mock Rail</div>
+                        <div className="text-[11px] text-zinc-500">In-memory synthetic payment simulator for attack vectors</div>
+                      </div>
+                      <span className="ml-auto font-mono text-[10px] text-zinc-400 rounded border border-zinc-800 px-2 py-0.5 bg-zinc-900/80">
+                        Simulated
+                      </span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                    Max Per-Action Cap
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-zinc-400">
+                      {getCurrencySymbol(currency)}
+                    </span>
+                    <input
+                      type="text"
+                      value={maxPerActionString}
+                      onChange={(e) => setMaxPerActionString(e.target.value)}
+                      placeholder="500"
+                      className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 pl-8 pr-3 font-mono text-xs tabular-nums text-white placeholder:text-zinc-600 transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                    Human Approval Threshold
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-zinc-400">
+                      {getCurrencySymbol(currency)}
+                    </span>
+                    <input
+                      type="text"
+                      value={approvalThresholdString}
+                      onChange={(e) => setApprovalThresholdString(e.target.value)}
+                      placeholder="1,000"
+                      className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 pl-8 pr-3 font-mono text-xs tabular-nums text-white placeholder:text-zinc-600 transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-foreground block mb-1.5">
-                  Human Approval Threshold
+                <label className="text-xs font-medium text-zinc-300 block mb-1.5">
+                  Maximum Delegation Depth (Hard Invariant: Depth ≤ 2)
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
-                    {getCurrencySymbol(currency)}
-                  </span>
-                  <Input
-                    value={approvalThresholdString}
-                    onChange={(e) => setApprovalThresholdString(e.target.value)}
-                    placeholder="1,000"
-                    className="pl-8 font-mono text-xs h-9 tabular-nums"
-                  />
-                </div>
+                <select
+                  value={maxDelegationDepth}
+                  onChange={(e) => setMaxDelegationDepth(Number(e.target.value))}
+                  className="w-full h-10 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 text-xs text-white transition-colors focus:border-zinc-600 focus:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-600 cursor-pointer"
+                >
+                  <option value={1}>1 Tier (Root Agent only, no sub-delegation)</option>
+                  <option value={2}>2 Tiers (Root Orchestrator → Specialist Subagents)</option>
+                  <option value={3}>3 Tiers (Extended Tree: Root → Specialists → Micro-Agents)</option>
+                </select>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Enforces monotonically decreasing spending bounds down the agent delegation hierarchy.
+                </span>
               </div>
             </div>
+          )}
 
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Maximum Delegation Depth
+          {/* Step 4: Dynamic Consent Generation */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileCheck className="h-4 w-4 text-zinc-300" />
+                  <span className="text-xs font-semibold text-white">
+                    Mandate-Derived Cryptographic Consent
+                  </span>
+                </div>
+                <span className="font-mono text-[10px] rounded border border-zinc-800 bg-zinc-900/80 px-2 py-0.5 text-zinc-400">
+                  SHA-256 Digest Bound
+                </span>
+              </div>
+
+              {/* Monospace Contract Terminal Box */}
+              <div className="rounded-xl border border-zinc-800 bg-black p-4 font-mono text-xs text-zinc-300 leading-relaxed shadow-inner">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-900 text-[10px] text-zinc-500">
+                  <span>CONSENT_SPEC_V1.AUTH</span>
+                  <span>FIDO2 WebAuthn Armed</span>
+                </div>
+                {dynamicConsentText}
+              </div>
+
+              <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3 text-[11px] text-zinc-400 leading-relaxed">
+                <strong className="text-zinc-200">Notice:</strong> This statement is mathematically compiled from the configured parameters. It cannot be edited manually. Your authorization binds this root mandate policy to the double-entry ledger.
+              </div>
+
+              <label className="flex items-start gap-3 p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 cursor-pointer transition-colors select-none">
+                <input
+                  type="checkbox"
+                  checked={consentConfirmed}
+                  onChange={(e) => setConsentConfirmed(e.target.checked)}
+                  className="mt-0.5 size-4 rounded border-zinc-700 bg-zinc-800 text-white accent-white shrink-0 cursor-pointer"
+                />
+                <div className="space-y-0.5">
+                  <span className="text-xs font-medium text-white block">
+                    I explicitly authorize this root delegation grant
+                  </span>
+                  <span className="text-[11px] text-zinc-400 block leading-relaxed">
+                    I acknowledge that autonomous child subagents will be bounded by these invariants and high-value payments will demand biometric passkey sign-off.
+                  </span>
+                </div>
               </label>
-              <select
-                value={maxDelegationDepth}
-                onChange={(e) => setMaxDelegationDepth(Number(e.target.value))}
-                className="flex h-9 w-full rounded-md border border-border bg-card px-3 py-1 text-xs text-foreground focus-visible:outline-none"
-              >
-                <option value={1}>1 Level (Root Agent only, no sub-delegation)</option>
-                <option value={2}>2 Levels (Root Agent → Specialist Subagents)</option>
-                <option value={3}>3 Levels (Root Agent → Specialists → Micro-Agents)</option>
-                <option value={4}>4 Levels (Extended tree)</option>
-              </select>
-              <span className="text-[10px] text-muted-foreground mt-1 block">
-                Limits how many hops of authority child agents may spawn.
-              </span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 4: Dynamic Consent Generation */}
-        {step === 4 && (
-          <div className="py-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <FileCheck className="h-4 w-4 text-success" />
-              <span className="text-xs font-semibold text-foreground">
-                Mandate-Derived Cryptographic Consent Agreement
-              </span>
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-4 font-mono text-xs text-foreground leading-relaxed shadow-inner">
-              {dynamicConsentText}
-            </div>
-
-            <div className="rounded-md border border-border bg-white/[0.02] p-3 text-[11px] text-muted-foreground leading-relaxed">
-              <strong>Notice:</strong> This consent statement is computed deterministically from your mandate policies. It cannot be edited manually. Your digital signature authorizes the gateway to bind this root policy to the ledger.
-            </div>
-
-            <label className="flex items-start gap-2.5 p-2 rounded-md border border-border bg-secondary cursor-pointer">
-              <input
-                type="checkbox"
-                checked={consentConfirmed}
-                onChange={(e) => setConsentConfirmed(e.target.checked)}
-                className="mt-0.5 rounded border-border bg-card accent-success shrink-0"
-              />
-              <span className="text-xs font-medium text-foreground">
-                I have reviewed the synthesized mandate terms above and explicitly authorize this root delegation grant.
-              </span>
-            </label>
-          </div>
-        )}
-
-        {/* Step 5: Review & Confirm */}
-        {step === 5 && (
-          <div className="py-4 space-y-4">
-            <div className="rounded-lg border border-border bg-card overflow-hidden text-xs">
-              <div className="p-3 bg-white/[0.04] border-b border-border font-semibold text-foreground">
-                Root Mandate Policy Summary
-              </div>
-              <div className="divide-y divide-border">
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Environment:</span>
-                  <span className="font-medium text-foreground">
-                    {name} <span className="font-mono text-muted-foreground">({slug})</span>
+          {/* Step 5: Review & Confirm */}
+          {step === 5 && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden text-xs">
+                <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/60 border-b border-zinc-800">
+                  <span className="font-semibold text-white">Root Mandate Policy Contract</span>
+                  <span className="font-mono text-[10px] rounded border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-blue-400">
+                    Ready for Provisioning
                   </span>
                 </div>
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Type:</span>
-                  <Badge variant={envType === "sandbox" ? "pending" : "authorized"}>
-                    {envType.toUpperCase()}
-                  </Badge>
-                </div>
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Root Budget Limit:</span>
-                  <span className="font-mono font-semibold text-success tabular-nums">
-                    {formatMinorUnits(budgetLimitMinor, currency)} ({budgetLimitMinor} minor)
-                  </span>
-                </div>
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Auto-Approval Cap:</span>
-                  <span className="font-mono text-foreground tabular-nums">
-                    {formatMinorUnits(approvalThresholdMinor, currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Max Delegation Depth:</span>
-                  <span className="font-medium text-foreground">{maxDelegationDepth} Levels</span>
-                </div>
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Expires At:</span>
-                  <span className="font-mono text-foreground">{formattedExpiryDisplay}</span>
-                </div>
-                <div className="flex justify-between p-2.5">
-                  <span className="text-muted-foreground">Consent Status:</span>
-                  <span className="flex items-center gap-1 font-semibold text-success">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Authorized by Operator
-                  </span>
+
+                <div className="p-4 space-y-3.5">
+                  {/* Row 1: Environment & Type */}
+                  <div className="grid grid-cols-2 gap-3 pb-3 border-b border-zinc-900">
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-mono">Environment</span>
+                      <span className="font-medium text-white text-sm">{name}</span>
+                      <span className="font-mono text-[11px] text-zinc-400 block">/e/{slug}</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-mono">Type & Rails</span>
+                      <span className="font-medium text-white">{envType.toUpperCase()}</span>
+                      <span className="text-zinc-400 text-[11px] block">{allowedRails.join(", ")}</span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Financial Caps */}
+                  <div className="grid grid-cols-3 gap-3 pb-3 border-b border-zinc-900 font-mono">
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase">Root Ceiling</span>
+                      <span className="font-bold text-white text-sm">
+                        {formatMinorUnits(budgetLimitMinor, currency)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase">Approval Trigger</span>
+                      <span className="font-medium text-zinc-300 text-sm">
+                        {formatMinorUnits(approvalThresholdMinor, currency)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase">Max Depth</span>
+                      <span className="font-medium text-zinc-300 text-sm">{maxDelegationDepth} Tiers</span>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Meta details */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-400">Mandate Expiry:</span>
+                    <span className="font-mono text-zinc-300">{formattedExpiryDisplay}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-400">Consent Verification:</span>
+                    <span className="flex items-center gap-1.5 font-medium text-zinc-200">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-blue-400" />
+                      Cryptographic Signature Armed
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {errorMessage && (
-          <div className="flex items-center gap-2 p-2.5 rounded-md border border-destructive/30 bg-destructive/10 text-xs text-destructive">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
+          {errorMessage && (
+            <div className="flex items-center gap-2.5 p-3 rounded-lg border border-red-500/30 bg-red-950/20 text-xs text-red-300">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+        </div>
 
-        {/* Footer Navigation Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-border mt-2">
+        {/* ─── Footer matching Workspace Action Bar ─── */}
+        <div className="px-6 py-4 border-t border-zinc-800/80 bg-zinc-950 flex items-center justify-between">
           {step > 1 ? (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setStep((step - 1) as WizardStep)}
               disabled={isSubmitting}
-              className="gap-1.5 text-xs"
+              className="h-9 gap-1.5 border-zinc-800 bg-zinc-900/80 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Back</span>
@@ -707,36 +795,45 @@ export function CreateEnvironmentWizard({
               variant="ghost"
               size="sm"
               onClick={() => handleClose(false)}
-              className="text-xs text-muted-foreground"
+              className="h-9 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900"
             >
               Cancel
             </Button>
           )}
 
           {step < 5 ? (
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              type="button"
               onClick={handleNextStep}
-              className="gap-1.5 text-xs"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-zinc-200 cursor-pointer shadow-sm active:scale-[0.99]"
             >
               <span>Continue</span>
               <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            </button>
           ) : (
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              type="button"
               onClick={() => void handleAuthorizeAndCreate()}
               disabled={isSubmitting}
-              className="gap-2 text-xs bg-success hover:bg-success/90 text-background font-semibold"
+              className="flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 text-xs font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.99]"
             >
-              <Shield className="h-4 w-4" />
-              <span>{isSubmitting ? "Authorizing Mandate…" : "Authorize & Create Environment"}</span>
-            </Button>
+              {isSubmitting ? (
+                <>
+                  <div className="h-3.5 w-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                  <span>Authorizing Mandate…</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Authorize & Create Environment</span>
+                </>
+              )}
+            </button>
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
+export default CreateEnvironmentWizard;

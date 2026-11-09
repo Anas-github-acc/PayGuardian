@@ -20,7 +20,7 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
   const currentEnv = store.currentEnvironment;
 
   // Live backend hook fetching environment agents
-  const { agents, isLoading, error, refetch } = useAgentLibrary(currentEnv?.id);
+  const { agents, catalogAgents = [], isLoading, error, refetch } = useAgentLibrary(currentEnv?.id);
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState<AgentCategory>("all");
@@ -61,6 +61,34 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
       return true;
     });
   }, [agents, selectedCategory, showAttachedOnly, searchQuery, nodeStatusById]);
+
+  // Filtered catalog agents available to browse and attach
+  const filteredCatalogAgents = React.useMemo(() => {
+    return catalogAgents.filter((agent) => {
+      if (selectedCategory !== "all" && agent.category !== selectedCategory) {
+        return false;
+      }
+      const isAttached = agents.some(
+        (a) =>
+          a.name.toLowerCase() === agent.name.toLowerCase() ||
+          (agent.specialty !== "custom" && a.specialty === agent.specialty)
+      );
+      if (showAttachedOnly && !isAttached) {
+        return false;
+      }
+      if (searchQuery.trim().length > 0) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = agent.name.toLowerCase().includes(query);
+        const matchesSpecialty = agent.specialty.toLowerCase().includes(query);
+        const matchesDesc = agent.description.toLowerCase().includes(query);
+        const matchesTagline = agent.tagline.toLowerCase().includes(query);
+        if (!matchesName && !matchesSpecialty && !matchesDesc && !matchesTagline) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [catalogAgents, selectedCategory, showAttachedOnly, searchQuery, agents]);
 
   const categories: { id: AgentCategory; label: string }[] = [
     { id: "all", label: "All Agents" },
@@ -133,6 +161,31 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
         key={agent.id}
         agent={agent}
         isAttached={status !== undefined || agent.isAttached}
+        status={status}
+        onInspect={handleInspect}
+        onAttach={handleAttach}
+      />
+    );
+  };
+
+  const renderCatalogCard = (agent: SpecialistAgent) => {
+    const isAttached = agents.some(
+      (a) =>
+        a.name.toLowerCase() === agent.name.toLowerCase() ||
+        (agent.specialty !== "custom" && a.specialty === agent.specialty)
+    );
+    const attachedAgent = agents.find(
+      (a) =>
+        a.name.toLowerCase() === agent.name.toLowerCase() ||
+        (agent.specialty !== "custom" && a.specialty === agent.specialty)
+    );
+    const status = attachedAgent ? nodeStatusById.get(attachedAgent.id) ?? "active" : undefined;
+
+    return (
+      <AgentCard
+        key={agent.id}
+        agent={agent}
+        isAttached={isAttached}
         status={status}
         onInspect={handleInspect}
         onAttach={handleAttach}
@@ -305,25 +358,28 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
               </section>
             )}
 
-            {/* R2: Explicit Agent Catalog Unavailable Container (GAP-CAT-01) */}
+            {/* Available in library (Catalog) */}
             <section className="mt-10 border-t border-border pt-8">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-foreground">Available in library (Catalog)</h2>
-                <span className="text-xs font-mono text-muted-foreground">GAP-CAT-01</span>
-              </div>
-              <div className="rounded-lg border border-warning/30 bg-card p-6 text-center">
-                <AlertCircle className="mx-auto h-8 w-8 text-warning mb-2" />
-                <h3 className="text-sm font-semibold text-foreground">Agent Catalog Unavailable</h3>
-                <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Fastify Gateway lacks an agent catalog endpoint. Global specialist agent marketplace directory is
-                  not yet exposed by the backend API.
-                </p>
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded border border-border bg-secondary/60 px-3 py-1 font-mono text-[11px] text-muted-foreground">
-                  <span>Referencing</span>
-                  <strong className="text-foreground">GAP-CAT-01</strong>
-                  <span>in docs/gaps.md</span>
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">Available in library (Catalog)</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Certified specialist agent templates ready to be attached to your environment.
+                  </p>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  {filteredCatalogAgents.length} available
+                </span>
               </div>
+              {filteredCatalogAgents.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border bg-card/30 p-6 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    No catalog agents matched the current filter.
+                  </p>
+                </div>
+              ) : (
+                <div className={gridClass}>{filteredCatalogAgents.map(renderCatalogCard)}</div>
+              )}
             </section>
           </>
         )}

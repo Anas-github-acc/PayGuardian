@@ -66,6 +66,64 @@ class GatewayClient:
             res = client.post(url, json=payload, headers=self._headers())
             return res.json()  # type: ignore[no-any-return]
 
+    def list_mandates(self, environment_id: str) -> list[dict[str, Any]]:
+        """Retrieve all active and child mandates for the given environment from the Gateway."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/mandates"
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                res = client.get(url, headers=self._headers())
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("mandates", [])  # type: ignore[no-any-return]
+        except Exception:
+            pass
+        return []
+
+    def get_mandate(self, mandate_id: str) -> dict[str, Any] | None:
+        """Fetch a specific mandate by ID from the Gateway."""
+        url = f"{self.base_url}/v1/mandates/{mandate_id}"
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                res = client.get(url, headers=self._headers())
+                if res.status_code == 200:
+                    return res.json()  # type: ignore[no-any-return]
+        except Exception:
+            pass
+        return None
+
+    def delegate_mandate(
+        self,
+        mandate_id: str,
+        holder_agent_id: str,
+        budget_limit_minor: int,
+        currency: str = "USD",
+        permitted_actions: list[str] | None = None,
+        expires_at: str | None = None,
+        can_delegate: bool = False,
+        max_delegation_depth: int = 0,
+        approval_required: bool = False,
+        idempotency_key: str | None = None,
+        grant_jti: str | None = None,
+    ) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/mandates/{mandate_id}/delegations"
+        payload: dict[str, Any] = {
+            "holderAgentId": holder_agent_id,
+            "budgetLimitMinor": budget_limit_minor,
+            "currency": currency.upper(),
+            "permittedActions": permitted_actions or ["*"],
+            "expiresAt": expires_at or "2099-01-01T00:00:00.000Z",
+            "canDelegate": can_delegate,
+            "maxDelegationDepth": max_delegation_depth,
+            "approvalRequired": approval_required,
+        }
+        if idempotency_key:
+            payload["idempotencyKey"] = idempotency_key
+        if grant_jti:
+            payload["grantJti"] = grant_jti
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, json=payload, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
     def simulate_action(
         self,
         environment_id: str,
@@ -190,3 +248,120 @@ class GatewayClient:
         with httpx.Client(timeout=self.timeout) as client:
             res = client.patch(url, json=payload, headers=self._headers())
             return res.json()  # type: ignore[no-any-return]
+
+    def get_catalog(self) -> list[dict[str, Any]]:
+        """Retrieve the global catalog of specialist subagents from Gateway."""
+        url = f"{self.base_url}/v1/agents/catalog"
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                res = client.get(url, headers=self._headers())
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("catalog", [])  # type: ignore[no-any-return]
+        except Exception:
+            pass
+        return []
+
+    def list_agents(self, environment_id: str) -> list[dict[str, Any]]:
+        """Retrieve registered agents in the environment."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/agents"
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                res = client.get(url, headers=self._headers())
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("agents", [])  # type: ignore[no-any-return]
+        except Exception:
+            pass
+        return []
+
+    def register_child_agent(
+        self,
+        environment_id: str,
+        parent_agent_id: str,
+        name: str,
+        kind: str = "custom",
+        capabilities: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Register/attach a child subagent in the environment under the parent coordinator."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/agents/children"
+        payload = {
+            "parentAgentId": parent_agent_id,
+            "name": name,
+            "kind": kind,
+            "capabilities": capabilities or [],
+        }
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, json=payload, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def list_ledger_accounts(self, environment_id: str) -> list[dict[str, Any]]:
+        """List ledger accounts in the environment."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/ledger/accounts"
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                res = client.get(url, headers=self._headers())
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("accounts", [])  # type: ignore[no-any-return]
+        except Exception:
+            pass
+        return []
+
+    def create_ledger_account(
+        self,
+        environment_id: str,
+        mandate_id: str,
+        parent_account_id: str | None,
+        currency: str = "USD",
+        available_minor: int = 0,
+    ) -> dict[str, Any]:
+        """Create a child ledger account for a mandate."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/ledger/accounts"
+        payload: dict[str, Any] = {
+            "mandateId": mandate_id,
+            "currency": currency.upper(),
+            "availableMinor": available_minor,
+        }
+        if parent_account_id is not None:
+            payload["parentAccountId"] = parent_account_id
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, json=payload, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def allocate_ledger(
+        self,
+        environment_id: str,
+        parent_account_id: str,
+        child_account_id: str,
+        amount_minor: int,
+        idempotency_key: str,
+        request_hash: str,
+    ) -> dict[str, Any]:
+        """Allocate budget from parent account to child account."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/ledger/allocations"
+        payload = {
+            "parentAccountId": parent_account_id,
+            "childAccountId": child_account_id,
+            "amountMinor": amount_minor,
+            "idempotencyKey": idempotency_key,
+            "requestHash": request_hash,
+        }
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, json=payload, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def capture_action(self, environment_id: str, action_id: str) -> dict[str, Any]:
+        """Capture a reserved action on the Gateway ledger, settling funds."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/actions/{action_id}/capture"
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        url = f"{self.base_url}{path}"
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, json=payload, headers=self._headers())
+            if res.status_code >= 400:
+                raise RuntimeError(f"Gateway POST {path} failed: {res.status_code} {res.text}")
+            return res.json() if res.content else {}

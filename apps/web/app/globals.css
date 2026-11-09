@@ -10,6 +10,14 @@
  * Raw values are stored as oklch components ("<L> <C> <H>") so Tailwind
  * opacity modifiers work through <alpha-value>.
  */
+/* Hide Next.js dev indicator badge in development */
+[data-nextjs-toast],
+nextjs-portal,
+#nextjs-dev-indicator,
+div[data-nextjs-toast-wrapper] {
+  display: none !important;
+}
+
 :root {
   color-scheme: dark;
 

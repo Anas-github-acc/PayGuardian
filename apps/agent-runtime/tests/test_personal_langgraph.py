@@ -1,0 +1,655 @@
+"""Unit tests for LangGraph Personal Agent and event emission."""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from agent_runtime.gateway_client import GatewayClient
+from agent_runtime.main import app
+from agent_runtime.personal_langgraph import (
+    EventEmitter,
+    PersonalLangGraphAgent,
+    sanitize_event_data,
+)
+
+client = TestClient(app)
+
+
+def test_langgraph_agent_full_workflow() -> None:
+    agent = PersonalLangGraphAgent()
+    result = agent.run("Plan a weekend getaway to Seattle with hotel and dinner")
+
+    assert "final_response" in result
+    assert len(result["final_response"]) > 0
+
+    # Verify plan contains subgoals
+    assert len(result["plan"]) >= 3
+    assert any("travel" in step.lower() or "itinerary" in step.lower() for step in result["plan"])
+
+    # Verify subagent tasks
+    tasks = result["subagent_tasks"]
+    assert len(tasks) >= 3
+    agent_names = {t["agent"] for t in tasks}
+    assert "travel" in agent_names
+    assert "hotel" in agent_names
+    assert "food" in agent_names
+
+    for t in tasks:
+        assert t["status"] == "completed"
+        assert t["authority_checked"] is True
+        assert t["delegated"] is True
+
+    # Verify results
+    results = result["results"]
+    assert "travel" in results
+    assert "hotel" in results
+    assert "food" in results
+
+
+def test_structured_events_emission() -> None:
+    emitted_events: list[dict] = []
+    emitter = EventEmitter(listener=lambda e: emitted_events.append(e))
+
+    agent = PersonalLangGraphAgent(event_emitter=emitter)
+    _ = agent.run("Plan a trip to Tokyo with lodging and ramen recommendations")
+
+    event_types = [e["event_type"] for e in emitted_events]
+
+    # Verify all 9 required event types are emitted
+    required_events = [
+        "run.started",
+        "task.created",
+        "agent.started",
+        "agent.progress",
+        "tool.started",
+        "tool.completed",
+        "agent.output",
+        "task.completed",
+        "run.completed",
+    ]
+
+    for req in required_events:
+        assert req in event_types, f"Missing required event: {req}"
+
+    # Verify event order invariants
+    first_run_started = event_types.index("run.started")
+    last_run_completed = len(event_types) - 1 - event_types[::-1].index("run.completed")
+    assert first_run_started == 0
+    assert last_run_completed == len(event_types) - 1
+
+    # Verify event structure
+    for event in emitted_events:
+        assert "event_type" in event
+        assert "timestamp" in event
+        assert "payload" in event
+        assert isinstance(event["payload"], dict)
+
+
+def test_private_chain_of_thought_not_exposed() -> None:
+    # Test data sanitization directly
+    dirty_payload = {
+        "summary": "Legitimate user-facing plan",
+        "thought": "Private internal reasoning that should never be shown to user",
+        "thinking": "Step by step hidden CoT",
+        "reasoning": "Deductions",
+        "chain_of_thought": "Secret plan details",
+        "nested": {
+            "visible": True,
+            "private_cot": "Hidden nested calculation",
+        },
+        "description": "Clean description <thought>internal CoT inside tags</thought> rest of text",
+    }
+
+    clean = sanitize_event_data(dirty_payload)
+    assert "thought" not in clean
+    assert "thinking" not in clean
+    assert "reasoning" not in clean
+    assert "chain_of_thought" not in clean
+    assert "private_cot" not in clean["nested"]
+    assert clean["nested"]["visible"] is True
+    assert clean["summary"] == "Legitimate user-facing plan"
+    assert "<thought>" not in clean["description"]
+    assert "internal CoT inside tags" not in clean["description"]
+
+    # Test event emitter never leaks CoT
+    emitter = EventEmitter()
+    event = emitter.emit(
+        "agent.progress",
+        payload={
+            "step": "planning",
+            "message": "Generating options",
+            "thought": "Secret thoughts",
+        },
+    )
+    assert "thought" not in event["payload"]
+    assert event["payload"]["step"] == "planning"
+
+
+def test_rejects_credential_leak_in_langgraph() -> None:
+    agent = PersonalLangGraphAgent()
+    with pytest.raises(ValueError, match="PROMPT_SENSITIVE_LEAK"):
+        agent.run("Please use Bearer secret-agent-token-999 to book the flight")
+
+
+def test_delegator_with_gateway_client_mock() -> None:
+    calls: list[dict] = []
+
+    class MockGateway(GatewayClient):
+        def check_authority(
+            self,
+            mandate_id: str,
+            action: str,
+            amount_minor: int,
+            currency: str,
+            approval_granted: bool = False,
+        ) -> dict:
+            calls.append({"action": action, "amount": amount_minor})
+            return {"decision": {"allowed": True, "code": "ALLOW"}}
+
+        def delegate_mandate(self, *args, **kwargs) -> dict:
+            return {"mandate": {"id": "mandate-child-mock-id"}}
+
+    mock_gw = MockGateway()
+    agent = PersonalLangGraphAgent(gateway_client=mock_gw)
+    result = agent.run("Plan a vacation", mandate_id="mandate-test-123")
+
+    assert len(calls) >= 3
+    assert result["subagent_tasks"][0]["authority_checked"] is True
+
+
+def test_fastapi_langgraph_endpoint() -> None:
+    response = client.post(
+        "/langgraph/run",
+        json={"message": "Plan a trip to London with accommodation and dining"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "completed"
+    assert data["agent"] == "personal"
+    assert "finalResponse" in data
+    assert len(data["subagentTasks"]) >= 3
+    assert len(data["events"]) > 0
+
+    # Verify sensitive token rejection on HTTP endpoint
+    leak_response = client.post(
+        "/langgraph/run",
+        json={"message": "Bearer dangerous-token-value"},
+    )
+    assert leak_response.status_code == 400
+    assert "PROMPT_SENSITIVE_LEAK" in leak_response.json()["detail"]
+
+
+def test_merchant_attach_simulation_workflow() -> None:
+    emitted_events: list[dict] = []
+    emitter = EventEmitter(listener=lambda e: emitted_events.append(e))
+
+    agent = PersonalLangGraphAgent(event_emitter=emitter)
+    result = agent.run(
+        "Use MerchantAttach to search products like biscuit and chai and proceed with payment"
+    )
+
+    assert "merchant_attach" in result["results"]
+    merchant_res = result["results"]["merchant_attach"]
+    assert "Chai & Bakery Express" in merchant_res["summary"]
+    assert merchant_res["total_minor"] == 1000
+    assert merchant_res["payment_authorization"]["status"] == "authorized"
+
+    # Verify simulation progression events emitted
+    event_types = [e["event_type"] for e in emitted_events]
+    assert "tool.started" in event_types
+    assert "agent.progress" in event_types
+    assert "tool.completed" in event_types
+
+    # Verify 3-minute simulated milestone messages
+    progress_messages = [
+        e.get("payload", {}).get("message", "")
+        for e in emitted_events
+        if e["event_type"] == "agent.progress"
+    ]
+    assert any("T+00:45 simulated" in msg for msg in progress_messages)
+    assert any("T+01:45 simulated" in msg for msg in progress_messages)
+    assert any("T+02:40 simulated" in msg for msg in progress_messages)
+
+
+def test_agent_discovery_query_handling() -> None:
+    agent = PersonalLangGraphAgent()
+    result = agent.run("how many agents do you have")
+
+    assert "final_response" in result
+    assert len(result["final_response"]) > 0
+    # Should not spawn unrelated travel subgoals
+    assert len(result["subagent_tasks"]) == 0
+
+
+def test_transport_delegation_for_train_ticket() -> None:
+    agent = PersonalLangGraphAgent()
+    result = agent.run("delegate the money to buy the train ticket")
+
+    assert len(result["subagent_tasks"]) == 1
+    assert result["subagent_tasks"][0]["agent"] == "transport"
+    assert result["subagent_tasks"][0]["status"] == "completed"
+    assert "transport" in result["results"]
+
+
+def test_biscuit_purchase_clarification_required() -> None:
+    """When buying biscuits without location, subagent returns structured clarification request."""
+    calls: list[dict] = []
+
+    class MockGateway(GatewayClient):
+        def check_authority(
+            self,
+            mandate_id: str,
+            action: str,
+            amount_minor: int,
+            currency: str,
+            approval_granted: bool = False,
+        ) -> dict:
+            calls.append({"action": action, "amount": amount_minor})
+            return {"decision": {"allowed": True, "code": "ALLOW"}}
+
+        def delegate_mandate(self, *args, **kwargs) -> dict:
+            return {"mandate": {"id": "mandate-child-mock-id"}}
+
+    mock_gw = MockGateway()
+    agent = PersonalLangGraphAgent(gateway_client=mock_gw)
+
+    result = agent.run("okay i what to buy biscuit can you buy me one", mandate_id="mandate-test-123")
+
+    # Verify task went into clarification_required phase
+    assert result.get("clarification_required") is True
+    tasks = result["subagent_tasks"]
+    assert len(tasks) == 1
+    assert tasks[0]["agent"] == "merchant_attach"
+    assert tasks[0]["phase"] == "clarification_required"
+    assert "location" in tasks[0]["missing_fields"]
+
+    # Verify exact structured clarification request format
+    clarif_req = tasks[0].get("clarification_request")
+    assert clarif_req is not None
+    assert clarif_req["status"] == "clarification_required"
+    assert len(clarif_req["questions"]) == 1
+    q = clarif_req["questions"][0]
+    assert q["question"] == "Which city or area should I search in?"
+    assert q["required"] is True
+    assert q["reason"] == "Finding nearby merchants"
+
+    # Verify no spending authority check was performed with amount=0
+    assert len(calls) == 0
+
+    # Verify final response asks the user for the missing location
+    final_response = result["final_response"].lower()
+    assert "which city or area should i search in" in final_response or "location" in final_response
+
+
+def test_biscuit_purchase_flow_with_gandhinagar_user_turn() -> None:
+    """User provides 'gandhinagar, gujarat, india and i would prefer any brand' in turn 2 -> resumes and executes."""
+    agent = PersonalLangGraphAgent()
+
+    # Turn 1: User asks without location
+    turn1_messages = [{"role": "user", "content": "okay i what to buy biscuit can you buy me one"}]
+    result1 = agent.run(messages=turn1_messages, budget_currency="INR")
+    assert result1.get("clarification_required") is True
+
+    # Turn 2: User responds with Gandhinagar and 'any brand'
+    turn2_messages = [
+        {"role": "user", "content": "okay i what to buy biscuit can you buy me one"},
+        {"role": "assistant", "content": result1["final_response"]},
+        {"role": "user", "content": "i am in gandhinagar, gujarat, india and i would prefer any brand"},
+    ]
+    result2 = agent.run(
+        messages=turn2_messages,
+        mandate_id="mandate-test-123",
+        budget_limit_minor=1000000,
+        budget_currency="INR",
+    )
+
+    # In Turn 2, clarification is satisfied and task resumes to completion
+    assert result2.get("clarification_required") is False
+    assert len(result2["subagent_tasks"]) == 1
+    task = result2["subagent_tasks"][0]
+    assert task["phase"] == "completed"
+    assert task["status"] == "completed"
+    assert task["amount_minor"] > 0
+    assert "merchant_attach" in result2["results"]
+    assert "Gandhinagar" in result2["results"]["merchant_attach"]["merchant"] or "Gandhinagar" in result2["final_response"]
+
+
+def test_biscuit_purchase_quote_to_authorized_execution() -> None:
+    """When user provides location and preference, subagent discovers quotes and gateway authorizes non-zero budget."""
+    calls: list[dict] = []
+
+    class MockGateway(GatewayClient):
+        def check_authority(
+            self,
+            mandate_id: str,
+            action: str,
+            amount_minor: int,
+            currency: str,
+            approval_granted: bool = False,
+        ) -> dict:
+            calls.append({"action": action, "amount": amount_minor})
+            return {"decision": {"allowed": True, "code": "ALLOW"}}
+
+        def delegate_mandate(self, *args, **kwargs) -> dict:
+            return {"mandate": {"id": "mandate-child-mock-id"}}
+
+    mock_gw = MockGateway()
+    agent = PersonalLangGraphAgent(gateway_client=mock_gw)
+
+    result = agent.run(
+        "I am in Indiranagar Bangalore, buy me 2 packs of Britannia Bourbon",
+        mandate_id="mandate-test-123",
+        budget_limit_minor=1000000,  # ₹10,000.00
+        budget_currency="INR",
+    )
+
+    assert result.get("clarification_required") is False
+    tasks = result["subagent_tasks"]
+    assert len(tasks) == 1
+    task = tasks[0]
+    assert task["agent"] == "merchant_attach"
+    assert task["phase"] == "completed"
+    assert task["status"] == "completed"
+    assert task["authority_checked"] is True
+    assert task["delegated"] is True
+
+    # Quoted amount must be positive (₹100.00 = 10000 minor)
+    assert task["amount_minor"] > 0
+    assert task["quoted_amount_minor"] == task["amount_minor"]
+
+    # Gateway authority check was called with positive non-zero amount
+    assert len(calls) == 1
+    assert calls[0]["amount"] == task["amount_minor"]
+    assert calls[0]["action"] == "procure_merchant_goods"
+
+
+def test_multi_turn_clarification_preserves_state() -> None:
+    """Conversation history carries clarification answers across turns without restarting discovery."""
+    agent = PersonalLangGraphAgent()
+
+    # Turn 1: User asks without details
+    turn1_messages = [{"role": "user", "content": "buy biscuit"}]
+    result1 = agent.run(messages=turn1_messages, budget_currency="INR")
+    assert result1.get("clarification_required") is True
+
+    # Turn 2: User provides location and brand preference in reply
+    turn2_messages = [
+        {"role": "user", "content": "buy biscuit"},
+        {"role": "assistant", "content": result1["final_response"]},
+        {"role": "user", "content": "I am in Indiranagar Bangalore, get Britannia Bourbon"},
+    ]
+    result2 = agent.run(messages=turn2_messages, budget_currency="INR")
+
+    # In Turn 2, clarification is satisfied and execution completes
+    assert result2.get("clarification_required") is False
+    assert len(result2["subagent_tasks"]) == 1
+    assert result2["subagent_tasks"][0]["phase"] == "completed"
+    assert result2["subagent_tasks"][0]["amount_minor"] > 0
+    assert "merchant_attach" in result2["results"]
+
+
+def test_budget_exceeded_prevents_unauthorized_execution() -> None:
+    """When a quote exceeds available mandate budget, task transitions to failed without execution."""
+    agent = PersonalLangGraphAgent()
+
+    # Budget limit is set to 500 minor (₹5.00), while biscuit quote is ₹100.00 (10000 minor)
+    result = agent.run(
+        "I am in Indiranagar Bangalore, buy me 2 packs of Britannia Bourbon",
+        mandate_id="mandate-test-123",
+        budget_limit_minor=500,
+        budget_currency="INR",
+    )
+
+    task = result["subagent_tasks"][0]
+    assert task["phase"] == "failed"
+    assert task["status"] == "budget_exceeded"
+    assert task.get("delegated") is False
+    # MerchantAttach execution result was NOT produced
+    assert "merchant_attach" not in result.get("results", {})
+
+
+def test_dynamic_agent_discovery_without_modifying_orchestrator() -> None:
+    """Registering a new subagent in the capability registry allows Personal Agent to dynamically discover it."""
+    from agent_runtime.subagent_registry import SubagentCapability, registry
+
+    new_subagent = SubagentCapability(
+        id="agent-cloud-optimizer",
+        name="Cloud Cost Optimizer",
+        alias="cloud_optimizer",
+        specialty="custom",
+        description="Autonomous spot instance scaling, cloud infrastructure optimization, compute capacity contracts, and invoice settlement.",
+        capabilities=["cloud.discover", "compute.quote", "optimize_cloud_spend"],
+        default_action="optimize_cloud_spend",
+        sample_prompts=["Optimize AWS compute cluster spot instances and reduce cloud spend"],
+    )
+    registry.register(new_subagent)
+
+    agent = PersonalLangGraphAgent()
+    result = agent.run("Optimize AWS compute cluster spot instances and reduce cloud spend")
+
+    tasks = result["subagent_tasks"]
+    assert len(tasks) == 1
+    assert tasks[0]["agent"] == "cloud_optimizer"
+    assert tasks[0]["action"] == "optimize_cloud_spend"
+
+
+def test_child_mandate_gateway_delegation_and_ledger_reserve_capture() -> None:
+    """Verifies that child mandate is delegated to the Gateway and funds are reserved & captured on ledger."""
+    delegated_calls: list[dict] = []
+    reserved_calls: list[dict] = []
+    captured_calls: list[str] = []
+
+    class MockLedgerGateway(GatewayClient):
+        def check_authority(self, **kwargs) -> dict:
+            return {"decision": {"allowed": True, "code": "ALLOW"}}
+
+        def list_agents(self, environment_id: str) -> list[dict]:
+            return [
+                {"id": "agent-root-personal", "name": "Personal Coordinator", "kind": "personal", "parentAgentId": None},
+                {"id": "agent-merchant-attach", "name": "MerchantAttach", "kind": "custom", "parentAgentId": "agent-root-personal"},
+            ]
+
+        def delegate_mandate(self, **kwargs) -> dict:
+            delegated_calls.append(kwargs)
+            return {
+                "mandate": {
+                    "id": "mandate-child-merchant-real-001",
+                    "parentMandateId": kwargs["mandate_id"],
+                    "holderAgentId": kwargs["holder_agent_id"],
+                    "budgetLimitMinor": kwargs["budget_limit_minor"],
+                }
+            }
+
+        def list_ledger_accounts(self, environment_id: str) -> list[dict]:
+            return [
+                {"id": "acc_parent_root", "mandateId": "mandate-parent-123", "balanceMinor": 1000000, "currency": "INR"},
+                {"id": "acc_child_merchant", "mandateId": "mandate-child-merchant-real-001", "balanceMinor": 10000, "currency": "INR"},
+            ]
+
+        def reserve_action(self, **kwargs) -> dict:
+            reserved_calls.append(kwargs)
+            return {
+                "action": {"id": "act_reserve_tx_9988"},
+                "reservation": {"id": "act_reserve_tx_9988", "state": "reserved"},
+            }
+
+        def capture_action(self, environment_id: str, action_id: str) -> dict:
+            captured_calls.append(action_id)
+            return {"reservation": {"id": action_id, "state": "captured"}}
+
+    mock_gw = MockLedgerGateway()
+    agent = PersonalLangGraphAgent(gateway_client=mock_gw)
+
+    messages = [
+        {"role": "user", "content": "buy biscuit"},
+        {"role": "assistant", "content": "Which city or area should I search in?"},
+        {"role": "user", "content": "I am in Gandhinagar, Gujarat, India. Buy Britannia Bourbon"},
+    ]
+
+    result = agent.run(
+        messages=messages,
+        environment_id="env-test-456",
+        mandate_id="mandate-parent-123",
+        budget_limit_minor=1000000,
+        budget_currency="INR",
+    )
+
+    # 1. Child mandate delegated to Gateway
+    assert len(delegated_calls) == 1
+    assert delegated_calls[0]["holder_agent_id"] == "agent-merchant-attach"
+    assert delegated_calls[0]["budget_limit_minor"] > 0
+    assert result["subagent_tasks"][0]["child_mandate_id"] == "mandate-child-merchant-real-001"
+
+    # 2. Ledger reserve and capture executed
+    assert len(reserved_calls) == 1
+    assert reserved_calls[0]["mandate_id"] == "mandate-child-merchant-real-001"
+    assert reserved_calls[0]["amount_minor"] == result["subagent_tasks"][0]["amount_minor"]
+    assert len(captured_calls) == 1
+    assert captured_calls[0] == "act_reserve_tx_9988"
+
+    # 3. Action ID recorded in payment authorization
+    merchant_res = result["results"]["merchant_attach"]
+    assert merchant_res["payment_authorization"]["action_id"] == "act_reserve_tx_9988"
+
+
+def test_okay_delegate_activates_only_ongoing_plan() -> None:
+    """When user confirms with 'okay delegate', only the active subagent is delegated, avoiding keyword leak traps."""
+    agent = PersonalLangGraphAgent()
+
+    # Multi-turn history with biscuit purchase and coordinator fallback note containing external link
+    messages = [
+        {"role": "user", "content": "okay i what to buy biscuit can you buy me one"},
+        {"role": "assistant", "content": "Which city or area should I search in?"},
+        {"role": "user", "content": "i am at gandhinagar, gujarat, india"},
+        {
+            "role": "assistant",
+            "content": (
+                "Coordinated Plan: MerchantAttach selected Chai & Bakery Express (Gandhinagar). "
+                "Quoted ₹70.00. (Fallback coordinator response — LLM unavailable: Please visit https://apinex.bond/overview)"
+            ),
+        },
+        {"role": "user", "content": "okay delegate"},
+    ]
+
+    result = agent.run(
+        messages=messages,
+        mandate_id="mandate-test-123",
+        budget_limit_minor=1000000,
+        budget_currency="INR",
+    )
+
+    tasks = result["subagent_tasks"]
+    # MUST only delegate to merchant_attach; travel, hotel, food MUST NOT be activated
+    assert len(tasks) == 1
+    assert tasks[0]["agent"] == "merchant_attach"
+    assert tasks[0]["phase"] == "completed"
+    assert "merchant_attach" in result["results"]
+    assert "travel" not in result["results"]
+    assert "hotel" not in result["results"]
+    assert "food" not in result["results"]
+
+
+def test_human_approval_pause_and_budget_proposal_event() -> None:
+    """When approval_required=True and user has not confirmed, agent halts after budget planner and emits approval.requested."""
+    emitter = EventEmitter()
+    agent = PersonalLangGraphAgent(event_emitter=emitter)
+
+    messages = [
+        {"role": "user", "content": "i am at gandhinagar, gujarat, india. buy me biscuit and chai"},
+    ]
+
+    result = agent.run(
+        messages=messages,
+        mandate_id="mandate-root-100",
+        budget_limit_minor=1000000,
+        budget_currency="INR",
+        approval_required=True,
+    )
+
+    # 1. State must reflect approval_pending
+    assert result.get("approval_pending") is True
+    assert result.get("is_user_confirmed") is False
+
+    # 2. Must emit approval.requested event with type budget_proposal
+    approval_events = [e for e in emitter.events if e.get("event_type") == "approval.requested"]
+    assert len(approval_events) == 1
+    ev_payload = approval_events[0].get("payload", {})
+    assert ev_payload.get("type") == "budget_proposal"
+    assert ev_payload.get("currency") == "INR"
+    assert ev_payload.get("rootBudgetMinor") == 1000000
+    assert len(ev_payload.get("proposedAllocations", [])) >= 1
+
+    # 3. Tasks must remain in authorization_pending status without executing payment
+    tasks = result["subagent_tasks"]
+    assert len(tasks) >= 1
+    for t in tasks:
+        assert t["status"] == "authorization_pending"
+        assert t["phase"] == "authorization_pending"
+
+    # 4. Results must NOT contain completed payments
+    assert len(result.get("results", {})) == 0
+
+    # 5. Synthesizer final response must prompt for human authorization
+    final_text = result.get("final_response", "")
+    assert "Human Authorization Required" in final_text or "Approve & Issue Cryptographic Mandates" in final_text
+
+
+def test_human_approval_confirmation_flow() -> None:
+    """When user replies 'okay delegate', orchestrator recognizes confirmation and proceeds to authorized execution."""
+    emitter = EventEmitter()
+    agent = PersonalLangGraphAgent(event_emitter=emitter)
+
+    messages = [
+        {"role": "user", "content": "i am at gandhinagar, gujarat, india. buy me biscuit and chai"},
+        {
+            "role": "assistant",
+            "content": "Proposed Budget Allocation: MerchantAttach ₹70.00. Please approve or reject.",
+        },
+        {"role": "user", "content": "okay delegate"},
+    ]
+
+    result = agent.run(
+        messages=messages,
+        mandate_id="mandate-root-100",
+        budget_limit_minor=1000000,
+        budget_currency="INR",
+        approval_required=True,
+    )
+
+    # Must proceed past authorization_pending to completion
+    assert result.get("approval_pending") is False
+    assert result.get("is_user_confirmed") is True
+    tasks = result["subagent_tasks"]
+    assert len(tasks) == 1
+    assert tasks[0]["status"] == "completed"
+    assert "merchant_attach" in result["results"]
+
+
+def test_human_approval_rejection_flow() -> None:
+    """When user replies with rejection ('reject'), orchestrator cleanly cancels without delegating funds."""
+    emitter = EventEmitter()
+    agent = PersonalLangGraphAgent(event_emitter=emitter)
+
+    messages = [
+        {"role": "user", "content": "i am at gandhinagar, gujarat, india. buy me biscuit and chai"},
+        {
+            "role": "assistant",
+            "content": "Proposed Budget Allocation: MerchantAttach ₹70.00. Please approve or reject.",
+        },
+        {"role": "user", "content": "I reject the proposed budget allocation. Do not proceed."},
+    ]
+
+    result = agent.run(
+        messages=messages,
+        mandate_id="mandate-root-100",
+        budget_limit_minor=1000000,
+        budget_currency="INR",
+        approval_required=True,
+    )
+
+    assert result.get("is_user_rejected") is True
+    assert len(result.get("subagent_tasks", [])) == 0
+    final_text = result.get("final_response", "")
+    assert "rejected and cancelled" in final_text or "cancelled" in final_text
+
+
+

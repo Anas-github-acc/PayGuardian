@@ -121,7 +121,9 @@ export function AgentCard({
           )}
         </div>
         <p className="mt-2 truncate text-[11px] text-muted-foreground">
-          {agent.role} · {formatMinorUnits(agent.recommendedBudgetMinor, agent.currency)}
+          <span className="capitalize">{agent.role}</span>
+          {" · "}
+          <span>Rec. Limit: {formatMinorUnits(agent.recommendedBudgetMinor, agent.currency)}</span>
         </p>
       </div>
     </div>

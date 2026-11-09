@@ -115,4 +115,98 @@ describe("ledger accounting", () => {
     expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(LedgerError);
     expect(ledger.getAccount("account").reservedMinor).toBeLessThanOrEqual(100);
   });
+
+  describe("wallet integrity verification", () => {
+    it("maintains a valid cryptographic transition chain and verifies against account state", () => {
+      const ledger = new InMemoryLedger();
+      ledger.createAccount({ id: "parent", parentId: null, availableMinor: 10000 });
+      ledger.createAccount({ id: "child", parentId: "parent", availableMinor: 0 });
+
+      ledger.allocate("parent", "child", 3000);
+      ledger.reserve("action-1", "child", 1000);
+      ledger.capture("action-1");
+      ledger.reserve("action-2", "child", 500);
+      ledger.release("action-2");
+      ledger.reclaim("parent", "child", 1000);
+
+      const parentIntegrity = ledger.verifyAccountIntegrity("parent");
+      expect(parentIntegrity.valid).toBe(true);
+      expect(parentIntegrity.transitionsVerified).toBe(3); // create, allocation_out, reclaim_in
+
+      const childIntegrity = ledger.verifyAccountIntegrity("child");
+      expect(childIntegrity.valid).toBe(true);
+      expect(childIntegrity.transitionsVerified).toBe(7);
+
+      const transitions = ledger.getTransitions("child");
+      expect(transitions).toHaveLength(7);
+      expect(transitions[0].sequence).toBe(1);
+      expect(transitions[0].previousHash).toBeNull();
+      expect(transitions[1].previousHash).toBe(transitions[0].transitionHash);
+      expect(transitions[2].previousHash).toBe(transitions[1].transitionHash);
+    });
+
+    it("fails closed when account balance state is tampered directly", () => {
+      const ledger = new InMemoryLedger();
+      ledger.createAccount({ id: "acc", parentId: null, availableMinor: 5000 });
+
+      // Before tamper: integrity is valid
+      expect(ledger.verifyAccountIntegrity("acc").valid).toBe(true);
+
+      // Malicious tamper: increase available funds by 10000 out of thin air
+      ledger.tamperAccount("acc", (account) => {
+        account.availableMinor = 15000;
+      });
+
+      const integrity = ledger.verifyAccountIntegrity("acc");
+      expect(integrity.valid).toBe(false);
+      expect(integrity.reason).toMatch(/Account balance does not match cryptographic balance record/);
+
+      // Attempting to reserve/spend fails closed with WALLET_INTEGRITY_VIOLATION
+      expect(() => ledger.reserve("spend-attempt", "acc", 100)).toThrowError(
+        expect.objectContaining({
+          code: "WALLET_INTEGRITY_VIOLATION",
+        }),
+      );
+    });
+
+    it("fails closed when transition hash or previous hash is tampered", () => {
+      const ledger = new InMemoryLedger();
+      ledger.createAccount({ id: "acc", parentId: null, availableMinor: 5000 });
+      ledger.reserve("act-1", "acc", 1000);
+
+      // Tamper with sequence 1 transition hash
+      ledger.tamperTransition("acc", 0, (t) => {
+        t.transitionHash = "deadbeef".repeat(8);
+      });
+
+      const integrity = ledger.verifyAccountIntegrity("acc");
+      expect(integrity.valid).toBe(false);
+      expect(integrity.reason).toMatch(/Transition hash mismatch/);
+
+      expect(() => ledger.reserve("spend-attempt", "acc", 500)).toThrowError(
+        expect.objectContaining({
+          code: "WALLET_INTEGRITY_VIOLATION",
+        }),
+      );
+    });
+
+    it("fails closed when transition balance math is forged", () => {
+      const ledger = new InMemoryLedger();
+      ledger.createAccount({ id: "acc", parentId: null, availableMinor: 5000 });
+
+      // Tamper with balanceAfter
+      ledger.tamperTransition("acc", 0, (t) => {
+        t.balanceAfter.availableMinor = 99999;
+      });
+
+      const integrity = ledger.verifyAccountIntegrity("acc");
+      expect(integrity.valid).toBe(false);
+
+      expect(() => ledger.reserve("spend-attempt", "acc", 100)).toThrowError(
+        expect.objectContaining({
+          code: "WALLET_INTEGRITY_VIOLATION",
+        }),
+      );
+    });
+  });
 });

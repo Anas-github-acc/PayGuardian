@@ -55,8 +55,8 @@ export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
         )}
       >
         {/* Environment Icon */}
-        <span className="flex h-5 w-5 items-center justify-center rounded bg-secondary text-muted-foreground group-hover:text-foreground">
-          {isLoading ? (
+        <span suppressHydrationWarning className="flex h-5 w-5 items-center justify-center rounded bg-secondary text-muted-foreground group-hover:text-foreground">
+          {isLoading && !currentEnvironment ? (
             <div className="h-2.5 w-2.5 rounded-full border border-primary border-t-transparent animate-spin" />
           ) : isSandbox ? (
             <TestTube2 className="h-3 w-3" />
@@ -69,8 +69,8 @@ export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
 
         {/* Environment Name & Type */}
         <span className="flex items-center gap-1.5 text-left">
-          <span className="max-w-[130px] sm:max-w-[170px] truncate font-medium text-foreground">
-            {isLoading
+          <span suppressHydrationWarning className="max-w-[130px] sm:max-w-[170px] truncate font-medium text-foreground">
+            {isLoading && !currentEnvironment
               ? "Loading..."
               : currentEnvironment?.name ?? "No Environments"}
           </span>

@@ -28,6 +28,9 @@ import {
 } from "./phase4.js";
 import { registerPhase4Routes } from "./phase4-routes.js";
 import { registerPhase6Routes } from "./phase6-routes.js";
+import { AGENT_CATALOG } from "./agent-catalog.js";
+import { createChatbotStore, type ChatbotStore } from "./chatbot.js";
+import { registerChatbotRoutes } from "./chatbot-routes.js";
 
 export function buildApp(
   options: {
@@ -37,6 +40,7 @@ export function buildApp(
     ledger?: LedgerStore;
     approvals?: ApprovalStore;
     sessions?: SessionStore;
+    chatbot?: ChatbotStore;
     paypalOperations?: PayPalOperationStore;
     paypalWorkerOrder?: PayPalWorkerOrderStore | null;
     paypal?: PayPalClient;
@@ -76,6 +80,7 @@ export function buildApp(
     options.paypalWorkerOrder ?? createPayPalWorkerOrderStore(supabaseClient);
   const providerEvents = options.providerEvents ?? createProviderEventStore(supabaseClient);
   const providerJobs = options.providerJobs ?? createProviderJobStore(supabaseClient);
+  const chatbot = options.chatbot ?? createChatbotStore(supabaseClient);
   const audit = options.audit ?? createAuditStore(supabaseClient);
   const resolvePrincipal =
     options.resolvePrincipal ?? createPrincipalResolver(supabaseClient, config, registry);
@@ -160,19 +165,81 @@ export function buildApp(
         },
       },
       async () => {
+        const apiKey = process.env.GEMINI_API_KEY;
         const primary = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+
+        // If a Google AI API key is configured, dynamically discover available models from Google AI
+        if (apiKey) {
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            if (res.ok) {
+              const data = (await res.json()) as { models?: Array<any> };
+              if (Array.isArray(data.models)) {
+                const googleModels = data.models
+                  .filter((m: any) =>
+                    m.name &&
+                    m.supportedGenerationMethods?.includes("generateContent") &&
+                    m.name.includes("gemini")
+                  )
+                  .map((m: any) => {
+                    const id = m.name.replace(/^models\//, "");
+                    const isDefault = id === primary || id === "gemini-2.5-flash";
+                    return {
+                      id,
+                      label: m.displayName || id.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+                      provider: "Google Gemini (Free Tier)",
+                      default: isDefault,
+                    };
+                  });
+
+                if (googleModels.length > 0) {
+                  return { models: googleModels };
+                }
+              }
+            }
+          } catch (err) {
+            // fallback to default catalog on network or key issue
+          }
+        }
+
+        // Unified Models Catalog: APInex Luna (Default Free) + Google Gemini Free
         const catalog = [
-          { id: primary, label: primary.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), provider: "Google Gemini", default: true },
+          { id: "free/gpt-6-luna", label: "APInex GPT-6 Luna (Free)", provider: "APInex", default: true },
+          { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Free)", provider: "Google Gemini" },
+          { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite (Free)", provider: "Google Gemini" },
           { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google Gemini" },
-          { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", provider: "Google Gemini" },
+          { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Free)", provider: "Google Gemini" },
         ];
-        return { models: catalog.filter((m, i, a) => a.findIndex((x) => x.id === m.id) === i) };
+        return { models: catalog };
+      },
+    );
+
+    routes.get(
+      "/v1/agents/catalog",
+      {
+        schema: {
+          tags: ["agents"],
+          response: {
+            200: {
+              type: "object",
+              required: ["catalog"],
+              properties: {
+                catalog: {
+                  type: "array",
+                },
+              },
+            },
+          },
+        },
+      },
+      async () => {
+        return { catalog: AGENT_CATALOG };
       },
     );
   });
 
   registerPhase1Routes(app, { registry, resolvePrincipal, audit });
-  registerPhase2Routes(app, { registry, authority, resolvePrincipal, audit });
+  registerPhase2Routes(app, { registry, authority, ledger, approvals, resolvePrincipal, audit });
   registerPhase3Routes(app, { registry, authority, ledger, resolvePrincipal, audit, approvals });
   registerPhase4Routes(app, { registry, authority, approvals, sessions, resolvePrincipal, audit });
   registerPayPalRoutes(app, {
@@ -188,6 +255,7 @@ export function buildApp(
     approvals,
   });
   registerPhase6Routes(app, { registry, authority, resolvePrincipal, audit });
+  registerChatbotRoutes(app, { registry, authority, chatbot, providerJobs, resolvePrincipal, audit });
 
   return app;
 }

@@ -32,11 +32,13 @@ export interface UseEnvironmentsResult {
 
 export function useEnvironments(): UseEnvironmentsResult {
   const { environmentsList, currentEnvironment, isEnvironmentsLoaded } = useWorkspaceStore();
-  const [isLoading, setIsLoading] = React.useState(!isEnvironmentsLoaded);
+  const [isLoading, setIsLoading] = React.useState(!isEnvironmentsLoaded && !currentEnvironment);
   const [error, setError] = React.useState<string | null>(null);
 
   const fetchEnvironments = React.useCallback(async () => {
-    setIsLoading(true);
+    if (!workspaceStore.getState().currentEnvironment) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const dtoList = await apiClient.environments.list();
@@ -53,10 +55,8 @@ export function useEnvironments(): UseEnvironmentsResult {
   }, []);
 
   React.useEffect(() => {
-    if (!isEnvironmentsLoaded) {
-      void fetchEnvironments();
-    }
-  }, [isEnvironmentsLoaded, fetchEnvironments]);
+    void fetchEnvironments();
+  }, [fetchEnvironments]);
 
   const createAndBootstrap = React.useCallback(
     async (options: CreateAndBootstrapOptions): Promise<Environment> => {
@@ -90,54 +90,8 @@ export function useEnvironments(): UseEnvironmentsResult {
         approvalRequired: true,
       });
 
-      // 4. Optionally register starter child agents with delegated sub-mandates
-      let agentCount = 1;
-      if (options.bootstrapChildAgents && options.budgetLimitMinor >= 400000) {
-        try {
-          const travelChild = await apiClient.agents.registerChild(envId, {
-            parentAgentId: rootAgent.id,
-            name: "Travel Subagent",
-            kind: "specialist",
-            capabilities: ["flight.search", "flight.book"],
-          });
-          agentCount++;
-
-          const travelLimit = Math.min(400000, Math.floor(options.budgetLimitMinor * 0.4));
-          await apiClient.mandates.delegate(rootMandate.id, {
-            holderAgentId: travelChild.id,
-            budgetLimitMinor: travelLimit,
-            currency: options.currency,
-            permittedActions: ["flight.*"],
-            expiresAt,
-            canDelegate: true,
-            maxDelegationDepth: 1,
-            approvalRequired: false,
-          });
-
-          const hotelChild = await apiClient.agents.registerChild(envId, {
-            parentAgentId: rootAgent.id,
-            name: "Hotel Subagent",
-            kind: "specialist",
-            capabilities: ["hotel.search", "hotel.book"],
-          });
-          agentCount++;
-
-          const hotelLimit = Math.min(300000, Math.floor(options.budgetLimitMinor * 0.3));
-          await apiClient.mandates.delegate(rootMandate.id, {
-            holderAgentId: hotelChild.id,
-            budgetLimitMinor: hotelLimit,
-            currency: options.currency,
-            permittedActions: ["hotel.*"],
-            expiresAt,
-            canDelegate: true,
-            maxDelegationDepth: 1,
-            approvalRequired: false,
-          });
-        } catch (subErr) {
-          // Log and continue, root environment + root agent + root mandate are ready
-          console.warn("Child agent bootstrap partial warning:", subErr);
-        }
-      }
+      // 4. Clean root state: child agents and sub-mandates are created on-demand via agent delegation
+      const agentCount = 1;
 
       // Map to full frontend Environment
       const fullEnv = mapEnvironmentDto(createdEnvDto, {

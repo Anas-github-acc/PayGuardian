@@ -8,6 +8,7 @@ import type { AgentDto, RegisterChildAgentRequest } from "@payguardian/contracts
 
 export interface UseAgentLibraryResult {
   agents: SpecialistAgent[];
+  catalogAgents: SpecialistAgent[];
   rawAgents: AgentDto[];
   isLoading: boolean;
   error: Error | null;
@@ -17,25 +18,24 @@ export interface UseAgentLibraryResult {
 
 export function useAgentLibrary(environmentId?: string | null): UseAgentLibraryResult {
   const [agents, setAgents] = useState<SpecialistAgent[]>([]);
+  const [catalogAgents, setCatalogAgents] = useState<SpecialistAgent[]>([]);
   const [rawAgents, setRawAgents] = useState<AgentDto[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(environmentId));
   const [error, setError] = useState<Error | null>(null);
 
   const fetchAgents = useCallback(async () => {
-    if (!environmentId) {
-      setAgents([]);
-      setRawAgents([]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const fetched = await apiClient.agents.list(environmentId);
-      setRawAgents(fetched);
-      setAgents(fetched.map(mapAgentDtoToSpecialist));
+      const [fetchedEnv, fetchedCatalog] = await Promise.all([
+        environmentId ? apiClient.agents.list(environmentId) : Promise.resolve([]),
+        apiClient.agents.catalog().catch(() => []),
+      ]);
+
+      setRawAgents(fetchedEnv);
+      setAgents(fetchedEnv.map(mapAgentDtoToSpecialist));
+      setCatalogAgents(fetchedCatalog);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
@@ -56,6 +56,7 @@ export function useAgentLibrary(environmentId?: string | null): UseAgentLibraryR
 
   return {
     agents,
+    catalogAgents,
     rawAgents,
     isLoading,
     error,

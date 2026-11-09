@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, Check, ChevronDown, Mic, Plus, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Mic, Plus, Square, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export type ComposerMode = "Delegate" | "Ask";
@@ -23,6 +23,10 @@ export interface AIComposerSubmission {
 export interface AIComposerProps {
   /** Disables input while the agent is drafting a response. */
   disabled?: boolean;
+  /** Whether the agent is currently generating a response. */
+  isStreaming?: boolean;
+  /** Callback triggered when user clicks the stop button. */
+  onStop?: () => void;
   /** Receives the prompt, selection and attached files — wire to the chat send flow. */
   onSubmit: (submission: AIComposerSubmission) => void;
   className?: string;
@@ -61,6 +65,11 @@ const FALLBACK_MODELS: ComposerModel[] = [
 ];
 
 const FAVS_STORAGE_KEY = "pg_composer_fav_models";
+const LAST_ACTIVE_MODEL_STORAGE_KEY = "pg_composer_active_model_id";
+
+// Persistent global cache across component remounts / chat switches
+let globalCachedModels: ComposerModel[] | null = null;
+let globalCachedActiveModelId: string | null = null;
 
 function providerKeyFor(providerLabel?: string): ProviderKey {
   const p = (providerLabel ?? "").toLowerCase();
@@ -140,7 +149,13 @@ interface SpeechRecognitionWindow extends Window {
   webkitSpeechRecognition?: SpeechRecognitionCtor;
 }
 
-export function AIComposer({ disabled = false, onSubmit, className = "" }: AIComposerProps) {
+export function AIComposer({
+  disabled = false,
+  isStreaming = false,
+  onStop,
+  onSubmit,
+  className = "",
+}: AIComposerProps) {
   const [promptText, setPromptText] = React.useState("");
   const [mode, setMode] = React.useState<ComposerMode>("Delegate");
   const [modeMenuOpen, setModeMenuOpen] = React.useState(false);
@@ -150,9 +165,27 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
   const [searchRevealed, setSearchRevealed] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [modelFilterTab, setModelFilterTab] = React.useState<ModelFilterTab>("fav");
-  const [models, setModels] = React.useState<ComposerModel[]>(FALLBACK_MODELS);
-  const [modelsLoading, setModelsLoading] = React.useState(true);
-  const [activeModelId, setActiveModelId] = React.useState<string>(FALLBACK_MODELS[0].id);
+  const [models, setModels] = React.useState<ComposerModel[]>(() => globalCachedModels ?? FALLBACK_MODELS);
+  const [modelsLoading, setModelsLoading] = React.useState<boolean>(globalCachedModels === null);
+  const [activeModelId, setActiveModelId] = React.useState<string>(() => {
+    if (globalCachedActiveModelId) return globalCachedActiveModelId;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(LAST_ACTIVE_MODEL_STORAGE_KEY);
+      if (stored) return stored;
+    }
+    return FALLBACK_MODELS[0].id;
+  });
+
+  const selectModelId = React.useCallback((id: string) => {
+    setActiveModelId(id);
+    globalCachedActiveModelId = id;
+    try {
+      localStorage.setItem(LAST_ACTIVE_MODEL_STORAGE_KEY, id);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const [hoveredModelId, setHoveredModelId] = React.useState<string | null>(null);
   const [modelMenuPointerReady, setModelMenuPointerReady] = React.useState(false);
 
@@ -190,6 +223,12 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
       }
     };
 
+    if (globalCachedModels && globalCachedModels.length > 0) {
+      setModels(globalCachedModels);
+      setModelsLoading(false);
+      return;
+    }
+
     fetch(`${API_BASE}/v1/models`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
       .then((data: { models?: { id: string; label: string; provider?: string; default?: boolean }[] }) => {
@@ -203,12 +242,20 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
           isFav: false,
           efforts: ALL_EFFORTS,
         }));
-        setModels(loadFavs(list));
-        const def = remote?.find((m) => m.default) ?? list[0];
-        setActiveModelId(def.id);
+        const withFavs = loadFavs(list);
+        globalCachedModels = withFavs;
+        setModels(withFavs);
+        if (!globalCachedActiveModelId) {
+          const def = remote?.find((m) => m.default) ?? list[0];
+          selectModelId(def.id);
+        }
       })
       .catch(() => {
-        if (!cancelled) setModels(loadFavs(FALLBACK_MODELS));
+        if (!cancelled) {
+          const fallbackWithFavs = loadFavs(FALLBACK_MODELS);
+          globalCachedModels = fallbackWithFavs;
+          setModels(fallbackWithFavs);
+        }
       })
       .finally(() => {
         if (!cancelled) setModelsLoading(false);
@@ -217,7 +264,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [selectModelId]);
 
   React.useEffect(() => {
     const w = window as SpeechRecognitionWindow;
@@ -327,7 +374,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
       const updated = prev.map((m) => (m.id === targetId ? { ...m, isFav: !m.isFav } : m));
       const targetAfter = updated.find((m) => m.id === targetId);
       if (targetAfter?.isFav) {
-        setActiveModelId(targetId);
+        selectModelId(targetId);
         setAutoMode(false);
       }
       try {
@@ -344,7 +391,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
 
   const handleSelectModel = (e: React.MouseEvent, modelId: string) => {
     e.stopPropagation();
-    setActiveModelId(modelId);
+    selectModelId(modelId);
     setAutoMode(false);
     setModelMenuOpen(false);
     setHoveredModelId(null);
@@ -354,7 +401,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
     e.stopPropagation();
     if (!hoveredModelId) return;
     setModels((prev) => prev.map((m) => (m.id === hoveredModelId ? { ...m, effort } : m)));
-    setActiveModelId(hoveredModelId);
+    selectModelId(hoveredModelId);
     setAutoMode(false);
   };
 
@@ -391,10 +438,10 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
     const val = e.target.value;
     setPromptText(val);
     setContextMenuOpen(val.endsWith("@"));
-    // Auto-grow up to 140px
+    // Auto-grow up to 180px
     const el = e.target;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   };
 
   const handleInsertContextTag = (e: React.MouseEvent, tag: string) => {
@@ -600,7 +647,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
           disabled={disabled}
           placeholder="Delegate, Ask, Automate / @ for context"
           aria-label="Message the assistant"
-          className="mb-4 min-h-7 w-full resize-none border-none bg-transparent px-0.5 text-[15px] leading-normal text-zinc-100 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50"
+          className="mb-4 min-h-8 w-full resize-none border-none bg-transparent px-0.5 text-base sm:text-lg leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50"
         />
 
         {/* Bottom controls bar */}
@@ -692,7 +739,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
                     modelsLoading && "text-muted-foreground"
                   )}
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground">
+                  <span className="flex shrink-0 items-center justify-center text-foreground">
                     <ProviderBadgeIcon provider={activeModel?.provider ?? "gemini"} />
                   </span>
                   <span className="flex items-baseline gap-1.5 whitespace-nowrap">
@@ -1010,7 +1057,7 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
 
           {/* Right controls */}
           <div className="flex shrink-0 items-center gap-2">
-            {/* Microphone / Record (expands while recording) */}
+            {/* Microphone / Record (only icon, no text) */}
             <button
               type="button"
               onClick={handleRecordClick}
@@ -1018,44 +1065,46 @@ export function AIComposer({ disabled = false, onSubmit, className = "" }: AICom
               aria-pressed={isRecording}
               className={cn(
                 pillBase,
-                "flex items-center justify-start overflow-hidden px-2.5",
+                "flex h-9 w-9 shrink-0 items-center justify-center p-0",
                 isRecording
-                  ? "w-[100px] border-destructive/40 bg-destructive/10 text-destructive"
-                  : "w-9 hover:w-[92px]"
+                  ? "border-destructive/40 bg-destructive/10 text-destructive"
+                  : "text-zinc-400 hover:text-white"
               )}
             >
-              <span className="flex shrink-0 items-center justify-center">
-                {isRecording ? (
-                  <span className="aic-pulse-dot h-2.5 w-2.5 rounded-full bg-destructive" />
-                ) : (
-                  <Mic className="h-4 w-4 text-foreground" />
-                )}
-              </span>
-              <span
-                className={cn(
-                  "ml-1.5 whitespace-nowrap text-[13px] font-medium",
-                  isRecording ? "opacity-100 text-destructive" : cn(pillLabel, "text-foreground")
-                )}
-              >
-                {isRecording ? formattedRecordingTime : "Record"}
-              </span>
+              {isRecording ? (
+                <span className="aic-pulse-dot h-3 w-3 rounded-full bg-destructive" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </button>
 
-            {/* Submit up-arrow */}
-            <button
-              type="button"
-              onClick={handleSubmitPrompt}
-              disabled={disabled || !isSubmitReady}
-              aria-label="Send message"
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-40",
-                isSubmitReady
-                  ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-500 active:scale-95"
-                  : "border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-200"
-              )}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
+            {/* Stop or Send button */}
+            {isStreaming ? (
+              <button
+                type="button"
+                onClick={onStop}
+                aria-label="Stop response"
+                title="Stop response"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 transition-colors active:scale-95"
+              >
+                <Square className="h-3.5 w-3.5 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmitPrompt}
+                disabled={disabled || !isSubmitReady}
+                aria-label="Send message"
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 disabled:pointer-events-none disabled:opacity-40",
+                  isSubmitReady
+                    ? "border-zinc-700 bg-white text-black hover:bg-zinc-200 active:scale-95"
+                    : "border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-200"
+                )}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </section>

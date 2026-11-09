@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
-import type { Registry } from "./phase1.js";
+import type { Principal, Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
 import type { LedgerStore } from "./phase3.js";
 import {
@@ -15,7 +15,7 @@ import type { ProviderEventStore } from "./paypal-events.js";
 import type { ProviderJobStore } from "./provider-jobs.js";
 import type { ApprovalStore } from "./phase4.js";
 
-type AppRequest = FastifyRequest & { principal?: { userId: string; kind: "user" } };
+type AppRequest = FastifyRequest & { principal?: Principal };
 type PayPalExecutionMode = "inline" | "worker";
 
 const PAYPAL_PROVIDER = "paypal";
@@ -55,6 +55,15 @@ function errorResponse(reply: FastifyReply, error: unknown) {
       .send({ code: error.code, message: error.message });
   }
   const code = error instanceof Error ? error.message : "PAYPAL_OPERATION_FAILED";
+  if (code.includes("WALLET_INTEGRITY_VIOLATION")) {
+    return reply.code(403).send({
+      decision: {
+        allowed: false,
+        code: "WALLET_INTEGRITY_VIOLATION",
+        reason: error instanceof Error ? error.message : "Wallet integrity verification failed.",
+      },
+    });
+  }
   return reply.code(400).send({ code, message: "PayPal operation failed." });
 }
 
@@ -234,7 +243,7 @@ export function registerPayPalRoutes(
   app.post<{
     Params: { environmentId: string };
     Body: {
-      agentId: string;
+      agentId?: string;
       mandateId: string;
       ledgerAccountId: string;
       idempotencyKey: string;
@@ -253,10 +262,30 @@ export function registerPayPalRoutes(
       owner.userId,
       request.params.environmentId,
     );
-    const agent = await dependencies.registry.getAgent(owner.userId, request.body.agentId);
+    if (!environment) {
+      return reply
+        .code(404)
+        .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Payment target not found." });
+    }
+
+    if (owner.agentId && request.body.agentId && request.body.agentId !== owner.agentId) {
+      return reply.code(403).send({
+        code: "AGENT_IDENTITY_MISMATCH",
+        message: "Supplied agentId does not match authenticated agent credentials.",
+      });
+    }
+
+    const resolvedAgentId = owner.agentId ?? request.body.agentId;
+    if (!resolvedAgentId) {
+      return reply.code(400).send({
+        code: "AGENT_ID_REQUIRED",
+        message: "Agent ID is required.",
+      });
+    }
+
+    const agent = await dependencies.registry.getAgent(owner.userId, resolvedAgentId);
     const mandate = await dependencies.authority.get(request.body.mandateId, owner.userId);
     if (
-      !environment ||
       !agent ||
       agent.environmentId !== environment.id ||
       agent.status !== "active" ||
@@ -326,6 +355,20 @@ export function registerPayPalRoutes(
         decision,
         ...(createdApprovalId ? { approvalId: createdApprovalId } : {}),
       });
+    }
+
+    // Fail-closed authorization: verify wallet integrity before allowing payment
+    const integrity = await dependencies.ledger.verifyAccountIntegrity(
+      environment.id,
+      request.body.ledgerAccountId,
+    );
+    if (!integrity.valid) {
+      const decision = {
+        allowed: false,
+        code: "WALLET_INTEGRITY_VIOLATION",
+        reason: `Wallet integrity verification failed: ${integrity.reason}`,
+      };
+      return reply.code(403).send({ decision });
     }
     let reserved: Awaited<ReturnType<LedgerStore["authorizeAndReserve"]>> | null = null;
     const executionMode = paypalExecutionMode();

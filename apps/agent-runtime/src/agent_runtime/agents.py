@@ -14,6 +14,14 @@ AGENT_DEFINITIONS = {
     "transport": "Suggest transport options within the authority supplied by Travel.",
     "food": "Suggest food options within the authority supplied by Personal.",
     "activities": "Suggest activities within the authority supplied by Personal.",
+    "merchant_attach": (
+        "Simulate searching merchant products like biscuit and chai, compare vendors "
+        "over a simulated 3-minute workflow, and proceed with bounded gateway payment."
+    ),
+    "merchantattach": (
+        "Simulate searching merchant products like biscuit and chai, compare vendors "
+        "over a simulated 3-minute workflow, and proceed with bounded gateway payment."
+    ),
 }
 
 
@@ -21,7 +29,7 @@ def configured_agent_names() -> list[str]:
     return list(AGENT_DEFINITIONS)
 
 
-def build_agent(name: str) -> Any:
+def build_agent(name: str, model: str | None = None) -> Any:
     if name not in AGENT_DEFINITIONS:
         return None
     if not ADK_AVAILABLE:
@@ -29,9 +37,10 @@ def build_agent(name: str) -> Any:
 
     from google.adk.agents import Agent
 
+    target_model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     return Agent(
         name=f"payguardian_{name}_agent",
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=target_model,
         instruction=(
             f"You are the {name} agent. {AGENT_DEFINITIONS[name]} "
             "The gateway is the only authority source."

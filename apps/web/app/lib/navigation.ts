@@ -56,6 +56,10 @@ export function useDashboardNavigation() {
 
   const navigateTab = React.useCallback(
     (tab: NavTab, sub?: TablesSubTab) => {
+      if (tab === "assistant") {
+        router.push("/chat");
+        return;
+      }
       const params = new URLSearchParams();
       if (tab !== "overview") {
         params.set("tab", tab);
