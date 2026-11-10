@@ -62,6 +62,7 @@ export type Registry = {
   listEnvironments(userId: string): Promise<Environment[]>;
   createEnvironment(input: Omit<Environment, "id" | "createdAt" | "status">): Promise<Environment>;
   getEnvironment(userId: string, environmentId: string): Promise<Environment | null>;
+  deleteEnvironment(userId: string, environmentId: string): Promise<boolean>;
   setEnvironmentStatus(
     userId: string,
     environmentId: string,
@@ -182,6 +183,26 @@ export class InMemoryRegistry implements Registry {
   async getEnvironment(userId: string, environmentId: string): Promise<Environment | null> {
     const environment = this.environments.get(environmentId);
     return environment?.ownerUserId === userId ? environment : null;
+  }
+
+  async deleteEnvironment(userId: string, environmentId: string): Promise<boolean> {
+    const environment = this.environments.get(environmentId);
+    if (!environment || environment.ownerUserId !== userId) {
+      return false;
+    }
+    this.environments.delete(environmentId);
+    for (const [agentId, agent] of this.agents.entries()) {
+      if (agent.environmentId === environmentId) {
+        this.agents.delete(agentId);
+        for (const [credId, cred] of this.credentials.entries()) {
+          if (cred.agentId === agentId) {
+            this.credentials.delete(credId);
+          }
+        }
+      }
+    }
+    this.persist();
+    return true;
   }
 
   async setEnvironmentStatus(
@@ -343,6 +364,118 @@ export class SupabaseRegistry implements Registry {
       .maybeSingle();
     if (error) throw error;
     return data ? mapEnvironment(data) : null;
+  }
+
+  async deleteEnvironment(userId: string, environmentId: string): Promise<boolean> {
+    // 1. Try atomic database cascade function first
+    try {
+      const { data: rpcSuccess, error: rpcError } = await this.client.rpc(
+        "delete_environment_cascade",
+        {
+          p_user_id: userId,
+          p_environment_id: environmentId,
+        },
+      );
+      if (!rpcError && typeof rpcSuccess === "boolean") {
+        return rpcSuccess;
+      }
+    } catch {
+      // Fallback to progressive child-first cleanup if RPC is not present
+    }
+
+    const env = await this.getEnvironment(userId, environmentId);
+    if (!env) return false;
+
+    // 2. Fallback progressive cleanup:
+    // Remove chatbot task events & runs
+    const { data: runs } = await this.client
+      .from("agent_runs")
+      .select("id")
+      .eq("environment_id", environmentId);
+    const runIds = (runs || []).map((r: { id: string }) => r.id);
+    if (runIds.length > 0) {
+      await this.client.from("agent_events").delete().in("run_id", runIds);
+      await this.client
+        .from("agent_tasks")
+        .update({ parent_task_id: null, mandate_id: null })
+        .in("run_id", runIds);
+      await this.client.from("agent_tasks").delete().in("run_id", runIds);
+      await this.client.from("agent_runs").delete().eq("environment_id", environmentId);
+    }
+
+    // Remove conversations & messages
+    const { data: convs } = await this.client
+      .from("conversations")
+      .select("id")
+      .eq("environment_id", environmentId);
+    const convIds = (convs || []).map((c: { id: string }) => c.id);
+    if (convIds.length > 0) {
+      await this.client.from("messages").delete().in("conversation_id", convIds);
+      await this.client.from("conversations").delete().eq("environment_id", environmentId);
+    }
+
+    // Remove delegation grants
+    await this.client.from("delegation_grants").delete().eq("environment_id", environmentId);
+
+    // Remove provider jobs, events, operations
+    await this.client.from("provider_jobs").delete().eq("environment_id", environmentId);
+    await this.client.from("provider_events").delete().eq("environment_id", environmentId);
+    await this.client.from("provider_operations").delete().eq("environment_id", environmentId);
+
+    // Remove protected actions & reservations
+    const { data: actions } = await this.client
+      .from("protected_actions")
+      .select("id")
+      .eq("environment_id", environmentId);
+    const actionIds = (actions || []).map((a: { id: string }) => a.id);
+    if (actionIds.length > 0) {
+      await this.client.from("reservations").delete().in("action_id", actionIds);
+      await this.client.from("protected_actions").delete().eq("environment_id", environmentId);
+    }
+
+    // Remove ledger accounts & transitions & transfers
+    await this.client.from("ledger_balance_transitions").delete().eq("environment_id", environmentId);
+    await this.client.from("ledger_transfers").delete().eq("environment_id", environmentId);
+    await this.client
+      .from("ledger_accounts")
+      .update({ parent_account_id: null })
+      .eq("environment_id", environmentId);
+    await this.client.from("ledger_accounts").delete().eq("environment_id", environmentId);
+
+    // Remove mandates
+    await this.client
+      .from("mandates")
+      .update({ parent_mandate_id: null, previous_mandate_id: null, issuer_agent_id: null })
+      .eq("environment_id", environmentId);
+    await this.client.from("mandates").delete().eq("environment_id", environmentId);
+
+    // Remove credentials & agents
+    const { data: agents } = await this.client
+      .from("agents")
+      .select("id")
+      .eq("environment_id", environmentId);
+    const agentIds = (agents || []).map((a: { id: string }) => a.id);
+    if (agentIds.length > 0) {
+      await this.client.from("agent_credentials").delete().in("agent_id", agentIds);
+      await this.client
+        .from("agents")
+        .update({ parent_agent_id: null })
+        .eq("environment_id", environmentId);
+      await this.client.from("agents").delete().eq("environment_id", environmentId);
+    }
+
+    // Remove policies & memberships
+    await this.client.from("policies").delete().eq("environment_id", environmentId);
+    await this.client.from("environment_memberships").delete().eq("environment_id", environmentId);
+
+    // Finally delete environment
+    const { error } = await this.client
+      .from("environments")
+      .delete()
+      .eq("owner_user_id", userId)
+      .eq("id", environmentId);
+    if (error) throw error;
+    return true;
   }
 
   async setEnvironmentStatus(

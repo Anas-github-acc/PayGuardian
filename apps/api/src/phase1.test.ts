@@ -210,4 +210,48 @@ describe("Phase 1 identity, environments, and registry", () => {
     });
     expect(authCheckForged.statusCode).toBe(401);
   });
+
+  it("deletes an environment and purges its agents", async () => {
+    const app = testApp();
+    const headers = { "x-local-user-id": "alice" };
+
+    const createRes = await app.inject({
+      method: "POST",
+      url: "/v1/environments",
+      headers,
+      payload: {
+        name: "Temporary Env",
+        purpose: "To be deleted",
+        currency: "USD",
+        budgetLimitMinor: 50000,
+      },
+    });
+    expect(createRes.statusCode).toBe(201);
+    const envId = createRes.json().environment.id as string;
+
+    // Delete environment
+    const deleteRes = await app.inject({
+      method: "DELETE",
+      url: `/v1/environments/${envId}`,
+      headers,
+    });
+    expect(deleteRes.statusCode).toBe(200);
+    expect(deleteRes.json().success).toBe(true);
+
+    // List environments should now be empty
+    const listRes = await app.inject({
+      method: "GET",
+      url: "/v1/environments",
+      headers,
+    });
+    expect(listRes.json().environments).toHaveLength(0);
+
+    // Deleting again should return 404
+    const deleteAgain = await app.inject({
+      method: "DELETE",
+      url: `/v1/environments/${envId}`,
+      headers,
+    });
+    expect(deleteAgain.statusCode).toBe(404);
+  });
 });

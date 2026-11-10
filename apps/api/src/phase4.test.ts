@@ -327,4 +327,67 @@ describe("Phase 4 Approvals, Protected Actions, and Sessions", () => {
     expect(deniedSim.statusCode).toBe(403);
     expect(deniedSim.json().decision.code).toBe("ACTION_NOT_PERMITTED");
   });
+
+  it("orchestrates hierarchical budget proposal delegation via POST /v1/approvals/:approvalId/approve", async () => {
+    const { app, headers, environmentId, mandateId } = await setup();
+
+    const approvalRes = await app.inject({
+      method: "POST",
+      url: "/v1/approvals/appr-test-goa-123/approve",
+      headers,
+      payload: {
+        environmentId,
+        mandateId,
+        proposedAllocations: [
+          {
+            agent: "travel",
+            role: "Travel Concierge",
+            quotedCostMinor: 30000,
+            requestedMandateMinor: 30000,
+            capabilities: ["book_flight"],
+          },
+          {
+            agent: "hotel",
+            role: "Hotel Specialist",
+            quotedCostMinor: 15000,
+            requestedMandateMinor: 15000,
+            parentAgent: "travel",
+            isChild: true,
+            capabilities: ["book_hotel"],
+          },
+          {
+            agent: "food",
+            role: "Food & Dining Specialist",
+            quotedCostMinor: 10000,
+            requestedMandateMinor: 10000,
+            capabilities: ["book_flight"],
+          },
+          {
+            agent: "activities",
+            role: "Activities Specialist",
+            quotedCostMinor: 5000,
+            requestedMandateMinor: 5000,
+            capabilities: ["book_flight"],
+          },
+        ],
+      },
+    });
+
+    expect(approvalRes.statusCode).toBe(200);
+    const body = approvalRes.json();
+    expect(body.status).toBe("AUTHORIZED");
+    expect(body.delegations).toHaveLength(4);
+
+    const travelDel = body.delegations.find((d: any) => d.agent === "travel");
+    expect(travelDel).toBeDefined();
+    expect(travelDel.status).toBe("authorized");
+    expect(travelDel.mandateId).toBeDefined();
+
+    const hotelDel = body.delegations.find((d: any) => d.agent === "hotel");
+    expect(hotelDel).toBeDefined();
+    expect(hotelDel.parentMandateId).toBe(travelDel.mandateId); // Nested under Travel!
+    expect(hotelDel.status).toBe("authorized");
+
+    expect(body.failures).toHaveLength(0);
+  });
 });

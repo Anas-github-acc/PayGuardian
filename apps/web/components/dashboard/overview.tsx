@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -9,6 +10,9 @@ import {
   ShieldCheck,
   ShieldX,
   Wallet,
+  Trash2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatMinorUnits } from "../../app/lib/currency";
@@ -17,9 +21,19 @@ import type { AgentNodeData } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
 import { useWorkspaceGraph } from "../../lib/api/hooks/use-workspace-graph";
 import { useActivityFeed } from "../../lib/api/hooks/use-activity-feed";
+import { useEnvironments } from "../../lib/api/hooks";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -130,8 +144,18 @@ export interface OverviewProps {
 }
 
 export function Overview({ className = "" }: OverviewProps) {
+  const router = useRouter();
   const { currentEnvironment } = useWorkspaceStore();
   const { navigateTab } = useDashboardNavigation();
+  const { deleteEnvironment, environments } = useEnvironments();
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = React.useState("");
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+
+  const envName = currentEnvironment?.name ?? "";
+  const isDeleteMatch = deleteConfirmationInput.trim() === envName.trim();
 
   const { nodes } = useWorkspaceGraph(currentEnvironment?.id);
   const { activities } = useActivityFeed(currentEnvironment?.id);
@@ -150,9 +174,61 @@ export function Overview({ className = "" }: OverviewProps) {
 
   const recentActions = activities.filter((a) => !a.isSimulation).slice(0, 5);
 
+  const handleDeleteEnvironment = async () => {
+    if (!currentEnvironment || isDeleting || !isDeleteMatch) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    const wasLast = environments.length <= 1;
+    try {
+      const ok = await deleteEnvironment(currentEnvironment.id);
+      if (ok) {
+        setIsDeleteDialogOpen(false);
+        setDeleteConfirmationInput("");
+        if (wasLast) {
+          router.push("/onboarding");
+        }
+      } else {
+        setDeleteError("Failed to delete environment. Please check ledger state and try again.");
+      }
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete environment");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className={`theme-mono flex-1 overflow-y-auto bg-background ${className}`}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
+        {/* Environment Header & Delete Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border mb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold text-foreground tracking-tight">
+                {currentEnvironment?.name ?? "Environment Overview"}
+              </h1>
+              <Badge variant={currentEnvironment?.type === "sandbox" ? "pending" : "authorized"}>
+                {currentEnvironment?.type === "sandbox" ? "Sandbox" : "Production"}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {currentEnvironment?.purpose || "Autonomous Delegation & Financial Authority Boundary"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="h-8 px-3 text-xs border-border bg-background text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Delete Environment</span>
+            </Button>
+          </div>
+        </div>
+
         {/* Row 1: Stat Cards */}
         <div className="grid grid-cols-1 border border-border bg-card sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
@@ -368,6 +444,104 @@ export function Overview({ className = "" }: OverviewProps) {
           </div>
         </div>
       </div>
+
+      {/* Delete Environment Confirmation Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setIsDeleteDialogOpen(false);
+            setDeleteConfirmationInput("");
+            setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-card border border-border p-6 shadow-2xl">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-base font-semibold text-foreground">
+              Delete Environment
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              This will permanently delete the environment and related resources like
+              Credentials, Child Mandates, and Ledger Allocations.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground block">
+                To confirm, type <span className="font-semibold text-foreground">“{envName}”</span>
+              </label>
+              <Input
+                value={deleteConfirmationInput}
+                onChange={(e) => {
+                  setDeleteConfirmationInput(e.target.value);
+                  setDeleteError(null);
+                }}
+                placeholder={envName}
+                disabled={isDeleting}
+                className={cn(
+                  "h-9 text-xs font-mono bg-background border-border",
+                  deleteConfirmationInput && !isDeleteMatch && "border-destructive/60 focus-visible:ring-destructive"
+                )}
+                autoFocus
+              />
+              {deleteConfirmationInput && !isDeleteMatch && (
+                <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                  <AlertCircle className="size-3 shrink-0" />
+                  <span>Typing “{envName}” is required</span>
+                </p>
+              )}
+            </div>
+
+            {/* Warning Box */}
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>Deleting {envName} cannot be undone.</span>
+            </div>
+
+            {deleteError && (
+              <div className="rounded-md border border-destructive bg-destructive/15 p-2.5 text-xs text-destructive">
+                {deleteError}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2 mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setDeleteConfirmationInput("");
+                setDeleteError(null);
+              }}
+              className="border-border bg-background hover:bg-muted text-foreground text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={!isDeleteMatch || isDeleting}
+              onClick={handleDeleteEnvironment}
+              className="text-xs font-medium disabled:opacity-40 flex items-center gap-1.5"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Delete Environment</span>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

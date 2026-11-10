@@ -11,11 +11,16 @@ export interface MandateRow {
   reservedMinor: number;
   availableMinor: number;
   currency: string;
-  state: "active" | "expired" | "revoked";
+  state: "active" | "expired" | "revoked" | "superseded";
   expiresAt: string;
   canDelegate: boolean;
   maxDelegationDepth: number;
   permittedActions: string[];
+  mandateSeriesId?: string;
+  version?: number;
+  previousMandateId?: string | null;
+  supersededAt?: string | null;
+  createdAt?: string;
 }
 
 export interface ActivityAuditRow {

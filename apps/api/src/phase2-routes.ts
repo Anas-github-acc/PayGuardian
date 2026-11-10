@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
 import type { Principal, Registry } from "./phase1.js";
-import type { AuthorityStore } from "./phase2.js";
+import { mandateContentHash, type AuthorityStore } from "./phase2.js";
 import type { LedgerStore } from "./phase3.js";
 import type { ApprovalStore } from "./phase4.js";
 import type { AuditEventStore } from "./audit.js";
@@ -281,20 +281,203 @@ export function registerPhase2Routes(
       idempotencyKey: request.body.idempotencyKey,
       grantJti: request.body.grantJti,
     });
+
+    if (result.mandate && dependencies.ledger) {
+      if (result.mandate.version && result.mandate.version > 1 && result.mandate.previousMandateId) {
+        if (dependencies.ledger.linkMandateVersion) {
+          dependencies.ledger.linkMandateVersion(
+            parent.environmentId,
+            result.mandate.id,
+            result.mandate.previousMandateId,
+          );
+        }
+        const childAcc = await dependencies.ledger.getAccountByMandate(
+          parent.environmentId,
+          result.mandate.previousMandateId,
+        );
+        const parentAcc = await dependencies.ledger.getAccountByMandate(
+          parent.environmentId,
+          parent.id,
+        );
+        if (childAcc && parentAcc) {
+          try {
+            await dependencies.ledger.allocate({
+              environmentId: parent.environmentId,
+              parentAccountId: parentAcc.id,
+              childAccountId: childAcc.id,
+              amountMinor: request.body.budgetLimitMinor,
+              idempotencyKey: request.body.idempotencyKey ?? `topup:${result.mandate.id}`,
+              requestHash: mandateContentHash({
+                issuerUserId: owner.userId,
+                environmentId: parent.environmentId,
+                holderAgentId: child.id,
+                budgetLimitMinor: request.body.budgetLimitMinor,
+                currency: request.body.currency ?? parent.currency,
+                permittedActions: request.body.permittedActions ?? parent.permittedActions,
+                expiresAt: request.body.expiresAt ?? parent.expiresAt,
+                canDelegate: request.body.canDelegate ?? false,
+                maxDelegationDepth: request.body.maxDelegationDepth ?? 0,
+                approvalRequired: request.body.approvalRequired ?? false,
+                parentMandateId: parent.id,
+              }),
+            });
+          } catch {
+            // ledger allocation logged or skipped if already processed
+          }
+        }
+      }
+    }
+
+    const isTopup = Boolean(result.mandate && result.mandate.version && result.mandate.version > 1);
     await dependencies.audit.append({
       environmentId: parent.environmentId,
       actorType: owner.kind,
       actorId: owner.kind === "agent" ? owner.agentId : owner.userId,
       mandateId: result.mandate?.id ?? parent.id,
-      eventType: result.mandate ? "mandate.delegated" : "mandate.delegation_denied",
+      eventType: result.mandate
+        ? isTopup
+          ? "mandate.topped_up"
+          : "mandate.delegated"
+        : "mandate.delegation_denied",
       outcome: result.mandate ? "success" : "denied",
       reasonCode: result.decision.code,
       payload: {
         holderAgentId: child.id,
         budgetLimitMinor: request.body.budgetLimitMinor,
         grantJti: request.body.grantJti ?? null,
+        ...(result.mandate
+          ? {
+              version: result.mandate.version,
+              mandateSeriesId: result.mandate.mandateSeriesId,
+              previousMandateId: result.mandate.previousMandateId,
+              totalBudgetLimitMinor: result.mandate.budgetLimitMinor,
+            }
+          : {}),
       },
     });
+    return reply
+      .code(result.decision.allowed ? 201 : 403)
+      .send(
+        result.mandate
+          ? { mandate: result.mandate, decision: result.decision }
+          : { decision: result.decision },
+      );
+  });
+
+  app.post<{
+    Params: { mandateId: string };
+    Body: {
+      holderAgentId: string;
+      additionalBudgetMinor: number;
+      currency?: string;
+      permittedActions?: string[];
+      expiresAt?: string;
+      canDelegate?: boolean;
+      maxDelegationDepth?: number;
+      approvalRequired?: boolean;
+      idempotencyKey?: string;
+      grantJti?: string;
+    };
+  }>("/v1/mandates/:mandateId/topups", async (request, reply) => {
+    const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+    if (!owner) return;
+
+    const parent = await dependencies.authority.get(request.params.mandateId, owner.userId);
+    if (!parent) {
+      return reply
+        .code(404)
+        .send({ code: "AUTHORITY_TARGET_NOT_FOUND", message: "Parent mandate not found." });
+    }
+
+    const child = await dependencies.registry.getAgent(owner.userId, request.body.holderAgentId);
+    if (!child || child.environmentId !== parent.environmentId) {
+      return reply.code(404).send({
+        code: "AUTHORITY_TARGET_NOT_FOUND",
+        message: "Child agent not found in mandate environment.",
+      });
+    }
+
+    const result = await dependencies.authority.delegate(request.params.mandateId, {
+      issuerUserId: owner.userId,
+      holderAgentId: child.id,
+      budgetLimitMinor: request.body.additionalBudgetMinor,
+      currency: (request.body.currency ?? parent.currency).toUpperCase(),
+      permittedActions: request.body.permittedActions ?? parent.permittedActions,
+      expiresAt: request.body.expiresAt ?? parent.expiresAt,
+      canDelegate: request.body.canDelegate ?? false,
+      maxDelegationDepth: request.body.maxDelegationDepth ?? 0,
+      approvalRequired: request.body.approvalRequired ?? false,
+      caller: owner,
+      idempotencyKey: request.body.idempotencyKey,
+      grantJti: request.body.grantJti,
+    });
+
+    if (result.mandate && dependencies.ledger && result.mandate.previousMandateId) {
+      if (dependencies.ledger.linkMandateVersion) {
+        dependencies.ledger.linkMandateVersion(
+          parent.environmentId,
+          result.mandate.id,
+          result.mandate.previousMandateId,
+        );
+      }
+      const childAcc = await dependencies.ledger.getAccountByMandate(
+        parent.environmentId,
+        result.mandate.previousMandateId,
+      );
+      const parentAcc = await dependencies.ledger.getAccountByMandate(
+        parent.environmentId,
+        parent.id,
+      );
+      if (childAcc && parentAcc) {
+        try {
+          await dependencies.ledger.allocate({
+            environmentId: parent.environmentId,
+            parentAccountId: parentAcc.id,
+            childAccountId: childAcc.id,
+            amountMinor: request.body.additionalBudgetMinor,
+            idempotencyKey: request.body.idempotencyKey ?? `topup:${result.mandate.id}`,
+            requestHash: mandateContentHash({
+              issuerUserId: owner.userId,
+              environmentId: parent.environmentId,
+              holderAgentId: child.id,
+              budgetLimitMinor: request.body.additionalBudgetMinor,
+              currency: request.body.currency ?? parent.currency,
+              permittedActions: request.body.permittedActions ?? parent.permittedActions,
+              expiresAt: request.body.expiresAt ?? parent.expiresAt,
+              canDelegate: request.body.canDelegate ?? false,
+              maxDelegationDepth: request.body.maxDelegationDepth ?? 0,
+              approvalRequired: request.body.approvalRequired ?? false,
+              parentMandateId: parent.id,
+            }),
+          });
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    await dependencies.audit.append({
+      environmentId: parent.environmentId,
+      actorType: owner.kind,
+      actorId: owner.kind === "agent" ? owner.agentId : owner.userId,
+      mandateId: result.mandate?.id ?? parent.id,
+      eventType: result.mandate ? "mandate.topped_up" : "mandate.delegation_denied",
+      outcome: result.mandate ? "success" : "denied",
+      reasonCode: result.decision.code,
+      payload: {
+        holderAgentId: child.id,
+        additionalBudgetMinor: request.body.additionalBudgetMinor,
+        ...(result.mandate
+          ? {
+              version: result.mandate.version,
+              mandateSeriesId: result.mandate.mandateSeriesId,
+              previousMandateId: result.mandate.previousMandateId,
+              totalBudgetLimitMinor: result.mandate.budgetLimitMinor,
+            }
+          : {}),
+      },
+    });
+
     return reply
       .code(result.decision.allowed ? 201 : 403)
       .send(

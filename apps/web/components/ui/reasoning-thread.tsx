@@ -117,7 +117,7 @@ export function Reasoning({ seconds, text }: { text: string; seconds?: number })
   const thinking = seconds === undefined;
   const toggle = useCallback(() => setOpen((value) => !value), []);
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="my-0 flex flex-col gap-1.5 py-0">
       <button
         aria-controls={id}
         aria-expanded={open || thinking}

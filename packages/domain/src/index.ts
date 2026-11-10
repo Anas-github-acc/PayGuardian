@@ -1,4 +1,4 @@
-export type MandateState = "active" | "expired" | "revoked";
+export type MandateState = "active" | "expired" | "revoked" | "superseded";
 
 export type MandateConstraints = {
   environmentId: string;
@@ -16,6 +16,10 @@ export type Mandate = MandateConstraints & {
   id: string;
   issuerUserId: string;
   parentMandateId: string | null;
+  mandateSeriesId?: string;
+  version?: number;
+  previousMandateId?: string | null;
+  supersededAt?: string | null;
   allocatedMinor: number;
   spentMinor: number;
   reservedMinor: number;
@@ -96,6 +100,8 @@ export function createRootMandate(input: {
   issuerUserId: string;
   createdAt: string;
   constraints: MandateConstraints;
+  mandateSeriesId?: string;
+  version?: number;
 }): Mandate {
   if (
     input.constraints.budgetLimitMinor <= 0 ||
@@ -114,6 +120,10 @@ export function createRootMandate(input: {
     permittedActions: unique(input.constraints.permittedActions),
     parentMandateId: null,
     id: input.id,
+    mandateSeriesId: input.mandateSeriesId ?? input.id,
+    version: input.version ?? 1,
+    previousMandateId: null,
+    supersededAt: null,
     issuerUserId: input.issuerUserId,
     allocatedMinor: 0,
     spentMinor: 0,
@@ -138,6 +148,8 @@ export function evaluateMandate(
   if (!mandate) return { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Mandate not found." };
   if (mandate.state === "revoked")
     return { allowed: false, code: "MANDATE_REVOKED", reason: "Mandate is revoked." };
+  if (mandate.state === "superseded")
+    return { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Mandate version is superseded." };
   if (isExpired(mandate, input.at))
     return { allowed: false, code: "MANDATE_EXPIRED", reason: "Mandate has expired." };
   if (!isSubset([input.action], mandate.permittedActions)) {
@@ -300,6 +312,10 @@ export function delegateMandate(
     permittedActions: unique(input.permittedActions),
     environmentId: parent.environmentId,
     parentMandateId: parent.id,
+    mandateSeriesId: input.id,
+    version: 1,
+    previousMandateId: null,
+    supersededAt: null,
     allocatedMinor: 0,
     spentMinor: 0,
     reservedMinor: 0,
@@ -310,6 +326,197 @@ export function delegateMandate(
   return {
     mandate,
     decision: { allowed: true, code: "ALLOW", reason: "Delegation is permitted." },
+  };
+}
+
+export type TopupRequest = {
+  additionalBudgetMinor: number;
+  permittedActions?: string[];
+  expiresAt?: string;
+  canDelegate?: boolean;
+  maxDelegationDepth?: number;
+  approvalRequired?: boolean;
+};
+
+export function topupMandate(
+  parent: Mandate,
+  previous: Mandate,
+  input: TopupRequest & { id: string; createdAt: string },
+  at: Date,
+): { mandate: Mandate | null; decision: PolicyDecision } {
+  if (parent.state === "revoked")
+    return {
+      mandate: null,
+      decision: { allowed: false, code: "MANDATE_REVOKED", reason: "Parent mandate is revoked." },
+    };
+  if (parent.state === "superseded")
+    return {
+      mandate: null,
+      decision: { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Parent mandate is superseded." },
+    };
+  if (isExpired(parent, at))
+    return {
+      mandate: null,
+      decision: { allowed: false, code: "MANDATE_EXPIRED", reason: "Parent mandate has expired." },
+    };
+  if (!parent.canDelegate)
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "DELEGATION_NOT_PERMITTED",
+        reason: "Parent cannot delegate authority.",
+      },
+    };
+  if (previous.state !== "active")
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "MANDATE_NOT_FOUND",
+        reason: "Previous mandate version is not active.",
+      },
+    };
+  if (previous.currency !== parent.currency)
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "CURRENCY_MISMATCH",
+        reason: "Child currency differs from parent currency.",
+      },
+    };
+  if (input.additionalBudgetMinor <= 0 || input.additionalBudgetMinor > availableBudget(parent)) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "BUDGET_EXCEEDED",
+        reason: "Child allocation exceeds parent available budget.",
+      },
+    };
+  }
+
+  // Permission inheritance: subset of both previous and parent
+  const targetActions = input.permittedActions ?? previous.permittedActions;
+  if (!isSubset(targetActions, parent.permittedActions)) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "ACTION_NOT_PERMITTED",
+        reason: "Top-up actions exceed parent permitted actions.",
+      },
+    };
+  }
+  if (!isSubset(targetActions, previous.permittedActions)) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "ACTION_NOT_PERMITTED",
+        reason: "Top-up actions cannot expand previous permissions.",
+      },
+    };
+  }
+
+  // Expiry cannot exceed previous or parent expiry
+  const targetExpiresAt = input.expiresAt ?? previous.expiresAt;
+  if (new Date(targetExpiresAt).getTime() > new Date(parent.expiresAt).getTime()) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "MANDATE_EXPIRED",
+        reason: "Child expiry exceeds parent expiry.",
+      },
+    };
+  }
+  if (new Date(targetExpiresAt).getTime() > new Date(previous.expiresAt).getTime()) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "MANDATE_EXPIRED",
+        reason: "Child expiry cannot exceed previous mandate expiry.",
+      },
+    };
+  }
+
+  // Approval requirements cannot be weakened
+  const targetApproval =
+    input.approvalRequired !== undefined ? input.approvalRequired : previous.approvalRequired;
+  if (parent.approvalRequired && !targetApproval) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "APPROVAL_REQUIRED",
+        reason: "Child authority cannot weaken the parent approval requirement.",
+      },
+    };
+  }
+  if (previous.approvalRequired && !targetApproval) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "APPROVAL_REQUIRED",
+        reason: "Child authority cannot weaken the previous approval requirement.",
+      },
+    };
+  }
+
+  // Delegation depth cannot increase
+  const targetDepth =
+    input.maxDelegationDepth !== undefined ? input.maxDelegationDepth : previous.maxDelegationDepth;
+  if (targetDepth >= parent.maxDelegationDepth || targetDepth > previous.maxDelegationDepth) {
+    return {
+      mandate: null,
+      decision: {
+        allowed: false,
+        code: "DELEGATION_DEPTH_EXCEEDED",
+        reason: "Delegation depth cannot increase beyond previous or parent limit.",
+      },
+    };
+  }
+
+  // Retire previous version
+  previous.state = "superseded";
+  previous.supersededAt = input.createdAt;
+
+  // New version carries forward spentMinor, reservedMinor, allocatedMinor
+  const newMandate: Mandate = {
+    id: input.id,
+    mandateSeriesId: previous.mandateSeriesId ?? previous.id,
+    version: (previous.version ?? 1) + 1,
+    previousMandateId: previous.id,
+    supersededAt: null,
+    issuerUserId: previous.issuerUserId,
+    environmentId: previous.environmentId,
+    holderAgentId: previous.holderAgentId,
+    parentMandateId: parent.id,
+    budgetLimitMinor: previous.budgetLimitMinor + input.additionalBudgetMinor,
+    allocatedMinor: previous.allocatedMinor,
+    spentMinor: previous.spentMinor,
+    reservedMinor: previous.reservedMinor,
+    currency: previous.currency,
+    permittedActions: unique(targetActions),
+    expiresAt: targetExpiresAt,
+    canDelegate: input.canDelegate !== undefined ? input.canDelegate : previous.canDelegate,
+    maxDelegationDepth: targetDepth,
+    approvalRequired: targetApproval,
+    state: "active",
+    revokedAt: null,
+    createdAt: input.createdAt,
+  };
+
+  // Parent allocated increases only by the additional allocation
+  parent.allocatedMinor += input.additionalBudgetMinor;
+
+  return {
+    mandate: newMandate,
+    decision: { allowed: true, code: "ALLOW", reason: "Top-up delegation permitted." },
   };
 }
 

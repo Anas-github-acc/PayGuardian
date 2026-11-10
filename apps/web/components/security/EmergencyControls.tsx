@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   PauseCircle,
   PlayCircle,
@@ -8,10 +9,20 @@ import {
   AlertTriangle,
   Lock,
   Check,
+  Trash2,
 } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import { useEnvironments } from "../../lib/api/hooks";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 export interface EmergencyControlsProps {
   environmentId?: string;
@@ -24,13 +35,33 @@ export function EmergencyControls({
   onRevokeAll,
   className = "",
 }: EmergencyControlsProps) {
+  const router = useRouter();
   const store = useWorkspaceStore();
+  const { deleteEnvironment, environments } = useEnvironments();
   const currentEnv = store.currentEnvironment;
   const activeEnvId = environmentId ?? currentEnv?.id ?? "env-sandbox-travel-01";
   const status = currentEnv?.status ?? "active";
 
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
   const [feedbackMessage, setFeedbackMessage] = React.useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    const wasLastEnv = environments.length <= 1;
+    try {
+      const success = await deleteEnvironment(activeEnvId);
+      if (success) {
+        setIsDeleteDialogOpen(false);
+        if (wasLastEnv) {
+          router.push("/onboarding");
+        }
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handlePause = async () => {
     setIsProcessing(true);
@@ -159,8 +190,54 @@ export function EmergencyControls({
               Revoke All Authority
             </Button>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={isProcessing || isDeleting}
+            className="border-destructive/40 text-destructive hover:bg-destructive/10 text-xs font-semibold"
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            Delete Environment
+          </Button>
         </div>
       </div>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Environment
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-1.5 leading-relaxed">
+              Are you sure you want to delete <strong className="text-foreground">{currentEnv?.name ?? activeEnvId}</strong>?
+              This will permanently purge this environment along with all associated agent credentials, child mandates, and ledger allocations.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isDeleting}
+              onClick={handleDelete}
+              className="font-medium"
+            >
+              {isDeleting ? "Deleting..." : "Delete Environment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Feedback Banner */}
       {feedbackMessage && (

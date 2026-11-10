@@ -189,6 +189,8 @@ export class ApiClient {
       this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/resume`, undefined, options),
     revoke: (id: string, options?: RequestOptions) =>
       this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/revoke`, undefined, options),
+    delete: (id: string, options?: RequestOptions) =>
+      this.delete<{ success: boolean; environmentId: string }>(`/v1/environments/${encodeURIComponent(id)}`, options),
   };
 
   readonly agents = {

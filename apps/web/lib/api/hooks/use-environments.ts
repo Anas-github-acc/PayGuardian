@@ -28,6 +28,7 @@ export interface UseEnvironmentsResult {
   isEnvironmentsLoaded: boolean;
   refetch: () => Promise<void>;
   createAndBootstrap: (options: CreateAndBootstrapOptions) => Promise<Environment>;
+  deleteEnvironment: (environmentId: string) => Promise<boolean>;
 }
 
 export function useEnvironments(): UseEnvironmentsResult {
@@ -111,6 +112,21 @@ export function useEnvironments(): UseEnvironmentsResult {
     [],
   );
 
+  const deleteEnvironment = React.useCallback(
+    async (environmentId: string): Promise<boolean> => {
+      try {
+        await apiClient.environments.delete(environmentId);
+        workspaceStore.removeEnvironment(environmentId);
+        return true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to delete environment";
+        setError(msg);
+        return false;
+      }
+    },
+    [],
+  );
+
   return {
     environments: environmentsList,
     currentEnvironment,
@@ -120,5 +136,6 @@ export function useEnvironments(): UseEnvironmentsResult {
     isEnvironmentsLoaded,
     refetch: fetchEnvironments,
     createAndBootstrap,
+    deleteEnvironment,
   };
 }

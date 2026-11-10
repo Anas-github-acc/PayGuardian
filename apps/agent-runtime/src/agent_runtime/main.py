@@ -44,6 +44,8 @@ class LangGraphRunRequest(BaseModel):
     run_id: str | None = None
     model_id: str | None = None
     budget_limit_minor: int | None = None
+    available_reserve_minor: int | None = None
+    already_delegated_minor: int | None = None
     budget_currency: str | None = None
     approval_required: bool | None = None
 
@@ -183,6 +185,8 @@ def run_langgraph(request: LangGraphRunRequest) -> dict[str, object]:
         run_id=request.run_id,
         model_id=request.model_id,
         budget_limit_minor=request.budget_limit_minor,
+        available_reserve_minor=request.available_reserve_minor,
+        already_delegated_minor=request.already_delegated_minor,
         budget_currency=request.budget_currency,
         approval_required=request.approval_required,
     )

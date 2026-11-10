@@ -7,9 +7,11 @@ import {
   delegateMandate,
   evaluateAuthorityChain,
   revokeMandate,
+  topupMandate,
   type DelegationRequest,
   type Mandate,
   type PolicyDecision,
+  type TopupRequest,
 } from "@payguardian/domain";
 import type { Principal } from "./phase1.js";
 
@@ -80,6 +82,17 @@ export type AuthorityStore = {
       caller?: Principal;
     },
   ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }>;
+  topup?(
+    parentId: string,
+    input: TopupRequest & {
+      issuerUserId: string;
+      holderAgentId: string;
+      idempotencyKey?: string;
+      caller?: Principal;
+      grantJti?: string;
+    },
+  ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }>;
+  findActiveChild?(parentId: string, holderAgentId: string): Promise<Mandate | null>;
   revoke(id: string, issuerUserId: string): Promise<Mandate | null>;
   evaluate(id: string, input: AuthorityCheckInput, userId: string): Promise<PolicyDecision>;
   createGrant(input: CreateDelegationGrantInput): Promise<DelegationGrant>;
@@ -110,11 +123,29 @@ export class InMemoryAuthorityStore implements AuthorityStore {
   private readonly mandates = new Map<string, Mandate>();
   private readonly grants = new Map<string, DelegationGrant>();
   private readonly idempotentDelegations = new Map<string, Mandate>();
+  private readonly locks = new Map<string, Promise<void>>();
   private readonly filePath?: string;
 
   constructor(filePath?: string) {
     this.filePath = filePath;
     this.load();
+  }
+
+  private async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    while (this.locks.has(key)) {
+      await this.locks.get(key);
+    }
+    let release!: () => void;
+    const lock = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.locks.set(key, lock);
+    try {
+      return await fn();
+    } finally {
+      this.locks.delete(key);
+      release();
+    }
   }
 
   private load(): void {
@@ -240,6 +271,17 @@ export class InMemoryAuthorityStore implements AuthorityStore {
     );
   }
 
+  async findActiveChild(parentId: string, holderAgentId: string): Promise<Mandate | null> {
+    return (
+      [...this.mandates.values()].find(
+        (m) =>
+          m.parentMandateId === parentId &&
+          m.holderAgentId === holderAgentId &&
+          m.state === "active",
+      ) ?? null
+    );
+  }
+
   async delegate(
     parentId: string,
     input: DelegationRequest & {
@@ -248,187 +290,250 @@ export class InMemoryAuthorityStore implements AuthorityStore {
       caller?: Principal;
     },
   ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }> {
-    // 1. Check idempotency if key provided
-    if (input.idempotencyKey) {
-      const idemKey = `${parentId}:${input.holderAgentId}:${input.idempotencyKey}`;
-      const existing = this.idempotentDelegations.get(idemKey);
-      if (existing) {
+    return this.withLock(`${parentId}:${input.holderAgentId}`, async () => {
+      // 1. Check idempotency if key provided
+      if (input.idempotencyKey) {
+        const idemKey = `${parentId}:${input.holderAgentId}:${input.idempotencyKey}`;
+        const existing = this.idempotentDelegations.get(idemKey);
+        if (existing) {
+          return {
+            mandate: existing,
+            decision: { allowed: true, code: "ALLOW", reason: "Delegation returned from idempotent execution." },
+          };
+        }
+      }
+
+      const parent = this.mandates.get(parentId);
+      if (!parent)
         return {
-          mandate: existing,
-          decision: { allowed: true, code: "ALLOW", reason: "Delegation returned from idempotent execution." },
+          mandate: null,
+          decision: {
+            allowed: false,
+            code: "MANDATE_NOT_FOUND",
+            reason: "Parent mandate not found.",
+          },
+        };
+
+      if (parent.issuerUserId !== input.issuerUserId) {
+        return {
+          mandate: null,
+          decision: {
+            allowed: false,
+            code: "MANDATE_NOT_FOUND",
+            reason: "Parent mandate is not owned by the authenticated principal.",
+          },
         };
       }
-    }
 
-    const parent = this.mandates.get(parentId);
-    if (!parent)
-      return {
-        mandate: null,
-        decision: {
-          allowed: false,
-          code: "MANDATE_NOT_FOUND",
-          reason: "Parent mandate not found.",
-        },
-      };
+      // Caller verification
+      if (input.caller) {
+        if (input.caller.kind === "agent") {
+          if (input.caller.agentId !== parent.holderAgentId) {
+            return {
+              mandate: null,
+              decision: {
+                allowed: false,
+                code: "AGENT_IDENTITY_MISMATCH",
+                reason: "Caller agent does not hold the parent mandate.",
+              },
+            };
+          }
+        }
+      }
 
-    if (parent.issuerUserId !== input.issuerUserId) {
-      return {
-        mandate: null,
-        decision: {
-          allowed: false,
-          code: "MANDATE_NOT_FOUND",
-          reason: "Parent mandate is not owned by the authenticated principal.",
-        },
-      };
-    }
-
-    // Caller verification
-    if (input.caller) {
-      if (input.caller.kind === "agent") {
-        if (input.caller.agentId !== parent.holderAgentId) {
+      // 2. Grant verification if grantJti provided
+      let grant: DelegationGrant | null = null;
+      if (input.grantJti) {
+        grant = this.grants.get(input.grantJti) ?? null;
+        if (!grant) {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "GRANT_NOT_FOUND",
+              reason: "Delegation grant not found.",
+            },
+          };
+        }
+        if (grant.environmentId !== parent.environmentId) {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "AUTHORITY_TARGET_NOT_FOUND",
+              reason: "Grant environment does not match parent mandate.",
+            },
+          };
+        }
+        if (input.caller && input.caller.kind === "agent" && grant.agentId !== input.caller.agentId) {
           return {
             mandate: null,
             decision: {
               allowed: false,
               code: "AGENT_IDENTITY_MISMATCH",
-              reason: "Caller agent does not hold the parent mandate.",
+              reason: "Caller agent does not match delegation grant agent.",
+            },
+          };
+        }
+        if (grant.status !== "active") {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "GRANT_INACTIVE",
+              reason: `Delegation grant is ${grant.status}.`,
+            },
+          };
+        }
+        const now = new Date();
+        if (new Date(grant.expiresAt) <= now || new Date(grant.expiresAt) > new Date(parent.expiresAt)) {
+          grant.status = "expired";
+          grant.updatedAt = now.toISOString();
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "GRANT_EXPIRED",
+              reason: "Delegation grant has expired.",
+            },
+          };
+        }
+        if (
+          grant.allowedChildAgents.length > 0 &&
+          !grant.allowedChildAgents.includes("*") &&
+          !grant.allowedChildAgents.includes(input.holderAgentId)
+        ) {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "CHILD_AGENT_NOT_ALLOWED_BY_GRANT",
+              reason: "Child agent is not allowed by this delegation grant.",
+            },
+          };
+        }
+        if (!input.permittedActions.every((act) => grant!.permittedActions.includes(act))) {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "ACTION_NOT_PERMITTED_BY_GRANT",
+              reason: "Child actions exceed permitted actions on the delegation grant.",
+            },
+          };
+        }
+        if (input.maxDelegationDepth > grant.maxDepth) {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "DELEGATION_DEPTH_EXCEEDED",
+              reason: "Child delegation depth exceeds grant limit.",
+            },
+          };
+        }
+        if (grant.amountUsedMinor + input.budgetLimitMinor > grant.maxBudgetMinor) {
+          return {
+            mandate: null,
+            decision: {
+              allowed: false,
+              code: "GRANT_BUDGET_EXCEEDED",
+              reason: "Requested budget exceeds remaining grant capacity.",
             },
           };
         }
       }
-    }
 
-    // 2. Grant verification if grantJti provided
-    let grant: DelegationGrant | null = null;
-    if (input.grantJti) {
-      grant = this.grants.get(input.grantJti) ?? null;
-      if (!grant) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "GRANT_NOT_FOUND",
-            reason: "Delegation grant not found.",
-          },
-        };
-      }
-      if (grant.environmentId !== parent.environmentId) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "AUTHORITY_TARGET_NOT_FOUND",
-            reason: "Grant environment does not match parent mandate.",
-          },
-        };
-      }
-      if (input.caller && input.caller.kind === "agent" && grant.agentId !== input.caller.agentId) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "AGENT_IDENTITY_MISMATCH",
-            reason: "Caller agent does not match delegation grant agent.",
-          },
-        };
-      }
-      if (grant.status !== "active") {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "GRANT_INACTIVE",
-            reason: `Delegation grant is ${grant.status}.`,
-          },
-        };
-      }
-      const now = new Date();
-      if (new Date(grant.expiresAt) <= now || new Date(grant.expiresAt) > new Date(parent.expiresAt)) {
-        grant.status = "expired";
-        grant.updatedAt = now.toISOString();
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "GRANT_EXPIRED",
-            reason: "Delegation grant has expired.",
-          },
-        };
-      }
-      if (
-        grant.allowedChildAgents.length > 0 &&
-        !grant.allowedChildAgents.includes("*") &&
-        !grant.allowedChildAgents.includes(input.holderAgentId)
-      ) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "CHILD_AGENT_NOT_ALLOWED_BY_GRANT",
-            reason: "Child agent is not allowed by this delegation grant.",
-          },
-        };
-      }
-      if (!input.permittedActions.every((act) => grant!.permittedActions.includes(act))) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "ACTION_NOT_PERMITTED_BY_GRANT",
-            reason: "Child actions exceed permitted actions on the delegation grant.",
-          },
-        };
-      }
-      if (input.maxDelegationDepth > grant.maxDepth) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "DELEGATION_DEPTH_EXCEEDED",
-            reason: "Child delegation depth exceeds grant limit.",
-          },
-        };
-      }
-      if (grant.amountUsedMinor + input.budgetLimitMinor > grant.maxBudgetMinor) {
-        return {
-          mandate: null,
-          decision: {
-            allowed: false,
-            code: "GRANT_BUDGET_EXCEEDED",
-            reason: "Requested budget exceeds remaining grant capacity.",
-          },
-        };
-      }
-    }
+      // Check if active child mandate already exists for this holder under parent
+      const activeChild = [...this.mandates.values()].find(
+        (m) =>
+          m.parentMandateId === parentId &&
+          m.holderAgentId === input.holderAgentId &&
+          m.state === "active",
+      );
 
-    const result = delegateMandate(
-      parent,
-      { ...input, id: randomUUID(), createdAt: new Date().toISOString() },
-      new Date(),
-    );
+      let result: { mandate: Mandate | null; decision: PolicyDecision };
 
-    if (result.mandate) {
-      this.mandates.set(result.mandate.id, result.mandate);
-      if (grant) {
-        const nowIso = new Date().toISOString();
-        grant.amountUsedMinor += input.budgetLimitMinor;
-        if (grant.approvalStrictness === "allow_once") {
-          grant.status = "consumed";
-        } else if (grant.amountUsedMinor >= grant.maxBudgetMinor) {
-          grant.status = "consumed";
+      if (activeChild) {
+        // TOP-UP VERSIONING: incremental allocation
+        result = topupMandate(
+          parent,
+          activeChild,
+          {
+            id: randomUUID(),
+            additionalBudgetMinor: input.budgetLimitMinor,
+            permittedActions: input.permittedActions,
+            expiresAt: input.expiresAt,
+            canDelegate: input.canDelegate,
+            maxDelegationDepth: input.maxDelegationDepth,
+            approvalRequired: input.approvalRequired,
+            createdAt: new Date().toISOString(),
+          },
+          new Date(),
+        );
+
+        if (result.mandate) {
+          // Update superseded state for previous version
+          this.mandates.set(activeChild.id, activeChild);
+          // Store new version
+          this.mandates.set(result.mandate.id, result.mandate);
         }
-        grant.updatedAt = nowIso;
+      } else {
+        // INITIAL DELEGATION: V1
+        result = delegateMandate(
+          parent,
+          { ...input, id: randomUUID(), createdAt: new Date().toISOString() },
+          new Date(),
+        );
+
+        if (result.mandate) {
+          this.mandates.set(result.mandate.id, result.mandate);
+        }
       }
+
       if (result.mandate) {
-        this.mandates.set(result.mandate.id, result.mandate);
+        if (grant) {
+          const nowIso = new Date().toISOString();
+          grant.amountUsedMinor += input.budgetLimitMinor;
+          if (grant.approvalStrictness === "allow_once") {
+            grant.status = "consumed";
+          } else if (grant.amountUsedMinor >= grant.maxBudgetMinor) {
+            grant.status = "consumed";
+          }
+          grant.updatedAt = nowIso;
+        }
         this.persist();
+        if (input.idempotencyKey) {
+          const idemKey = `${parentId}:${input.holderAgentId}:${input.idempotencyKey}`;
+          this.idempotentDelegations.set(idemKey, result.mandate);
+        }
       }
-      if (input.idempotencyKey && result.mandate) {
-        const idemKey = `${parentId}:${input.holderAgentId}:${input.idempotencyKey}`;
-        this.idempotentDelegations.set(idemKey, result.mandate);
-      }
-    }
-    return result;
+
+      return result;
+    });
+  }
+
+  async topup(
+    parentId: string,
+    input: TopupRequest & {
+      issuerUserId: string;
+      holderAgentId: string;
+      idempotencyKey?: string;
+      caller?: Principal;
+      grantJti?: string;
+    },
+  ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }> {
+    const parent = this.mandates.get(parentId);
+    return this.delegate(parentId, {
+      ...input,
+      budgetLimitMinor: input.additionalBudgetMinor,
+      currency: parent?.currency ?? "INR",
+      permittedActions: input.permittedActions ?? parent?.permittedActions ?? [],
+      expiresAt: input.expiresAt ?? parent?.expiresAt ?? new Date(Date.now() + 86400000).toISOString(),
+      canDelegate: input.canDelegate ?? false,
+      maxDelegationDepth: input.maxDelegationDepth ?? 0,
+      approvalRequired: input.approvalRequired ?? false,
+    });
   }
 
   async revoke(id: string, issuerUserId: string): Promise<Mandate | null> {
@@ -525,9 +630,7 @@ export class SupabaseAuthorityStore implements AuthorityStore {
   async get(id: string, userId?: string): Promise<Mandate | null> {
     let query = this.client
       .from("mandates")
-      .select(
-        "id,environment_id,issuer_user_id,holder_agent_id,parent_mandate_id,budget_limit_minor,allocated_minor,spent_minor,reserved_minor,currency,permitted_actions,expires_at,can_delegate,max_delegation_depth,approval_required,state,revoked_at,created_at",
-      )
+      .select("*")
       .eq("id", id);
     if (userId) query = query.eq("issuer_user_id", userId);
     const { data, error } = await query.maybeSingle();
@@ -538,9 +641,7 @@ export class SupabaseAuthorityStore implements AuthorityStore {
   async list(environmentId: string, userId: string): Promise<Mandate[]> {
     const { data, error } = await this.client
       .from("mandates")
-      .select(
-        "id,environment_id,issuer_user_id,holder_agent_id,parent_mandate_id,budget_limit_minor,allocated_minor,spent_minor,reserved_minor,currency,permitted_actions,expires_at,can_delegate,max_delegation_depth,approval_required,state,revoked_at,created_at",
-      )
+      .select("*")
       .eq("environment_id", environmentId)
       .eq("issuer_user_id", userId)
       .order("created_at", { ascending: false });
@@ -732,6 +833,10 @@ function mapMandate(row: SupabaseMandateRow): Mandate {
     environmentId: String(row.environment_id),
     holderAgentId: String(row.holder_agent_id),
     parentMandateId: row.parent_mandate_id ? String(row.parent_mandate_id) : null,
+    mandateSeriesId: row.mandate_series_id ? String(row.mandate_series_id) : String(row.id),
+    version: row.version !== undefined && row.version !== null ? Number(row.version) : 1,
+    previousMandateId: row.previous_mandate_id ? String(row.previous_mandate_id) : null,
+    supersededAt: row.superseded_at ? String(row.superseded_at) : null,
     budgetLimitMinor: Number(row.budget_limit_minor),
     allocatedMinor: Number(row.allocated_minor),
     spentMinor: Number(row.spent_minor),

@@ -24,6 +24,8 @@ import {
   PanelLeft,
   PanelLeftOpen,
   PanelLeftClose,
+  Shield,
+  BookOpen,
 } from "lucide-react";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
@@ -101,7 +103,7 @@ export function AssistantView({
   const currentEnvId = currentEnv?.id;
 
   // Persistent sidebar controls & conversation manager from ChatProvider
-  const { sidebarOpen, setSidebarOpen, upsertConversation } = useChat();
+  const { sidebarOpen, setSidebarOpen, upsertConversation, setMandateOverlayOpen } = useChat();
 
   // Active conversation & runs
   const [activeConversationId, setActiveConversationId] = React.useState<string | null>(
@@ -124,6 +126,18 @@ export function AssistantView({
   // Context window modal
   const [contextWindowOpen, setContextWindowOpen] = React.useState(false);
   const [activeModelId, setActiveModelId] = React.useState<string>("free/gpt-6-luna");
+  const [assembledContext, setAssembledContext] = React.useState<{
+    system_instruction?: string;
+    system_prompt?: string;
+    assembled_prompt?: string;
+    operational_context?: string;
+    total_characters?: number;
+    estimated_tokens?: number;
+    system_prompt_tokens?: number;
+    assembled_prompt_tokens?: number;
+    messages_count?: number;
+    active_tasks_count?: number;
+  } | null>(null);
 
   // Scroll container and auto-scroll tracking refs
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
@@ -304,6 +318,7 @@ export function AssistantView({
         "task.completed",
         "task.failed",
         "approval.requested",
+        "context.assembled",
         "run.completed",
       ];
 
@@ -550,6 +565,13 @@ export function AssistantView({
         break;
       }
 
+      case "context.assembled": {
+        if (payload) {
+          setAssembledContext(payload);
+        }
+        break;
+      }
+
       case "run.completed": {
         setIsStreaming(false);
         const finalTxt = payload.finalResponse ?? payload.output ?? payload.text ?? "";
@@ -744,9 +766,9 @@ export function AssistantView({
               type="button"
               onClick={() => setContextWindowOpen(true)}
               title="View Chat Context Window"
-              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors px-2 py-1"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
             >
-              <Layers className="h-3.5 w-3.5" />
+              <BookOpen className="h-3.5 w-3.5" />
               <span>Context Window</span>
             </button>
           </div>
@@ -789,52 +811,108 @@ export function AssistantView({
                     totalProposedMinor={pendingApproval.amountMinor}
                     allocations={pendingApproval.proposedAllocations}
                     onApprove={async () => {
-                      // Execute real signed child mandate delegation on the Gateway for approved specialists
-                      if (currentEnvId && pendingApproval.mandateId) {
+                      if (!currentEnvId) {
+                        return { ok: false, message: "No active environment selected." };
+                      }
+                      const approvalId = pendingApproval.id;
+                      try {
+                        const res = await fetch(
+                          `${API_BASE}/v1/environments/${currentEnvId}/approvals/${approvalId}/approve`,
+                          {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              "x-local-user-id": "local-user",
+                            },
+                            body: JSON.stringify({
+                              mandateId: pendingApproval.mandateId,
+                              currency: pendingApproval.currency,
+                              proposedAllocations: pendingApproval.proposedAllocations,
+                            }),
+                          },
+                        );
+
+                        if (!res.ok) {
+                          const errData = await res.json().catch(() => ({}));
+                          const reason = errData.message || errData.code || `Gateway error HTTP ${res.status}`;
+                          return { ok: false, message: `Authority check failed: ${reason}` };
+                        }
+
+                        const data = await res.json();
+                        if (data.status === "FAILED") {
+                          const reason = data.failures?.[0]?.reason || "Authority rejected delegation for requested agents.";
+                          return { ok: false, message: `Delegation rejected: ${reason}` };
+                        }
+
+                        // Success confirmed by Gateway
+                        setPendingApproval(null);
+
+                        const formatCur = (minor: number, cur: string) => {
+                          const val = (minor / 100).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          });
+                          if (cur === "INR") return `₹${val}`;
+                          if (cur === "EUR") return `€${val}`;
+                          if (cur === "GBP") return `£${val}`;
+                          return `$${val}`;
+                        };
+
+                        const delegationsList = (data.delegations || [])
+                          .map(
+                            (d: any) =>
+                              `- **${d.agent.toUpperCase()}**: ${formatCur(d.amountMinor, d.currency)} (Child Mandate \`${d.mandateId}\`${d.parentAgent ? ` under ${d.parentAgent}` : ""})`,
+                          )
+                          .join("\n");
+
+                        const confirmedMsg =
+                          `### 🛡️ Cryptographic Child Mandates Authorized\n\n` +
+                          `The PayGuardian Gateway has verified root spending authority and issued ${data.delegations?.length || 0} child mandates in the ledger:\n\n` +
+                          `${delegationsList}\n\n` +
+                          `**Approval Status**: \`${data.status}\`\n` +
+                          `**Total Delegated**: ${formatCur(data.totalDelegatedMinor, data.currency || pendingApproval.currency)}\n` +
+                          `**Remaining Buffer**: ${formatCur(data.remainingReserveMinor, data.currency || pendingApproval.currency)}\n\n` +
+                          `Specialists are now active with their respective spending envelopes.`;
+
+                        const assistantMsg: ThreadMessage = {
+                          id: `asst-auth-${Date.now()}`,
+                          role: "assistant",
+                          text: confirmedMsg,
+                        };
+                        setThreadMessages((prev) => [...prev, assistantMsg]);
+                        return { ok: true, status: data.status };
+                      } catch (err: any) {
+                        return { ok: false, message: err?.message || "Network error while connecting to Gateway." };
+                      }
+                    }}
+                    onDeny={async () => {
+                      const approvalId = pendingApproval.id;
+                      if (currentEnvId && approvalId) {
                         try {
-                          for (const alloc of pendingApproval.proposedAllocations || []) {
-                            await fetch(`${API_BASE}/v1/mandates/${pendingApproval.mandateId}/delegations`, {
+                          await fetch(
+                            `${API_BASE}/v1/environments/${currentEnvId}/approvals/${approvalId}/reject`,
+                            {
                               method: "POST",
                               headers: {
                                 "Content-Type": "application/json",
                                 "x-local-user-id": "local-user",
                               },
                               body: JSON.stringify({
-                                holderAgentId: alloc.agent,
-                                budgetLimitMinor: alloc.requestedMandateMinor,
-                                currency: pendingApproval.currency,
-                                permittedActions: alloc.capabilities,
+                                reason: "User rejected proposed budget allocation in UI.",
                               }),
-                            });
-                          }
-                        } catch (err) {
-                          console.warn("Failed to create child mandates:", err);
+                            },
+                          );
+                        } catch {
+                          // Best effort backend audit record
                         }
                       }
                       setPendingApproval(null);
-                      await handleSendMessage({
-                        prompt: "okay delegate",
-                        mode: "Delegate",
-                        modelId: activeModelId,
-                        modelName: "Default Model",
-                        effort: "Medium",
-                        autoMode: true,
-                        attachedFiles: [],
-                        files: [],
-                      });
-                    }}
-                    onDeny={async () => {
-                      setPendingApproval(null);
-                      await handleSendMessage({
-                        prompt: "I reject the proposed budget allocation. Do not proceed.",
-                        mode: "Ask",
-                        modelId: activeModelId,
-                        modelName: "Default Model",
-                        effort: "Medium",
-                        autoMode: true,
-                        attachedFiles: [],
-                        files: [],
-                      });
+                      const deniedMsg: ThreadMessage = {
+                        id: `asst-deny-${Date.now()}`,
+                        role: "assistant",
+                        text: "Understood. The proposed budget allocation has been rejected. No funds or cryptographic child mandates were issued.",
+                      };
+                      setThreadMessages((prev) => [...prev, deniedMsg]);
                     }}
                   />
                 ) : (
@@ -894,16 +972,16 @@ export function AssistantView({
               </div>
             )}
 
-            {/* Single Transparent Responding Loader with AgentProgress (Stop button moved to chatbox) */}
-            {isStreaming && (
-              <div className="flex items-center py-1.5 px-1 bg-transparent border-0 text-zinc-300">
-                <AgentProgress label={currentProgressLabel} />
-              </div>
-            )}
-
                 <div ref={messagesEndRef} />
               </div>
             </div>
+
+            {/* Single Transparent Responding Loader with AgentProgress (Directly above response box with no top/bottom margin) */}
+            {isStreaming && (
+              <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 my-0 py-0 flex items-center bg-transparent border-0 text-zinc-300">
+                <AgentProgress label={currentProgressLabel} />
+              </div>
+            )}
 
             {/* Composer always stays at the bottom */}
             <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-4 pb-6 pt-2 sm:px-6">
@@ -1010,6 +1088,7 @@ export function AssistantView({
         threadMessages={threadMessages}
         subagents={subagents}
         activeRunId={activeRunId}
+        assembledContext={assembledContext}
       />
     </div>
   );

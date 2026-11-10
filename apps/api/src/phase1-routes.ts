@@ -90,6 +90,43 @@ export function registerPhase1Routes(
     return { environments: await dependencies.registry.listEnvironments(principal.userId) };
   });
 
+  app.delete<{ Params: { environmentId: string } }>(
+    "/v1/environments/:environmentId",
+    async (request, reply) => {
+      const principal = await requirePrincipal(
+        request as AppRequest,
+        reply,
+        dependencies.resolvePrincipal,
+      );
+      if (!principal) return;
+      // Append audit event before deleting the environment, so foreign key constraints in audit_events are satisfied
+      try {
+        await dependencies.audit.append({
+          environmentId: request.params.environmentId,
+          actorType: "user",
+          actorId: principal.userId,
+          eventType: "environment.deleted",
+          outcome: "success",
+          payload: { environmentId: request.params.environmentId },
+        });
+      } catch {
+        // In case audit logging is non-blocking or environment is already unlinked
+      }
+
+      const success = await dependencies.registry.deleteEnvironment(
+        principal.userId,
+        request.params.environmentId,
+      );
+      if (!success) {
+        return reply.code(404).send({
+          code: "ENVIRONMENT_NOT_FOUND",
+          message: "Environment not found.",
+        });
+      }
+      return reply.code(200).send({ success: true, environmentId: request.params.environmentId });
+    },
+  );
+
   app.get<{ Params: { environmentId: string } }>(
     "/v1/environments/:environmentId/agents",
     async (request, reply) => {

@@ -1,7 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrincipalResolver } from "./auth.js";
-import type { Principal, Registry } from "./phase1.js";
+import type { Agent, AgentKind, Environment, Principal, Registry } from "./phase1.js";
 import type { AuthorityStore } from "./phase2.js";
+import type { Mandate } from "@payguardian/domain";
 import type { AuditEventStore } from "./audit.js";
 import type { JsonObject } from "@payguardian/observability";
 import type {
@@ -182,6 +183,371 @@ export function registerPhase4Routes(
     return { approval };
   });
 
+  const SPECIALIST_SPECS: Record<
+    string,
+    { name: string; kind: AgentKind; parentAlias?: string; capabilities: string[] }
+  > = {
+    travel: {
+      name: "Travel Concierge",
+      kind: "travel",
+      capabilities: ["travel.discover", "flight.quote", "plan_itinerary"],
+    },
+    food: {
+      name: "Food & Dining Specialist",
+      kind: "food",
+      capabilities: ["food.discover", "dining.quote", "recommend_dining"],
+    },
+    activities: {
+      name: "Activities Specialist",
+      kind: "activities",
+      capabilities: ["activity.book", "attraction.quote", "book_activity"],
+    },
+    merchant_attach: {
+      name: "MerchantAttach",
+      kind: "custom",
+      capabilities: ["merchant.discover", "catalog.quote", "procure_merchant_goods"],
+    },
+    hotel: {
+      name: "Hotel Specialist",
+      kind: "hotel",
+      parentAlias: "travel",
+      capabilities: ["hotel.discover", "lodging.quote", "book_hotel"],
+    },
+    transport: {
+      name: "Transport Coordinator",
+      kind: "transport",
+      parentAlias: "travel",
+      capabilities: ["transit.schedule", "ground.quote", "book_transit"],
+    },
+  };
+
+  async function handleBudgetProposalApproval(
+    scoped: { owner: Principal; environment: Environment },
+    approvalId: string,
+    body: {
+      mandateId?: string;
+      currency?: string;
+      proposedAllocations: Array<{
+        agent: string;
+        role?: string;
+        quotedCostMinor?: number;
+        requestedMandateMinor: number;
+        capabilities?: string[];
+        description?: string;
+        reasoning?: string;
+        isChild?: boolean;
+        parentAgent?: string;
+      }>;
+    },
+    reply: FastifyReply,
+  ) {
+    let targetMandateId = body.mandateId;
+    let parentMandate: Mandate | null = null;
+    if (targetMandateId) {
+      parentMandate = await dependencies.authority.get(targetMandateId, scoped.owner.userId);
+    }
+    if (!parentMandate) {
+      const mandates = await dependencies.authority.list(scoped.environment.id, scoped.owner.userId);
+      parentMandate =
+        mandates.find((m) => !m.parentMandateId && m.state === "active") ||
+        mandates.find((m) => !m.parentMandateId) ||
+        mandates[0] ||
+        null;
+    }
+    if (!parentMandate) {
+      return reply.code(404).send({
+        code: "MANDATE_NOT_FOUND",
+        message: "Parent root mandate not found for environment.",
+      });
+    }
+    if (parentMandate.state === "revoked") {
+      return reply.code(403).send({
+        code: "MANDATE_REVOKED",
+        message: "Parent root mandate is revoked.",
+      });
+    }
+    if (new Date(parentMandate.expiresAt) <= new Date()) {
+      return reply.code(403).send({
+        code: "MANDATE_EXPIRED",
+        message: "Parent root mandate has expired.",
+      });
+    }
+
+    // 1. Resolve or register agents in the environment
+    const envAgents = await dependencies.registry.listAgents(scoped.owner.userId, scoped.environment.id);
+    let rootAgent = envAgents.find((a) => a.kind === "personal" || a.parentAgentId === null);
+    if (!rootAgent) {
+      const createdRoot = await dependencies.registry.createAgent({
+        environmentId: scoped.environment.id,
+        ownerUserId: scoped.owner.userId,
+        parentAgentId: null,
+        name: "Personal Agent Orchestrator",
+        kind: "personal",
+        capabilities: ["*"],
+      });
+      rootAgent = createdRoot.agent;
+    }
+
+    const agentMap = new Map<string, Agent>();
+
+    // Collect only the agent aliases that are actually part of this approved proposal
+    const requestedAliases = new Set<string>();
+    for (const alloc of body.proposedAllocations) {
+      requestedAliases.add(alloc.agent);
+      if (alloc.parentAgent) {
+        requestedAliases.add(alloc.parentAgent);
+      }
+      const spec = SPECIALIST_SPECS[alloc.agent];
+      if (spec?.parentAlias) {
+        requestedAliases.add(spec.parentAlias);
+      }
+    }
+
+    // Pass 1: Register/resolve only requested top-level agents
+    for (const [alias, spec] of Object.entries(SPECIALIST_SPECS)) {
+      if (spec.parentAlias || !requestedAliases.has(alias)) continue;
+      let agent = envAgents.find(
+        (a) =>
+          a.kind === spec.kind ||
+          a.name.toLowerCase() === spec.name.toLowerCase() ||
+          a.id === `agent-${alias}`,
+      );
+      if (!agent) {
+        const created = await dependencies.registry.createAgent({
+          environmentId: scoped.environment.id,
+          ownerUserId: scoped.owner.userId,
+          parentAgentId: rootAgent.id,
+          name: spec.name,
+          kind: spec.kind,
+          capabilities: spec.capabilities,
+        });
+        agent = created.agent;
+      }
+      agentMap.set(alias, agent);
+    }
+
+    // Pass 2: Register/resolve only requested nested sub-agents (e.g. hotel under travel)
+    for (const [alias, spec] of Object.entries(SPECIALIST_SPECS)) {
+      if (!spec.parentAlias || !requestedAliases.has(alias)) continue;
+      const parentCoord = agentMap.get(spec.parentAlias);
+      const parentId = parentCoord ? parentCoord.id : rootAgent.id;
+      let agent = envAgents.find(
+        (a) =>
+          (a.kind === spec.kind ||
+            a.name.toLowerCase() === spec.name.toLowerCase() ||
+            a.id === `agent-${alias}`) &&
+          a.parentAgentId === parentId,
+      );
+      if (!agent) {
+        const created = await dependencies.registry.createAgent({
+          environmentId: scoped.environment.id,
+          ownerUserId: scoped.owner.userId,
+          parentAgentId: parentId,
+          name: spec.name,
+          kind: spec.kind,
+          capabilities: spec.capabilities,
+        });
+        agent = created.agent;
+      }
+      agentMap.set(alias, agent);
+    }
+
+    // 2. Execute hierarchical delegations
+    const currency = (parentMandate.currency || body.currency || "USD").toUpperCase();
+    const delegatedMandates = new Map<string, Mandate>();
+    const successes: Array<{
+      agent: string;
+      agentId: string;
+      mandateId: string;
+      amountMinor: number;
+      currency: string;
+      status: "authorized";
+      parentAgent?: string;
+      parentMandateId?: string;
+    }> = [];
+    const failures: Array<{
+      agent: string;
+      reason: string;
+      status: "failed";
+    }> = [];
+
+    const topLevelAllocs = body.proposedAllocations.filter(
+      (a) => !a.isChild && !a.parentAgent && a.agent !== "hotel" && a.agent !== "transport",
+    );
+    const childAllocs = body.proposedAllocations.filter(
+      (a) => a.isChild || a.parentAgent || a.agent === "hotel" || a.agent === "transport",
+    );
+
+    // Phase A: Root Mandate -> Top-level specialist delegations
+    for (const alloc of topLevelAllocs) {
+      const agent = agentMap.get(alloc.agent) || envAgents.find((a) => a.id === alloc.agent);
+      if (!agent) {
+        failures.push({
+          agent: alloc.agent,
+          reason: `Agent '${alloc.agent}' could not be resolved in environment registry.`,
+          status: "failed",
+        });
+        continue;
+      }
+
+      const canDelegate = alloc.agent === "travel";
+      const maxDepth = alloc.agent === "travel" ? 1 : 0;
+      const idemKey = `${approvalId}:${alloc.agent}`;
+
+      let actionsToPermit =
+        alloc.capabilities && alloc.capabilities.length > 0
+          ? alloc.capabilities
+          : parentMandate.permittedActions;
+      if (!parentMandate.permittedActions.includes("*")) {
+        const filtered = actionsToPermit.filter(
+          (act: string) =>
+            parentMandate.permittedActions.includes(act) ||
+            parentMandate.permittedActions.some((p: string) => p.endsWith(".*") && act.startsWith(p.slice(0, -2))),
+        );
+        actionsToPermit = filtered.length > 0 ? filtered : parentMandate.permittedActions;
+      }
+
+      const res = await dependencies.authority.delegate(parentMandate.id, {
+        issuerUserId: scoped.owner.userId,
+        holderAgentId: agent.id, // Real database UUID
+        budgetLimitMinor: alloc.requestedMandateMinor,
+        currency,
+        permittedActions: actionsToPermit,
+        expiresAt: parentMandate.expiresAt,
+        canDelegate,
+        maxDelegationDepth: maxDepth,
+        approvalRequired: parentMandate.approvalRequired,
+        idempotencyKey: idemKey,
+        caller: scoped.owner,
+      });
+
+      if (res.mandate) {
+        delegatedMandates.set(alloc.agent, res.mandate);
+        successes.push({
+          agent: alloc.agent,
+          agentId: agent.id,
+          mandateId: res.mandate.id,
+          amountMinor: alloc.requestedMandateMinor,
+          currency: res.mandate.currency,
+          status: "authorized",
+        });
+      } else {
+        failures.push({
+          agent: alloc.agent,
+          reason: res.decision?.reason || "Authority rejected delegation.",
+          status: "failed",
+        });
+      }
+    }
+
+    // Phase B: Parent Specialist -> Nested Child Delegations (e.g. Travel -> Hotel)
+    for (const alloc of childAllocs) {
+      const parentAlias = alloc.parentAgent || SPECIALIST_SPECS[alloc.agent]?.parentAlias || "travel";
+      const parentCoordMandate = delegatedMandates.get(parentAlias);
+      const parentCoordAgent = agentMap.get(parentAlias);
+      const childAgent = agentMap.get(alloc.agent) || envAgents.find((a) => a.id === alloc.agent);
+
+      if (!parentCoordMandate || !parentCoordAgent || !childAgent) {
+        failures.push({
+          agent: alloc.agent,
+          reason: `Parent coordinator mandate ('${parentAlias}') must be active before child delegation.`,
+          status: "failed",
+        });
+        continue;
+      }
+
+      const idemKey = `${approvalId}:${alloc.agent}`;
+      let childActions =
+        alloc.capabilities && alloc.capabilities.length > 0
+          ? alloc.capabilities
+          : parentCoordMandate.permittedActions;
+      if (!parentCoordMandate.permittedActions.includes("*")) {
+        const filtered = childActions.filter(
+          (act: string) =>
+            parentCoordMandate.permittedActions.includes(act) ||
+            parentCoordMandate.permittedActions.some((p: string) => p.endsWith(".*") && act.startsWith(p.slice(0, -2))),
+        );
+        childActions = filtered.length > 0 ? filtered : parentCoordMandate.permittedActions;
+      }
+
+      const childResult = await dependencies.authority.delegate(parentCoordMandate.id, {
+        issuerUserId: scoped.owner.userId,
+        holderAgentId: childAgent.id, // Real database UUID
+        budgetLimitMinor: alloc.requestedMandateMinor,
+        currency: parentCoordMandate.currency,
+        permittedActions: childActions,
+        expiresAt: parentCoordMandate.expiresAt,
+        canDelegate: false,
+        maxDelegationDepth: 0,
+        approvalRequired: parentCoordMandate.approvalRequired,
+        idempotencyKey: idemKey,
+        caller: { kind: "agent", agentId: parentCoordAgent.id, userId: scoped.owner.userId },
+      });
+
+      if (childResult.mandate) {
+        delegatedMandates.set(alloc.agent, childResult.mandate);
+        successes.push({
+          agent: alloc.agent,
+          agentId: childAgent.id,
+          parentAgent: parentAlias,
+          parentMandateId: parentCoordMandate.id,
+          mandateId: childResult.mandate.id,
+          amountMinor: alloc.requestedMandateMinor,
+          currency: childResult.mandate.currency,
+          status: "authorized",
+        });
+      } else {
+        failures.push({
+          agent: alloc.agent,
+          reason: childResult.decision?.reason || "Authority rejected child delegation.",
+          status: "failed",
+        });
+      }
+    }
+
+    // State Machine Decision:
+    let finalStatus: "AUTHORIZED" | "PARTIALLY_AUTHORIZED" | "FAILED";
+    if (failures.length === 0 && successes.length > 0) {
+      finalStatus = "AUTHORIZED";
+    } else if (successes.length > 0) {
+      finalStatus = "PARTIALLY_AUTHORIZED";
+    } else {
+      finalStatus = "FAILED";
+    }
+
+    await dependencies.audit.append({
+      environmentId: scoped.environment.id,
+      actorType: "user",
+      actorId: scoped.owner.userId,
+      mandateId: parentMandate.id,
+      eventType: finalStatus === "AUTHORIZED" ? "approval.approved" : "mandate.delegation_denied",
+      outcome: finalStatus === "AUTHORIZED" ? "success" : "denied",
+      reasonCode: finalStatus,
+      payload: {
+        approvalId,
+        status: finalStatus,
+        delegations: successes,
+        failures,
+      },
+    });
+
+    const totalDelegatedMinor = successes
+      .filter((s) => !s.parentMandateId)
+      .reduce((acc, s) => acc + s.amountMinor, 0);
+    const remainingReserveMinor = Math.max(0, parentMandate.budgetLimitMinor - totalDelegatedMinor);
+
+    return reply.code(finalStatus === "FAILED" ? 400 : 200).send({
+      status: finalStatus,
+      approvalId,
+      environmentId: scoped.environment.id,
+      mandateId: parentMandate.id,
+      delegations: successes,
+      failures,
+      totalDelegatedMinor,
+      remainingReserveMinor,
+    });
+  }
+
   app.post<{
     Params: { environmentId: string; approvalId: string };
     Body: {
@@ -191,6 +557,19 @@ export function registerPhase4Routes(
       maxBudgetMinor?: number;
       maxDepth?: number;
       expiresAt?: string;
+      mandateId?: string;
+      currency?: string;
+      proposedAllocations?: Array<{
+        agent: string;
+        role?: string;
+        quotedCostMinor?: number;
+        requestedMandateMinor: number;
+        capabilities?: string[];
+        description?: string;
+        reasoning?: string;
+        isChild?: boolean;
+        parentAgent?: string;
+      }>;
     };
   }>("/v1/environments/:environmentId/approvals/:approvalId/approve", async (request, reply) => {
     const scoped = await environmentFor(
@@ -207,6 +586,20 @@ export function registerPhase4Routes(
         code: "USER_AUTHORITY_REQUIRED",
         message: "Approving requests is user-only.",
       });
+    }
+
+    // If this is a budget proposal delegation transaction:
+    if (
+      request.body?.proposedAllocations &&
+      Array.isArray(request.body.proposedAllocations) &&
+      request.body.proposedAllocations.length > 0
+    ) {
+      return handleBudgetProposalApproval(
+        scoped,
+        request.params.approvalId,
+        request.body as Parameters<typeof handleBudgetProposalApproval>[2],
+        reply,
+      );
     }
 
     try {
@@ -294,6 +687,169 @@ export function registerPhase4Routes(
       return reply.code(400).send({
         code: error instanceof Error ? error.message : "APPROVAL_ACTION_FAILED",
         message: "Failed to approve request.",
+      });
+    }
+  });
+
+  // Direct approval endpoint without environmentId in path
+  app.post<{
+    Params: { approvalId: string };
+    Body: {
+      environmentId?: string;
+      decision?: "allow_once" | "allow" | "deny";
+      allowedChildAgents?: string[];
+      permittedActions?: string[];
+      maxBudgetMinor?: number;
+      maxDepth?: number;
+      expiresAt?: string;
+      mandateId?: string;
+      currency?: string;
+      proposedAllocations?: Array<{
+        agent: string;
+        role?: string;
+        quotedCostMinor?: number;
+        requestedMandateMinor: number;
+        capabilities?: string[];
+        description?: string;
+        reasoning?: string;
+        isChild?: boolean;
+        parentAgent?: string;
+      }>;
+    };
+  }>("/v1/approvals/:approvalId/approve", async (request, reply) => {
+    let targetEnvId = request.body?.environmentId;
+    if (!targetEnvId) {
+      const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+      if (!owner) return;
+      const envs = await dependencies.registry.listEnvironments(owner.userId);
+      const active = envs.find((e) => e.status === "active") || envs[0];
+      if (!active) {
+        return reply.code(404).send({
+          code: "ENVIRONMENT_NOT_FOUND",
+          message: "No active environment found for user.",
+        });
+      }
+      targetEnvId = active.id;
+    }
+
+    const scoped = await environmentFor(
+      request as AppRequest,
+      reply,
+      dependencies.registry,
+      dependencies.resolvePrincipal,
+      targetEnvId,
+    );
+    if (!scoped) return;
+
+    if (scoped.owner.kind !== "user") {
+      return reply.code(403).send({
+        code: "USER_AUTHORITY_REQUIRED",
+        message: "Approving requests is user-only.",
+      });
+    }
+
+    if (
+      request.body?.proposedAllocations &&
+      Array.isArray(request.body.proposedAllocations) &&
+      request.body.proposedAllocations.length > 0
+    ) {
+      return handleBudgetProposalApproval(
+        scoped,
+        request.params.approvalId,
+        request.body as Parameters<typeof handleBudgetProposalApproval>[2],
+        reply,
+      );
+    }
+
+    try {
+      const existing = await dependencies.approvals.get(
+        scoped.environment.id,
+        request.params.approvalId,
+      );
+      if (!existing) {
+        return reply
+          .code(404)
+          .send({ code: "APPROVAL_NOT_FOUND", message: "Approval request not found." });
+      }
+
+      const decisionType = request.body?.decision ?? "allow_once";
+      const approval = await dependencies.approvals.approve(
+        scoped.environment.id,
+        request.params.approvalId,
+        scoped.owner.userId,
+        decisionType,
+      );
+
+      return { approval };
+    } catch (error) {
+      return reply.code(400).send({
+        code: error instanceof Error ? error.message : "APPROVAL_ACTION_FAILED",
+        message: "Failed to approve request.",
+      });
+    }
+  });
+
+  app.post<{
+    Params: { approvalId: string };
+    Body: { reason?: string; environmentId?: string };
+  }>("/v1/approvals/:approvalId/reject", async (request, reply) => {
+    let targetEnvId = request.body?.environmentId;
+    if (!targetEnvId) {
+      const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+      if (!owner) return;
+      const envs = await dependencies.registry.listEnvironments(owner.userId);
+      const active = envs.find((e) => e.status === "active") || envs[0];
+      if (!active) {
+        return reply.code(404).send({
+          code: "ENVIRONMENT_NOT_FOUND",
+          message: "No active environment found for user.",
+        });
+      }
+      targetEnvId = active.id;
+    }
+
+    const scoped = await environmentFor(
+      request as AppRequest,
+      reply,
+      dependencies.registry,
+      dependencies.resolvePrincipal,
+      targetEnvId,
+    );
+    if (!scoped) return;
+
+    if (scoped.owner.kind !== "user") {
+      return reply.code(403).send({
+        code: "USER_AUTHORITY_REQUIRED",
+        message: "Rejecting requests is user-only.",
+      });
+    }
+
+    try {
+      const approval = await dependencies.approvals.reject(
+        scoped.environment.id,
+        request.params.approvalId,
+        scoped.owner.userId,
+        request.body?.reason,
+      );
+
+      await dependencies.audit.append({
+        environmentId: scoped.environment.id,
+        actorType: "user",
+        actorId: scoped.owner.userId,
+        mandateId: approval.mandateId,
+        eventType: "approval.rejected",
+        outcome: "success",
+        payload: {
+          approvalId: approval.id,
+          reason: approval.rejectionReason,
+        },
+      });
+
+      return { approval };
+    } catch (error) {
+      return reply.code(400).send({
+        code: error instanceof Error ? error.message : "APPROVAL_ACTION_FAILED",
+        message: "Failed to reject request.",
       });
     }
   });

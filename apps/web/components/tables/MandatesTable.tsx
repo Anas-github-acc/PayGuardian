@@ -11,7 +11,7 @@ import {
   themeQuartz,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { Search, RefreshCw, ExternalLink, Shield, AlertCircle } from "lucide-react";
+import { Search, RefreshCw, ExternalLink, Shield, AlertCircle, History, CheckCircle2, Clock, GitCommit } from "lucide-react";
 import type { AgentDto, MandateDto, LedgerAccountDto } from "@payguardian/contracts";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { cn } from "../../lib/utils";
@@ -19,6 +19,7 @@ import { useWorkspaceStore } from "../../app/lib/workspace-store";
 import { apiClient } from "../../lib/api/client";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet";
 import { type MandateRow } from "./types";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -44,7 +45,8 @@ export function MandatesTable({
 
   const [mandates, setMandates] = React.useState<MandateRow[]>([]);
   const [searchQuery, setSearchQuery] = React.useState<string>("");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [statusFilter, setStatusFilter] = React.useState<string>("active");
+  const [selectedSeriesId, setSelectedSeriesId] = React.useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
   const gridApiRef = React.useRef<GridApi<MandateRow> | null>(null);
 
@@ -126,6 +128,11 @@ export function MandatesTable({
             Array.isArray(m.permittedActions) && m.permittedActions.length > 0
               ? (m.permittedActions as string[])
               : ["*"],
+          mandateSeriesId: m.mandateSeriesId ? String(m.mandateSeriesId) : String(m.id),
+          version: typeof m.version === "number" ? m.version : 1,
+          previousMandateId: m.previousMandateId ? String(m.previousMandateId) : null,
+          supersededAt: m.supersededAt ? String(m.supersededAt) : null,
+          createdAt: m.createdAt ? String(m.createdAt) : undefined,
         });
       }
 
@@ -155,6 +162,11 @@ export function MandatesTable({
             canDelegate: isRoot,
             maxDelegationDepth: isRoot ? 1 : 0,
             permittedActions: ["*"],
+            mandateSeriesId: `unfunded-${agent.id}`,
+            version: 1,
+            previousMandateId: null,
+            supersededAt: null,
+            createdAt: new Date().toISOString(),
           });
         }
       }
@@ -171,14 +183,38 @@ export function MandatesTable({
     void fetchMandates();
   }, [fetchMandates]);
 
+  // Group all mandates by series to track version lineage
+  const versionsBySeries = React.useMemo(() => {
+    const map = new Map<string, MandateRow[]>();
+    for (const m of mandates) {
+      const sId = m.mandateSeriesId || m.id;
+      const list = map.get(sId) ?? [];
+      list.push(m);
+      map.set(sId, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => (b.version ?? 1) - (a.version ?? 1));
+    }
+    return map;
+  }, [mandates]);
+
+  const selectedSeriesMandates = React.useMemo(() => {
+    if (!selectedSeriesId) return [];
+    return versionsBySeries.get(selectedSeriesId) ?? [];
+  }, [selectedSeriesId, versionsBySeries]);
+
+  const activeSeriesMandate = React.useMemo(() => {
+    return selectedSeriesMandates.find((m) => m.state === "active") ?? selectedSeriesMandates[0];
+  }, [selectedSeriesMandates]);
+
   // Column definitions for AG Grid: all text left-aligned, only amounts right-aligned.
   const columnDefs = React.useMemo<ColDef<MandateRow>[]>(() => {
     return [
       {
         field: "agentName",
         headerName: "Agent / Holder",
-        flex: 1.6,
-        minWidth: 170,
+        flex: 1.3,
+        minWidth: 120,
         cellRenderer: (params: ICellRendererParams<MandateRow>) => {
           if (!params.data) return null;
           return (
@@ -192,8 +228,8 @@ export function MandatesTable({
       {
         field: "parentAgentName",
         headerName: "Parent Authority",
-        flex: 1.2,
-        minWidth: 140,
+        flex: 1.0,
+        minWidth: 100,
         cellRenderer: (params: ICellRendererParams<MandateRow>) => {
           if (!params.data) return null;
           return (
@@ -206,8 +242,8 @@ export function MandatesTable({
       {
         field: "state",
         headerName: "Status",
-        width: 120,
-        minWidth: 120,
+        width: 85,
+        minWidth: 75,
         cellRenderer: (params: ICellRendererParams<MandateRow>) => {
           if (!params.data) return null;
           const state = params.data.state;
@@ -216,7 +252,9 @@ export function MandatesTable({
               ? "text-success"
               : state === "revoked"
                 ? "text-destructive"
-                : "text-muted-foreground";
+                : state === "superseded"
+                  ? "text-amber-500/90"
+                  : "text-muted-foreground";
           return (
             <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium capitalize", tone)}>
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -226,10 +264,43 @@ export function MandatesTable({
         },
       },
       {
+        field: "version",
+        headerName: "Version",
+        width: 65,
+        minWidth: 55,
+        cellRenderer: (params: ICellRendererParams<MandateRow>) => {
+          if (!params.data) return null;
+          const item = params.data;
+          const seriesId = item.mandateSeriesId || item.id;
+          const versionNum = item.version ?? 1;
+
+          return (
+            <div className="flex h-full items-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSeriesId(seriesId);
+                }}
+                className={cn(
+                  "font-mono text-xs cursor-pointer transition-colors",
+                  item.state === "superseded"
+                    ? "text-muted-foreground/50 line-through"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title={`Version ${versionNum}. Click to view history.`}
+              >
+                v{versionNum}
+              </button>
+            </div>
+          );
+        },
+      },
+      {
         field: "budgetLimitMinor",
         headerName: "Limit",
-        flex: 1,
-        minWidth: 110,
+        flex: 0.9,
+        minWidth: 80,
         headerClass: "numeric-header",
         cellClass: "numeric-cell",
         valueFormatter: (params) =>
@@ -238,7 +309,8 @@ export function MandatesTable({
       {
         field: "spentMinor",
         headerName: "Spent",
-        minWidth: 100,
+        width: 75,
+        minWidth: 65,
         headerClass: "numeric-header",
         cellClass: "numeric-cell",
         cellRenderer: (params: ICellRendererParams<MandateRow>) => {
@@ -253,7 +325,8 @@ export function MandatesTable({
       {
         field: "reservedMinor",
         headerName: "Reserved",
-        minWidth: 100,
+        width: 75,
+        minWidth: 65,
         headerClass: "numeric-header",
         cellClass: "numeric-cell",
         valueFormatter: (params) =>
@@ -262,8 +335,8 @@ export function MandatesTable({
       {
         field: "availableMinor",
         headerName: "Available",
-        flex: 1,
-        minWidth: 110,
+        flex: 0.9,
+        minWidth: 80,
         headerClass: "numeric-header",
         cellClass: "numeric-cell",
         valueFormatter: (params) =>
@@ -272,8 +345,8 @@ export function MandatesTable({
       {
         field: "expiresAt",
         headerName: "Expires",
-        flex: 1,
-        minWidth: 120,
+        width: 85,
+        minWidth: 80,
         cellRenderer: (params: ICellRendererParams<MandateRow>) => {
           if (!params.data) return null;
           return (
@@ -287,8 +360,8 @@ export function MandatesTable({
       },
       {
         headerName: "Actions",
-        width: 120,
-        minWidth: 120,
+        width: 85,
+        minWidth: 75,
         sortable: false,
         filter: false,
         cellRenderer: (params: ICellRendererParams<MandateRow>) => {
@@ -297,7 +370,7 @@ export function MandatesTable({
           const isActive = item.state === "active";
 
           return (
-            <div className="flex h-full items-center gap-0.5">
+            <div className="flex h-full items-center gap-1">
               {isActive && onRevokeMandate && (
                 <Button
                   variant="ghost"
@@ -306,7 +379,8 @@ export function MandatesTable({
                     e.stopPropagation();
                     onRevokeMandate(item.id, item.agentName);
                   }}
-                  className="h-6 px-2 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  className="h-6 px-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                  title="Revoke mandate"
                 >
                   Revoke
                 </Button>
@@ -319,7 +393,8 @@ export function MandatesTable({
                     e.stopPropagation();
                     onViewTrace(item.id);
                   }}
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="Open Payment Link / View Trace"
                   aria-label="View Trace"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -330,7 +405,7 @@ export function MandatesTable({
         },
       },
     ];
-  }, [onRevokeMandate, onViewTrace]);
+  }, [onRevokeMandate, onViewTrace, versionsBySeries]);
 
   // Filtered rows
   const filteredRows = React.useMemo(() => {
@@ -341,7 +416,8 @@ export function MandatesTable({
         const matchesName = m.agentName.toLowerCase().includes(q);
         const matchesParent = m.parentAgentName.toLowerCase().includes(q);
         const matchesId = m.id.toLowerCase().includes(q);
-        return matchesName || matchesParent || matchesId;
+        const matchesSeries = m.mandateSeriesId?.toLowerCase().includes(q);
+        return matchesName || matchesParent || matchesId || Boolean(matchesSeries);
       }
       return true;
     });
@@ -349,7 +425,22 @@ export function MandatesTable({
 
   function onGridReady(params: GridReadyEvent<MandateRow>) {
     gridApiRef.current = params.api;
+    params.api.sizeColumnsToFit();
   }
+
+  React.useEffect(() => {
+    function handleResize() {
+      gridApiRef.current?.sizeColumnsToFit();
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  React.useEffect(() => {
+    if (gridApiRef.current) {
+      gridApiRef.current.sizeColumnsToFit();
+    }
+  }, [filteredRows.length]);
 
   return (
     <div className={`mx-auto w-full max-w-[1200px] space-y-4 ${className}`}>
@@ -358,7 +449,7 @@ export function MandatesTable({
         <div>
           <h2 className="text-sm font-semibold text-foreground">Mandates</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Delegated spending authority held by each agent, with live limit and usage figures.
+            Delegated spending authority held by each agent, with versioned lineage, live limits, and audit tracking.
           </p>
         </div>
 
@@ -390,7 +481,7 @@ export function MandatesTable({
       {/* Toolbar: status filter + count */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5 select-none">
-          {["all", "active", "revoked"].map((status) => (
+          {["active", "all", "superseded", "revoked"].map((status) => (
             <Button
               key={status}
               variant={statusFilter === status ? "secondary" : "ghost"}
@@ -404,7 +495,7 @@ export function MandatesTable({
         </div>
 
         <span className="text-xs text-muted-foreground">
-          {filteredRows.length} mandates
+          {filteredRows.length} {filteredRows.length === 1 ? "mandate" : "mandates"}
         </span>
       </div>
 
@@ -418,13 +509,15 @@ export function MandatesTable({
           </p>
         </div>
       ) : (
-        <div className="ag-theme-quartz-dark w-full rounded-lg overflow-hidden border border-border">
+        <div className="ag-theme-quartz-dark w-full rounded-lg overflow-x-auto border border-border">
           <AgGridReact<MandateRow>
             rowData={filteredRows}
             columnDefs={columnDefs}
             onGridReady={onGridReady}
-            rowSelection={{ mode: "singleRow" }}
+            onFirstDataRendered={(params) => params.api.sizeColumnsToFit()}
+            onGridSizeChanged={(params) => params.api.sizeColumnsToFit()}
             domLayout="autoHeight"
+            autoSizeStrategy={{ type: "fitGridWidth" }}
             onRowClicked={(event) => {
               if (event.data && onSelectMandate) {
                 onSelectMandate(event.data.id);
@@ -438,6 +531,169 @@ export function MandatesTable({
           />
         </div>
       )}
+
+      {/* Mandate Version Lineage & History Drawer */}
+      <Sheet open={!!selectedSeriesId} onOpenChange={(open) => !open && setSelectedSeriesId(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg bg-card border-border overflow-y-auto p-6 text-foreground">
+          {selectedSeriesMandates.length > 0 && (
+            <div className="space-y-6">
+              <SheetHeader className="text-left space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded bg-primary/10 text-primary">
+                    <History className="h-4 w-4" />
+                  </span>
+                  <SheetTitle className="text-base font-semibold text-foreground">
+                    Mandate Lineage: {activeSeriesMandate?.agentName}
+                  </SheetTitle>
+                </div>
+                <SheetDescription className="text-xs text-muted-foreground">
+                  Audit trail of spending authority versions and top-up allocations for this mandate series:
+                  <span className="font-mono ml-1 text-foreground/80">{selectedSeriesId?.slice(0, 8)}...</span>
+                </SheetDescription>
+              </SheetHeader>
+
+              {/* Series Overview Card */}
+              <div className="rounded-lg border border-border bg-secondary/30 p-3.5 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Role / Authority</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-foreground capitalize">{activeSeriesMandate?.role}</span>
+                    <span className="text-muted-foreground">via</span>
+                    <span className="font-medium text-foreground">{activeSeriesMandate?.parentAgentName}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-3">
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Active Limit</div>
+                    <div className="font-mono text-xs font-semibold text-foreground">
+                      {formatMinorUnits(activeSeriesMandate?.budgetLimitMinor ?? 0, activeSeriesMandate?.currency ?? "USD")}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Spent</div>
+                    <div className="font-mono text-xs font-semibold text-muted-foreground">
+                      {formatMinorUnits(activeSeriesMandate?.spentMinor ?? 0, activeSeriesMandate?.currency ?? "USD")}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Available</div>
+                    <div className="font-mono text-xs font-semibold text-success">
+                      {formatMinorUnits(activeSeriesMandate?.availableMinor ?? 0, activeSeriesMandate?.currency ?? "USD")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline of versions */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Version Lineage ({selectedSeriesMandates.length} {selectedSeriesMandates.length === 1 ? "Version" : "Versions"})
+                  </h4>
+                </div>
+
+                <div className="relative border-l border-border/80 ml-3.5 pl-5 space-y-5">
+                  {selectedSeriesMandates.map((item, idx) => {
+                    const isCurrent = item.state === "active";
+                    const prevItem = selectedSeriesMandates[idx + 1];
+                    const incrementalDelta = prevItem ? item.budgetLimitMinor - prevItem.budgetLimitMinor : 0;
+
+                    return (
+                      <div key={item.id} className="relative group">
+                        {/* Timeline dot */}
+                        <div
+                          className={cn(
+                            "absolute -left-[27px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-background",
+                            isCurrent ? "bg-success ring-2 ring-success/20" : "bg-muted-foreground/60"
+                          )}
+                        />
+
+                        {/* Version Item Card */}
+                        <div
+                          className={cn(
+                            "rounded-lg border p-3 text-xs space-y-2.5 transition-colors",
+                            isCurrent
+                              ? "border-primary/40 bg-primary/5 shadow-sm"
+                              : "border-border/70 bg-card/60 opacity-80 hover:opacity-100"
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-foreground">v{item.version ?? 1}</span>
+                              <span
+                                className={cn(
+                                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                                  isCurrent
+                                    ? "bg-success/15 text-success"
+                                    : item.state === "revoked"
+                                      ? "bg-destructive/15 text-destructive"
+                                      : "bg-muted text-muted-foreground"
+                                )}
+                              >
+                                {item.state}
+                              </span>
+                            </div>
+
+                            <span className="text-[11px] text-muted-foreground font-mono">
+                              {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
+                            </span>
+                          </div>
+
+                          <div className="flex items-baseline justify-between border-t border-border/40 pt-2">
+                            <div>
+                              <span className="text-muted-foreground text-[11px]">Cumulative Limit: </span>
+                              <span className="font-mono font-semibold text-foreground">
+                                {formatMinorUnits(item.budgetLimitMinor, item.currency)}
+                              </span>
+                            </div>
+                            {incrementalDelta > 0 && (
+                              <span className="text-[11px] font-mono font-semibold text-primary">
+                                +{formatMinorUnits(incrementalDelta, item.currency)} Top-up
+                              </span>
+                            )}
+                          </div>
+
+                          {item.previousMandateId && (
+                            <div className="text-[10px] text-muted-foreground font-mono">
+                              <span>Predecessor: </span>
+                              <span className="truncate">{item.previousMandateId.slice(0, 8)}...</span>
+                            </div>
+                          )}
+
+                          {item.supersededAt && (
+                            <div className="text-[10px] text-amber-500/80">
+                              Superseded on {new Date(item.supersededAt).toLocaleString()}
+                            </div>
+                          )}
+
+                          {item.permittedActions && item.permittedActions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {item.permittedActions.slice(0, 4).map((action) => (
+                                <span
+                                  key={action}
+                                  className="rounded border border-border bg-secondary/80 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground"
+                                >
+                                  {action}
+                                </span>
+                              ))}
+                              {item.permittedActions.length > 4 && (
+                                <span className="text-[10px] text-muted-foreground self-center">
+                                  +{item.permittedActions.length - 4} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

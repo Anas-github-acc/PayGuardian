@@ -8,13 +8,28 @@ Supports:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("agent_runtime.llm_provider")
+
+
+@dataclass
+class ToolCallResult:
+    id: str
+    name: str
+    arguments: dict[str, Any]
+
+
+@dataclass
+class LLMResponse:
+    content: str
+    tool_calls: list[ToolCallResult] = field(default_factory=list)
 
 
 def _load_env_file(path: Path) -> None:
@@ -58,8 +73,9 @@ class LLMProvider(ABC):
         model: str | None = None,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-    ) -> str:
-        """Generate response text from LLM."""
+        tools: list[dict[str, Any]] | None = None,
+    ) -> str | LLMResponse:
+        """Generate response text or tool calls from LLM."""
         pass
 
 
@@ -91,7 +107,8 @@ class ApinexProvider(LLMProvider):
         model: str | None = None,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-    ) -> str:
+        tools: list[dict[str, Any]] | None = None,
+    ) -> str | LLMResponse:
         client = self._get_client()
         target_model = model or self.default_model
 
@@ -101,13 +118,33 @@ class ApinexProvider(LLMProvider):
         messages.append({"role": "user", "content": prompt})
 
         try:
-            res = client.chat.completions.create(
-                model=target_model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            return res.choices[0].message.content or ""
+            kwargs: dict[str, Any] = {
+                "model": target_model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }
+            if tools:
+                kwargs["tools"] = tools
+
+            res = client.chat.completions.create(**kwargs)
+            choice = res.choices[0]
+            msg = choice.message
+
+            tool_calls: list[ToolCallResult] = []
+            if getattr(msg, "tool_calls", None):
+                for tc in msg.tool_calls:
+                    fn_name = tc.function.name
+                    try:
+                        args = json.loads(tc.function.arguments) if tc.function.arguments else {}
+                    except Exception:
+                        args = {}
+                    tool_calls.append(ToolCallResult(id=tc.id, name=fn_name, arguments=args))
+
+            content = msg.content or ""
+            if tools:
+                return LLMResponse(content=content, tool_calls=tool_calls)
+            return content
         except Exception as exc:
             logger.error("Apinex completion error: %s", exc)
             raise
@@ -127,7 +164,8 @@ class GoogleGeminiProvider(LLMProvider):
         model: str | None = None,
         max_tokens: int = 1000,
         temperature: float = 0.7,
-    ) -> str:
+        tools: list[dict[str, Any]] | None = None,
+    ) -> str | LLMResponse:
         # Fallback simulation or direct call
         target_model = model or self.default_model
         try:
@@ -142,7 +180,16 @@ class GoogleGeminiProvider(LLMProvider):
                 contents=prompt,
                 config=config,
             )
-            return response.text or ""
+            text = response.text or ""
+            if tools:
+                return LLMResponse(content=text, tool_calls=[])
+            return text
+        except Exception as exc:
+            logger.warning("Google Gemini SDK direct generation unavailable: %s", exc)
+            sim = f"Processed by {target_model}: {prompt}"
+            if tools:
+                return LLMResponse(content=sim, tool_calls=[])
+            return sim
         except Exception as exc:
             logger.warning("Google Gemini SDK direct generation unavailable: %s", exc)
             return f"Processed by {target_model}: {prompt}"

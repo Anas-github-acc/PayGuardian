@@ -2,12 +2,22 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Plus, ShieldCheck, TestTube2 } from "lucide-react";
+import { Check, ChevronDown, Plus, ShieldCheck, TestTube2, Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatMinorUnits } from "../../app/lib/currency";
-import { workspaceStore } from "../../app/lib/workspace-store";
+import { workspaceStore, type Environment } from "../../app/lib/workspace-store";
 import { useEnvironments } from "../../lib/api/hooks";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,8 +33,16 @@ export interface EnvironmentSwitcherProps {
 
 export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
   const router = useRouter();
-  const { environments, currentEnvironment, isLoading } = useEnvironments();
+  const { environments, currentEnvironment, isLoading, deleteEnvironment } = useEnvironments();
   const environmentsList = environments;
+
+  const [envToDelete, setEnvToDelete] = React.useState<Environment | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = React.useState("");
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+
+  const envToDeleteName = envToDelete?.name ?? "";
+  const isDeleteMatch = deleteConfirmationInput.trim() === envToDeleteName.trim();
 
   const handleSelect = (envId: string) => {
     if (envId === currentEnvironment?.id) return;
@@ -40,6 +58,29 @@ export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!envToDelete || isDeleting || !isDeleteMatch) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    const wasLastEnv = environmentsList.length <= 1;
+    try {
+      const success = await deleteEnvironment(envToDelete.id);
+      if (success) {
+        setEnvToDelete(null);
+        setDeleteConfirmationInput("");
+        if (wasLastEnv) {
+          router.push("/onboarding");
+        }
+      } else {
+        setDeleteError("Failed to delete environment. Please check ledger state and try again.");
+      }
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete environment");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const formattedBudget = currentEnvironment
     ? formatMinorUnits(currentEnvironment.budgetLimitMinor, currentEnvironment.currency)
     : "$0.00";
@@ -47,6 +88,7 @@ export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
   const isSandbox = currentEnvironment?.type === "sandbox";
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
@@ -152,6 +194,18 @@ export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
                   </span>
                 </span>
                 {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-foreground" />}
+                <button
+                  type="button"
+                  title={`Delete ${env.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setEnvToDelete(env);
+                  }}
+                  className="ml-1 p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/15 transition-all opacity-40 hover:opacity-100 shrink-0"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </DropdownMenuItem>
             );
           })
@@ -165,5 +219,103 @@ export function EnvironmentSwitcher({ className }: EnvironmentSwitcherProps) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <Dialog
+      open={!!envToDelete}
+      onOpenChange={(open) => {
+        if (!open && !isDeleting) {
+          setEnvToDelete(null);
+          setDeleteConfirmationInput("");
+          setDeleteError(null);
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-md bg-card border border-border p-6 shadow-2xl">
+        <DialogHeader className="space-y-2 text-left">
+          <DialogTitle className="text-base font-semibold text-foreground">
+            Delete Environment
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+            This will permanently delete the environment and related resources like
+            Credentials, Child Mandates, and Ledger Allocations.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground block">
+              To confirm, type <span className="font-semibold text-foreground">“{envToDeleteName}”</span>
+            </label>
+            <Input
+              value={deleteConfirmationInput}
+              onChange={(e) => {
+                setDeleteConfirmationInput(e.target.value);
+                setDeleteError(null);
+              }}
+              placeholder={envToDeleteName}
+              disabled={isDeleting}
+              className={cn(
+                "h-9 text-xs font-mono bg-background border-border",
+                deleteConfirmationInput && !isDeleteMatch && "border-destructive/60 focus-visible:ring-destructive"
+              )}
+              autoFocus
+            />
+            {deleteConfirmationInput && !isDeleteMatch && (
+              <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                <AlertCircle className="size-3 shrink-0" />
+                <span>Typing “{envToDeleteName}” is required</span>
+              </p>
+            )}
+          </div>
+
+          {/* Warning Box */}
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>Deleting {envToDeleteName} cannot be undone.</span>
+          </div>
+
+          {deleteError && (
+            <div className="rounded-md border border-destructive bg-destructive/15 p-2.5 text-xs text-destructive">
+              {deleteError}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-2 mt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isDeleting}
+            onClick={() => {
+              setEnvToDelete(null);
+              setDeleteConfirmationInput("");
+              setDeleteError(null);
+            }}
+            className="border-border bg-background hover:bg-muted text-foreground text-xs"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={!isDeleteMatch || isDeleting}
+            onClick={handleConfirmDelete}
+            className="text-xs font-medium disabled:opacity-40 flex items-center gap-1.5"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <span>Delete Environment</span>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

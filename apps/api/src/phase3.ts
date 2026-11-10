@@ -69,6 +69,7 @@ export type LedgerStore = {
   verifyEnvironmentIntegrity(environmentId: string): Promise<IntegrityVerificationResult>;
   getTransitions(environmentId: string, accountId: string): Promise<LedgerTransition[]>;
   tamperAccount?(environmentId: string, accountId: string, mutator: (acc: LedgerAccount) => void): Promise<void>;
+  linkMandateVersion?(environmentId: string, newMandateId: string, existingMandateOrSeriesId: string): void;
 };
 
 function validateAmount(amountMinor: number): void {
@@ -115,6 +116,13 @@ export class InMemoryLedgerStore implements LedgerStore {
     const accountId = this.mandateAccounts.get(`${environmentId}:${mandateId}`);
     if (!accountId) return null;
     return this.getAccount(environmentId, accountId);
+  }
+
+  linkMandateVersion(environmentId: string, newMandateId: string, existingMandateOrSeriesId: string): void {
+    const accountId = this.mandateAccounts.get(`${environmentId}:${existingMandateOrSeriesId}`);
+    if (accountId) {
+      this.mandateAccounts.set(`${environmentId}:${newMandateId}`, accountId);
+    }
   }
 
   async verifyAccountIntegrity(

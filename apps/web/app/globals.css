@@ -210,7 +210,19 @@ body {
 .ag-theme-quartz-dark .ag-root-wrapper {
   border: 1px solid oklch(var(--border));
   border-radius: var(--radius);
-  overflow: hidden;
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* Remove AG Grid horizontal scroll div completely so it never covers content */
+.ag-theme-quartz .ag-body-horizontal-scroll,
+.ag-theme-quartz-dark .ag-body-horizontal-scroll,
+.ag-theme-quartz .ag-body-horizontal-scroll.ag-scrollbar-invisible,
+.ag-theme-quartz-dark .ag-body-horizontal-scroll.ag-scrollbar-invisible {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  visibility: hidden !important;
 }
 
 /* Legacy layout support for auth and misc pages */

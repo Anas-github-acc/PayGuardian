@@ -64,6 +64,10 @@ export type MandateDto = {
   issuerUserId: string;
   holderAgentId: string;
   parentMandateId: string | null;
+  mandateSeriesId?: string;
+  version?: number;
+  previousMandateId?: string | null;
+  supersededAt?: string | null;
   budgetLimitMinor: number;
   allocatedMinor: number;
   spentMinor: number;
@@ -74,7 +78,7 @@ export type MandateDto = {
   canDelegate: boolean;
   maxDelegationDepth: number;
   approvalRequired: boolean;
-  state: "active" | "expired" | "revoked";
+  state: "active" | "expired" | "revoked" | "superseded";
   revokedAt: string | null;
   createdAt: string;
 };
@@ -99,6 +103,16 @@ export type DelegateMandateRequest = {
   canDelegate: boolean;
   maxDelegationDepth: number;
   approvalRequired: boolean;
+};
+
+export type TopupMandateRequest = {
+  additionalBudgetMinor: number;
+  permittedActions?: string[];
+  expiresAt?: string;
+  canDelegate?: boolean;
+  maxDelegationDepth?: number;
+  approvalRequired?: boolean;
+  idempotencyKey?: string;
 };
 
 export type PolicyDecisionDto = {

@@ -433,6 +433,25 @@ class WorkspaceStore {
     this.switchEnvironment(newEnv.id);
   };
 
+  public removeEnvironment = (envId: string): void => {
+    const remaining = this.state.environmentsList.filter((e) => e.id !== envId);
+    let nextCurrent = this.state.currentEnvironment;
+    const isCurrentDeleted = this.state.currentEnvironmentId === envId;
+    if (isCurrentDeleted) {
+      nextCurrent = remaining[0] ?? null;
+      this.resetWorkspace();
+    }
+    this.setState({
+      environmentsList: remaining,
+      currentEnvironment: nextCurrent,
+      currentEnvironmentId: nextCurrent?.id ?? null,
+    });
+    persistEnvironments(remaining, nextCurrent?.id ?? null);
+    if (isCurrentDeleted && nextCurrent && typeof window !== "undefined") {
+      void this.refreshEnvironmentData(nextCurrent.id);
+    }
+  };
+
   public updateEnvironment = (id: string, updates: Partial<Environment>): void => {
     const updated = this.state.environmentsList.map((e) => (e.id === id ? { ...e, ...updates } : e));
     const current = id === this.state.currentEnvironmentId && this.state.currentEnvironment
