@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, Check, ChevronDown, Mic, Plus, Square, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowUp, Check, ChevronDown, Lock, Mic, Plus, Square, X } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { BotIcon } from "../ui/bot-icon";
 
-export type ComposerMode = "Delegate" | "Ask";
+export type ComposerMode = "Delegate" | "Ask" | "About PayGuardian";
 export type EffortLevel = "Low" | "Medium" | "High" | "Max";
 type ProviderKey = "gemini" | "kimi" | "openai" | "spark";
 type ModelFilterTab = "fav" | "all";
@@ -30,6 +32,12 @@ export interface AIComposerProps {
   /** Receives the prompt, selection and attached files — wire to the chat send flow. */
   onSubmit: (submission: AIComposerSubmission) => void;
   className?: string;
+  /** Whether the chat is running in incognito mode (unauthenticated visitor). */
+  isIncognito?: boolean;
+  /** Whether the user is authenticated. */
+  isAuthenticated?: boolean;
+  /** Initial mode override. */
+  initialMode?: ComposerMode;
 }
 
 interface ComposerModel {
@@ -50,7 +58,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001"
 
 const ALL_EFFORTS: EffortLevel[] = ["Low", "Medium", "High", "Max"];
 
-const ALL_MODES: ComposerMode[] = ["Delegate", "Ask"];
+const ALL_MODES: ComposerMode[] = ["About PayGuardian", "Ask", "Delegate"];
 
 const CONTEXT_OPTIONS: ContextTagOption[] = [
   { tag: "@environment", category: "Workspace" },
@@ -192,10 +200,19 @@ export function AIComposer({
   onStop,
   onSubmit,
   className = "",
+  isIncognito = false,
+  isAuthenticated = true,
+  initialMode,
 }: AIComposerProps) {
   const [promptText, setPromptText] = React.useState("");
-  const [mode, setMode] = React.useState<ComposerMode>("Delegate");
+  const isUnauthenticated = isIncognito || !isAuthenticated;
+  const [mode, setMode] = React.useState<ComposerMode>(() => {
+    if (initialMode) return initialMode;
+    if (isUnauthenticated) return "About PayGuardian";
+    return "Delegate";
+  });
   const [modeMenuOpen, setModeMenuOpen] = React.useState(false);
+  const [showAuthDialog, setShowAuthDialog] = React.useState(false);
 
   const [autoMode, setAutoMode] = React.useState(false);
   const [modelMenuOpen, setModelMenuOpen] = React.useState(false);
@@ -654,7 +671,11 @@ export function AIComposer({
             }
           }}
           disabled={disabled}
-          placeholder="Delegate, Ask, Automate / @ for context"
+          placeholder={
+            mode === "About PayGuardian"
+              ? "Ask anything about PayGuardian's technology, architecture & invariants..."
+              : "Delegate, Ask, Automate / @ for context"
+          }
           aria-label="Message the assistant"
           className="mb-4 min-h-8 w-full resize-none border-none bg-transparent px-0.5 text-base sm:text-lg leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50"
         />
@@ -703,7 +724,7 @@ export function AIComposer({
               <div
                 role="menu"
                 className={cn(
-                  "absolute bottom-[calc(100%+8px)] left-0 z-30 w-36 origin-bottom-left rounded-xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-xl transition-all duration-200",
+                  "absolute bottom-[calc(100%+8px)] left-0 z-30 w-52 origin-bottom-left rounded-xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-xl transition-all duration-200",
                   modeMenuOpen
                     ? "pointer-events-auto scale-100 translate-y-0 opacity-100"
                     : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0",
@@ -712,18 +733,29 @@ export function AIComposer({
                 <div className="flex flex-col gap-0.5">
                   {orderedModes.map((modeOption) => {
                     const isSelected = modeOption === mode;
+                    const requiresAuth = isUnauthenticated && modeOption !== "About PayGuardian";
                     return (
                       <div
                         key={modeOption}
                         role="menuitem"
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (requiresAuth) {
+                            setModeMenuOpen(false);
+                            setShowAuthDialog(true);
+                            return;
+                          }
                           setMode(modeOption);
                           setModeMenuOpen(false);
                         }}
-                        className="flex h-9 cursor-pointer items-center justify-between rounded-lg px-3.5 text-[13px] font-medium text-zinc-200 transition-colors hover:bg-zinc-900"
+                        className="flex h-9 cursor-pointer items-center justify-between rounded-lg px-3 text-[13px] font-medium text-zinc-200 transition-colors hover:bg-zinc-900"
                       >
-                        <span>{modeOption}</span>
+                        <span className="flex items-center gap-2">
+                          <span>{modeOption}</span>
+                          {requiresAuth && (
+                            <Lock className="h-3 w-3 text-zinc-500 shrink-0" />
+                          )}
+                        </span>
                         {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-blue-400" />}
                       </div>
                     );
@@ -1138,6 +1170,67 @@ export function AIComposer({
         }
         .aic-pulse-dot { animation: aicPulseDot 1.2s infinite ease-in-out; }
       `}</style>
+
+      {/* Authentication Required Dialog Modal */}
+      {showAuthDialog && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in"
+          onClick={() => {
+            setShowAuthDialog(false);
+            setMode("About PayGuardian");
+          }}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close dialog"
+              onClick={() => {
+                setShowAuthDialog(false);
+                setMode("About PayGuardian");
+              }}
+              className="absolute top-4 right-4 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 transition-colors"
+            >
+              <X className="size-4" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <BotIcon size={22} />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-zinc-100">Authentication Required</h3>
+                <p className="text-xs text-zinc-400">Agent execution and spending authority</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-zinc-300 leading-relaxed">
+              To delegate spending authority, invoke specialist subagents, or execute transactions, please sign in.
+              In incognito mode, you can query the main agent about PayGuardian&apos;s architecture and security via <strong>About PayGuardian</strong>.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAuthDialog(false);
+                  setMode("About PayGuardian");
+                }}
+                className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+              >
+                Stay in Incognito
+              </button>
+              <Link
+                href="/login"
+                className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-zinc-200 transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

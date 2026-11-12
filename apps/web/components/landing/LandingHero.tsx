@@ -30,6 +30,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/app/auth-provider";
+import { BotIcon } from "@/components/ui/bot-icon";
 import { HeroBackgroundSvg } from "./BackgroundSvgs";
 import { HeroPromptComposer } from "./HeroPromptComposer";
 
@@ -106,20 +107,13 @@ export function LandingHero() {
             <span>{user ? "Dashboard" : "Get started free"}</span>
             <ArrowRight className="size-4" />
           </Link>
-          <a
+          <Link
             className="inline-flex h-[40px] min-w-[145px] items-center justify-center gap-2 rounded-[10px] border border-border bg-muted px-[18px] text-foreground/85 font-medium transition-all hover:bg-accent hover:text-foreground active:scale-[0.98]"
-            href="#ask-agent"
-            onClick={(e) => {
-              e.preventDefault();
-              const el = document.getElementById("ask-agent");
-              if (el) {
-                el.scrollIntoView({ behavior: "smooth", block: "center" });
-              }
-            }}
+            href="/icognito"
           >
-            <MessageSquare className="size-4 text-primary" />
-            <span>Learn more</span>
-          </a>
+            <BotIcon size={18} className="text-primary shrink-0" />
+            <span>Ask agent</span>
+          </Link>
         </motion.div>
 
         {/* Subtext info */}

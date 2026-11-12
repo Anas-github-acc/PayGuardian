@@ -52,11 +52,13 @@ import {
 } from "../../lib/chat-cache";
 import { ContextWindowDialog } from "./context-window-dialog";
 import { ProposedBudgetCard, type ProposedAllocationItem } from "./proposed-budget-card";
+import { useAuth } from "../../app/auth-provider";
 
 export interface AssistantViewProps {
   conversationIdFromUrl?: string;
   className?: string;
   onViewTrace?: (traceId?: string) => void;
+  isIncognito?: boolean;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
@@ -96,11 +98,15 @@ export function AssistantView({
   conversationIdFromUrl,
   className = "",
   onViewTrace,
+  isIncognito = false,
 }: AssistantViewProps) {
   const router = useRouter();
+  const auth = useAuth();
+  const user = auth?.user;
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
   const currentEnvId = currentEnv?.id;
+  const aboutAbortRef = React.useRef<AbortController | null>(null);
 
   // Persistent sidebar controls & conversation manager from ChatProvider
   const {
@@ -847,6 +853,128 @@ export function AssistantView({
       setActiveModelId(submission.modelId);
     }
 
+    // 1. Append user message to thread immediately
+    const userMsgId = `usr-${Date.now()}`;
+    const userMsg: ThreadMessage = {
+      id: userMsgId,
+      role: "user",
+      text,
+    };
+
+    setThreadMessages((prev) => [...prev, userMsg]);
+    setIsStreaming(true);
+    isNearBottomRef.current = true;
+    requestAnimationFrame(() => scrollToBottom("smooth"));
+
+    // 2. Standalone singleton handler for "About PayGuardian"
+    if (submission.mode === "About PayGuardian") {
+      setCurrentProgressLabel("Thinking… Querying PayGuardian Technical Specifications");
+      setSubagents([]);
+      const assistantMsgId = `asst-${Date.now()}`;
+      setThreadMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMsgId,
+          role: "assistant",
+          text: "",
+          streaming: true,
+        },
+      ]);
+
+      try {
+        const abortController = new AbortController();
+        aboutAbortRef.current = abortController;
+
+        const response = await fetch("/api/about-payguardian", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: text,
+            modelId: submission.modelId || activeModelId,
+          }),
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+
+        if (!response.body) {
+          throw new Error("No response stream available");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let accumulatedText = "";
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("data: ")) {
+              const rawData = trimmed.slice(6);
+              if (rawData === "[DONE]") break;
+              try {
+                const parsed = JSON.parse(rawData);
+                if (parsed.text) {
+                  accumulatedText += parsed.text;
+                  const currentText = accumulatedText;
+                  setThreadMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMsgId
+                        ? { ...m, text: currentText, streaming: true }
+                        : m,
+                    ),
+                  );
+                }
+              } catch {
+                // ignore parsing error for chunk
+              }
+            }
+          }
+        }
+
+        setThreadMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? { ...m, text: accumulatedText || "No response received.", streaming: false }
+              : m,
+          ),
+        );
+        setIsStreaming(false);
+        setCurrentProgressLabel("");
+        return;
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          setIsStreaming(false);
+          setCurrentProgressLabel("");
+          return;
+        }
+        setIsStreaming(false);
+        setCurrentProgressLabel("");
+        setThreadMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  ...m,
+                  text: `PayGuardian Explainer encountered an issue: ${err.message || "Failed to reach explainer service"}. Please try again.`,
+                  streaming: false,
+                }
+              : m,
+          ),
+        );
+        return;
+      }
+    }
+
     // Determine target environment ID
     const matchedConv = activeConversationId
       ? conversations.find((c) => c.id === activeConversationId)
@@ -876,18 +1004,6 @@ export function AssistantView({
 
     if (!effectiveEnvId) return;
 
-    // 1. Append user message to thread immediately
-    const userMsgId = `usr-${Date.now()}`;
-    const userMsg: ThreadMessage = {
-      id: userMsgId,
-      role: "user",
-      text,
-    };
-
-    setThreadMessages((prev) => [...prev, userMsg]);
-    setIsStreaming(true);
-    isNearBottomRef.current = true;
-    requestAnimationFrame(() => scrollToBottom("smooth"));
     setCurrentProgressLabel("Thinking… Initializing Personal Agent");
     setSubagents([]);
     if (pendingApproval) {
@@ -1180,35 +1296,54 @@ export function AssistantView({
 
           <button
             type="button"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(isIncognito ? "/" : "/dashboard")}
             className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-1 py-1"
-            title="Return to Dashboard"
+            title={isIncognito ? "Return to Landing Page" : "Return to Dashboard"}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Dashboard</span>
+            <span>{isIncognito ? "Home" : "Dashboard"}</span>
           </button>
 
           <div className="h-4 w-px bg-zinc-800 mx-1" />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold tracking-tight text-white">Main Agent Chat</span>
-            <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-medium text-zinc-400 border border-zinc-800">
-              LangGraph Personal
+            <span className="text-xs font-semibold tracking-tight text-white">
+              {isIncognito ? "PayGuardian Main Agent" : "Main Agent Chat"}
+            </span>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-medium border",
+                isIncognito
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  : "bg-zinc-900 text-zinc-400 border-zinc-800",
+              )}
+            >
+              {isIncognito ? "Incognito Explainer" : "LangGraph Personal"}
             </span>
           </div>
         </div>
 
-        {/* Context Window button */}
+        {/* Right side controls */}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setContextWindowOpen(true)}
-            title="View Chat Context Window"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            <span>Context Window</span>
-          </button>
+          {isIncognito ? (
+            <button
+              type="button"
+              onClick={() => router.push("/login")}
+              className="flex items-center gap-1.5 text-xs font-medium text-zinc-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800"
+            >
+              Sign In
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setContextWindowOpen(true)}
+              title="View Chat Context Window"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>Context Window</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1270,12 +1405,42 @@ export function AssistantView({
                     />
                   </div>
                   <h2 className="text-2xl sm:text-[28px] font-semibold tracking-[-0.02em] text-white">
-                    Delegate with total control
+                    {isIncognito ? "Ask PayGuardian Agent" : "Delegate with total control"}
                   </h2>
                   <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-zinc-400">
-                    Plan tasks, consult models, and safely delegate spending to autonomous subagents
-                    under cryptographic budget mandates.
+                    {isIncognito
+                      ? "Inquire about PayGuardian's architecture, cryptographic DAG mandates, integer accounting invariants, and payment settlement rails."
+                      : "Plan tasks, consult models, and safely delegate spending to autonomous subagents under cryptographic budget mandates."}
                   </p>
+                  {isIncognito && (
+                    <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-md">
+                      {[
+                        "How does PayGuardian enforce the DAG depth ≤ 2 invariant?",
+                        "How does integer accounting prevent floating-point loss?",
+                        "Explain the two-phase PayPal Sandbox settlement flow",
+                      ].map((promptSuggestion) => (
+                        <button
+                          key={promptSuggestion}
+                          type="button"
+                          onClick={() => {
+                            handleSendMessage({
+                              prompt: promptSuggestion,
+                              mode: "About PayGuardian",
+                              modelId: activeModelId,
+                              modelName: "APInex GPT-6 Luna",
+                              effort: "Medium",
+                              autoMode: false,
+                              attachedFiles: [],
+                              files: [],
+                            });
+                          }}
+                          className="rounded-full border border-zinc-800 bg-zinc-900/80 px-3.5 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white cursor-pointer"
+                        >
+                          {promptSuggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <ReasoningThread
@@ -1527,9 +1692,13 @@ export function AssistantView({
             <AIComposer
               disabled={isStreaming}
               isStreaming={isStreaming}
+              isIncognito={isIncognito}
+              isAuthenticated={Boolean(user)}
+              initialMode={isIncognito ? "About PayGuardian" : undefined}
               onStop={() => {
                 setIsStreaming(false);
                 if (eventSourceRef.current) eventSourceRef.current.close();
+                if (aboutAbortRef.current) aboutAbortRef.current.abort();
               }}
               onSubmit={handleSendMessage}
               className="mx-auto w-full max-w-3xl"
@@ -1538,7 +1707,7 @@ export function AssistantView({
         </div>
 
         {/* Right Side: Split Screen Window for Subagent Inspection */}
-        {selectedSubagent && (
+        {selectedSubagent && !isIncognito && (
           <div className="flex w-1/2 min-h-0 flex-col bg-zinc-925 border-l border-zinc-850">
             {/* Breadcrumb Header */}
             <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-850 px-4">

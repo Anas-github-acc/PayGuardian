@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { BotIcon } from "./bot-icon";
 
 export interface LetsWorkTogetherProps {
   onAction?: () => void;
@@ -19,8 +20,8 @@ export function LetsWorkTogether({
   onGetStarted,
   onLearnMore,
   actionText = "Get Started",
-  learnMoreText = "Learn More",
-  learnMoreUrl = "https://github.com",
+  learnMoreText = "Ask Agent",
+  learnMoreUrl = "/icognito",
   className = "",
   style,
 }: LetsWorkTogetherProps = {}) {
@@ -96,19 +97,19 @@ export function LetsWorkTogether({
               />
             </button>
 
-            {/* Learn More Button */}
+            {/* Ask Agent Button */}
             <button
               type="button"
               onClick={handleSecondaryClick}
               className="group relative flex items-center gap-2.5 rounded-full border border-white/20 bg-white/5 px-6 py-3 sm:px-8 sm:py-3.5 text-zinc-300 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/10 hover:text-white hover:scale-[1.02] cursor-pointer"
             >
+              <BotIcon
+                size={18}
+                className="size-4 sm:size-5 text-zinc-400 transition-all duration-300 group-hover:text-white"
+              />
               <span className="text-sm sm:text-base font-medium tracking-wide">
                 {learnMoreText}
               </span>
-              <ArrowUpRight
-                className="size-4 sm:size-5 text-zinc-400 transition-all duration-300 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                strokeWidth={1.75}
-              />
             </button>
           </div>
 
