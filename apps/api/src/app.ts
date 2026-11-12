@@ -67,7 +67,14 @@ export function buildApp(
     }
   });
 
-  app.register(cors, { origin: process.env.CORS_ORIGIN ?? "http://localhost:3000" });
+  const rawCors = process.env.CORS_ORIGIN;
+  const corsOrigin =
+    !rawCors || rawCors === "*" || rawCors === "true"
+      ? true
+      : rawCors.includes(",")
+        ? rawCors.split(",").map((s) => s.trim())
+        : rawCors;
+  app.register(cors, { origin: corsOrigin, credentials: true });
 
   app.register(swagger, {
     openapi: {

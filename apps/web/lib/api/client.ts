@@ -64,7 +64,27 @@ export class ApiClient {
     }
     if (options?.token) {
       headers.set("authorization", `Bearer ${options.token}`);
-    } else if (options?.localUserId) {
+    } else if (typeof window !== "undefined") {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+              if (accessToken) {
+                headers.set("authorization", `Bearer ${accessToken}`);
+                break;
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore localStorage access issues in restricted contexts
+      }
+    }
+    if (!headers.has("authorization") && options?.localUserId) {
       headers.set("x-local-user-id", options.localUserId);
     }
     return headers;
