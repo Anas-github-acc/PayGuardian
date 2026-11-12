@@ -13,6 +13,8 @@ export { Integrations as AgentGridIntegrations } from "./integrations-4";
 export { SecureAgentDelegationVisual, type AgentNodeData } from "./secure-agent-delegation";
 export { LetsWorkTogether, type LetsWorkTogetherProps } from "./lets-work-section";
 export { BotIcon } from "./bot-icon";
+export * from "./ask-agent-button";
+export * from "./ai-avatar";
 export * from "./agent-progress";
 export * from "./reasoning-thread";
 export * from "./background-inbox";

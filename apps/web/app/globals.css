@@ -510,3 +510,21 @@ div[class*="@container"] {
   animation: agentGridPulse 1.4s cubic-bezier(0.77, 0, 0.175, 1) infinite;
   will-change: opacity, transform;
 }
+
+/* ==========================================================================
+   Ask Agent Moving Border Line Animation (#d0785a)
+   ========================================================================== */
+@keyframes askAgentBorderSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-ask-agent-border {
+  animation: askAgentBorderSpin 3.5s linear infinite;
+  will-change: transform;
+}
+

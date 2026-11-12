@@ -122,17 +122,17 @@ class LLMProvider(ABC):
         pass
 
 
-class ApinexProvider(LLMProvider):
-    """Provider for APInex free models (OpenAI-compatible)."""
+class OpenRouterProvider(LLMProvider):
+    """Provider for OpenRouter models (OpenAI-compatible)."""
 
     def __init__(
         self,
         api_key: str | None = None,
-        base_url: str = "https://api.apinex.bond/v1",
-        default_model: str = "free/gpt-6-luna",
+        base_url: str = "https://openrouter.ai/api/v1",
+        default_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free",
     ) -> None:
-        self.api_key = api_key or os.getenv("APINEX_API_KEY", "")
-        self.base_url = base_url
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
+        self.base_url = os.getenv("OPENROUTER_BASE_URL", base_url)
         self.default_model = default_model
         self._client: Any = None
 
@@ -145,6 +145,10 @@ class ApinexProvider(LLMProvider):
                 base_url=self.base_url,
                 timeout=30.0,
                 max_retries=2,
+                default_headers={
+                    "HTTP-Referer": "https://payguardian.ai",
+                    "X-Title": "PayGuardian",
+                },
             )
         return self._client
 
@@ -219,8 +223,12 @@ class ApinexProvider(LLMProvider):
                 return LLMResponse(content=cleaned_content, tool_calls=tool_calls)
             return cleaned_content
         except Exception as exc:
-            logger.error("Apinex completion error: %s", exc)
+            logger.error("OpenRouter completion error: %s", exc)
             raise
+
+
+# Alias for backward compatibility
+ApinexProvider = OpenRouterProvider
 
 
 class GoogleGeminiProvider(LLMProvider):
@@ -239,10 +247,9 @@ class GoogleGeminiProvider(LLMProvider):
         temperature: float = 0.7,
         tools: list[dict[str, Any]] | None = None,
     ) -> str | LLMResponse:
-        req_model = model or self.default_model
-        # Map retired 2.x models to modern 3.8/current models
-        if "2.5" in req_model or "2.0" in req_model or "3.5" in req_model:
-            target_model = "gemini-3.8-flash"
+        req_model = (model or self.default_model).strip()
+        if req_model == "gemini-3.1-pro":
+            target_model = "gemini-3.1-pro-preview"
         else:
             target_model = req_model
 
@@ -331,21 +338,20 @@ class LLMFactory:
 
     @staticmethod
     def get_provider_for_model(model_id: str | None = None) -> tuple[LLMProvider, str]:
-        default_model = os.getenv("DEFAULT_MODEL", "free/gpt-6-luna")
+        default_model = os.getenv("DEFAULT_MODEL", "gemini-3.8-flash")
         chosen = (model_id or default_model).strip()
         m = chosen.lower()
 
-        # If user requests gemini models
-        if "gemini" in m:
-            target_model = (
-                "gemini-3.8-flash"
-                if ("2.5" in m or "2.0" in m or "3.5" in m)
-                else (model_id or "gemini-3.8-flash")
-            )
-            provider = GoogleGeminiProvider(default_model=target_model)
+        # If user requests openrouter models (or models containing '/' like nvidia/..., baidu/...)
+        if "/" in chosen or "openrouter" in m or "nemotron" in m or "ernie" in m:
+            target_model = chosen
+            provider = OpenRouterProvider(default_model=target_model)
             return provider, target_model
 
-        # Default to APInex (free/gpt-6-luna or other apinex models)
-        target_model = model_id or "free/gpt-6-luna"
-        provider = ApinexProvider(default_model=target_model)
+        # If user requests gemini models (or defaults to gemini)
+        if chosen == "gemini-3.1-pro":
+            target_model = "gemini-3.1-pro-preview"
+        else:
+            target_model = chosen if "gemini" in m else "gemini-3.8-flash"
+        provider = GoogleGeminiProvider(default_model=target_model)
         return provider, target_model

@@ -3,6 +3,7 @@
 import type React from "react";
 import { ArrowRight } from "lucide-react";
 import { BotIcon } from "./bot-icon";
+import { AskAgentButton } from "./ask-agent-button";
 
 export interface LetsWorkTogetherProps {
   onAction?: () => void;
@@ -97,20 +98,14 @@ export function LetsWorkTogether({
               />
             </button>
 
-            {/* Ask Agent Button */}
-            <button
-              type="button"
+            {/* Ask Agent Button with #d0785a colored moving line around border */}
+            <AskAgentButton
               onClick={handleSecondaryClick}
-              className="group relative flex items-center gap-2.5 rounded-full border border-white/20 bg-white/5 px-6 py-3 sm:px-8 sm:py-3.5 text-zinc-300 backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/10 hover:text-white hover:scale-[1.02] cursor-pointer"
-            >
-              <BotIcon
-                size={18}
-                className="size-4 sm:size-5 text-zinc-400 transition-all duration-300 group-hover:text-white"
-              />
-              <span className="text-sm sm:text-base font-medium tracking-wide">
-                {learnMoreText}
-              </span>
-            </button>
+              rounded="full"
+              size="md"
+              text={learnMoreText}
+              innerClassName="px-6 py-3 sm:px-8 sm:py-3.5"
+            />
           </div>
 
           {/* Right hairline */}

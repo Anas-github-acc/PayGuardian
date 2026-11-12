@@ -1195,7 +1195,7 @@ export function AssistantView({
         .join("\n");
 
       const confirmedMsg =
-        `### 🛡️ Cryptographic Child Mandates Authorized\n\n` +
+        `### Cryptographic Child Mandates Authorized\n\n` +
         `The PayGuardian Gateway has verified root spending authority and issued ${data.delegations?.length || 0} child mandates in the ledger:\n\n` +
         `${delegationsList}\n\n` +
         `**Approval Status**: \`${data.status}\`\n` +
@@ -1281,14 +1281,14 @@ export function AssistantView({
       className={`relative flex min-w-0 flex-1 flex-col h-full overflow-hidden bg-zinc-950 ${className}`}
     >
       {/* Top action bar: standard flex header, never covering messages */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-900 bg-zinc-950/90 backdrop-blur-md px-4 sm:px-6 z-10">
-        <div className="flex items-center gap-2.5">
-          {!sidebarOpen && (
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-900 bg-zinc-950/90 backdrop-blur-md px-3 sm:px-6 z-10 gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+          {!isIncognito && !sidebarOpen && (
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
               title="Open sidebar"
-              className="flex h-8 w-8 items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              className="flex h-8 w-8 items-center justify-center text-zinc-400 hover:text-white transition-colors shrink-0"
             >
               <PanelLeft className="h-4 w-4" />
             </button>
@@ -1297,22 +1297,22 @@ export function AssistantView({
           <button
             type="button"
             onClick={() => router.push(isIncognito ? "/" : "/dashboard")}
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-1 py-1"
+            className="flex items-center gap-1 text-[13px] font-medium text-zinc-400 hover:text-white transition-colors px-1 py-1 shrink-0"
             title={isIncognito ? "Return to Landing Page" : "Return to Dashboard"}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>{isIncognito ? "Home" : "Dashboard"}</span>
           </button>
 
-          <div className="h-4 w-px bg-zinc-800 mx-1" />
+          <div className="h-4 w-px bg-zinc-800 mx-0.5 sm:mx-1 shrink-0" />
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold tracking-tight text-white">
-              {isIncognito ? "PayGuardian Main Agent" : "Main Agent Chat"}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="text-[13px] sm:text-sm font-semibold tracking-tight text-white truncate">
+              {isIncognito ? "PayGuardian Agent" : "Main Agent Chat"}
             </span>
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-medium border",
+                "hidden sm:inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium border shrink-0",
                 isIncognito
                   ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                   : "bg-zinc-900 text-zinc-400 border-zinc-800",
@@ -1324,12 +1324,12 @@ export function AssistantView({
         </div>
 
         {/* Right side controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isIncognito ? (
             <button
               type="button"
               onClick={() => router.push("/login")}
-              className="flex items-center gap-1.5 text-xs font-medium text-zinc-200 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800"
+              className="flex items-center gap-1.5 text-[13px] font-medium text-zinc-200 hover:text-white transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 shrink-0"
             >
               Sign In
             </button>
@@ -1338,10 +1338,10 @@ export function AssistantView({
               type="button"
               onClick={() => setContextWindowOpen(true)}
               title="View Chat Context Window"
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
+              className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
             >
               <BookOpen className="h-3.5 w-3.5" />
-              <span>Context Window</span>
+              <span className="hidden sm:inline">Context Window</span>
             </button>
           )}
         </div>
@@ -1358,7 +1358,7 @@ export function AssistantView({
               pendingApproval.type === "budget_proposal" && (
                 <div
                   key="minimized-proposal-pill"
-                  className="absolute top-3 right-4 z-30 pointer-events-auto"
+                  className="absolute top-3 left-3 right-3 sm:left-auto sm:right-4 max-w-full sm:max-w-[340px] z-30 pointer-events-auto"
                 >
                   <ProposedBudgetCard
                     id={pendingApproval.id}
@@ -1386,34 +1386,34 @@ export function AssistantView({
           >
             <div
               className={cn(
-                "mx-auto flex w-full max-w-3xl flex-col px-4 pt-6 pb-6 sm:px-6",
+                "mx-auto flex w-full max-w-3xl flex-col px-3 sm:px-6 pt-4 pb-4 sm:pt-6 sm:pb-6",
                 threadMessages.length === 0
                   ? "flex-1 min-h-[calc(100vh-230px)] items-center justify-center"
                   : "space-y-6",
               )}
             >
               {threadMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center max-w-md my-auto py-8">
-                  <div className="mb-5 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900 shadow-xl shadow-black/50 ring-1 ring-[#D0785A]/20">
+                <div className="flex flex-col items-center justify-center text-center max-w-md my-auto py-6 sm:py-8 w-full px-2">
+                  <div className="mb-4 sm:mb-5 flex size-12 sm:size-14 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900 shadow-xl shadow-black/50 ring-1 ring-[#D0785A]/20">
                     <Image
                       src="/payguardian.svg"
                       alt="PayGuardian Logo"
                       width={32}
                       height={30}
-                      className="size-7 object-contain shrink-0"
+                      className="size-6 sm:size-7 object-contain shrink-0"
                       priority
                     />
                   </div>
-                  <h2 className="text-2xl sm:text-[28px] font-semibold tracking-[-0.02em] text-white">
+                  <h1 className="text-xl sm:text-[28px] font-semibold tracking-[-0.02em] text-white">
                     {isIncognito ? "Ask PayGuardian Agent" : "Delegate with total control"}
-                  </h2>
-                  <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-zinc-400">
+                  </h1>
+                  <p className="mt-2 sm:mt-2.5 max-w-sm text-[13px] sm:text-sm leading-relaxed text-zinc-400">
                     {isIncognito
                       ? "Inquire about PayGuardian's architecture, cryptographic DAG mandates, integer accounting invariants, and payment settlement rails."
                       : "Plan tasks, consult models, and safely delegate spending to autonomous subagents under cryptographic budget mandates."}
                   </p>
                   {isIncognito && (
-                    <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-md">
+                    <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row flex-wrap justify-center gap-2 w-full max-w-md">
                       {[
                         "How does PayGuardian enforce the DAG depth ≤ 2 invariant?",
                         "How does integer accounting prevent floating-point loss?",
@@ -1434,7 +1434,7 @@ export function AssistantView({
                               files: [],
                             });
                           }}
-                          className="rounded-full border border-zinc-800 bg-zinc-900/80 px-3.5 py-1.5 text-xs text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white cursor-pointer"
+                          className="rounded-xl sm:rounded-full border border-zinc-800 bg-zinc-900/80 px-3.5 py-2.5 sm:py-2 text-[13px] text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white cursor-pointer text-left sm:text-center w-full sm:w-auto"
                         >
                           {promptSuggestion}
                         </button>
@@ -1560,7 +1560,7 @@ export function AssistantView({
                               id: `asst-pp-capture-${Date.now()}`,
                               role: "assistant",
                               text:
-                                `### 🛡️ Payment Authorized & Settled via PayPal Sandbox\n\n` +
+                                `### Payment Authorized & Settled via PayPal Sandbox\n\n` +
                                 `The delegated payment has been authorized and captured directly through PayPal Sandbox.\n\n` +
                                 `- **Order ID**: \`${orderId}\`\n` +
                                 `- **Capture ID**: \`${captureId}\`\n` +
@@ -1688,7 +1688,7 @@ export function AssistantView({
           </div>
 
           {/* Composer always stays at the bottom */}
-          <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-4 pb-6 pt-2 sm:px-6">
+          <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-3 sm:px-6 pb-3 sm:pb-6 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <AIComposer
               disabled={isStreaming}
               isStreaming={isStreaming}
@@ -1708,7 +1708,7 @@ export function AssistantView({
 
         {/* Right Side: Split Screen Window for Subagent Inspection */}
         {selectedSubagent && !isIncognito && (
-          <div className="flex w-1/2 min-h-0 flex-col bg-zinc-925 border-l border-zinc-850">
+          <div className="flex w-full absolute inset-0 z-40 sm:relative sm:w-1/2 min-h-0 flex-col bg-zinc-925 border-l border-zinc-850">
             {/* Breadcrumb Header */}
             <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-850 px-4">
               <nav

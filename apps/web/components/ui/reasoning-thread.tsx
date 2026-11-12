@@ -266,7 +266,7 @@ export function ReasoningThread({
             <div key={message.id} className="group flex w-full flex-col items-end">
               <motion.div
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-[85%] rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3.5 text-base sm:text-[17px] leading-relaxed text-zinc-100 shadow-sm"
+                className="max-w-[90%] sm:max-w-[85%] rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 sm:px-5 sm:py-3.5 text-[15px] sm:text-[17px] leading-relaxed text-zinc-100 shadow-sm"
                 initial={reduced ? false : { opacity: 0, y: 8 }}
                 transition={reduced ? { duration: 0 } : ENTER}
               >
@@ -278,7 +278,7 @@ export function ReasoningThread({
                 <button
                   type="button"
                   onClick={() => handleCopy(message.text, message.id)}
-                  className="inline-flex items-center justify-center p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  className="inline-flex items-center justify-center p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity"
                   title="Copy prompt"
                 >
                   {copiedId === message.id ? (
@@ -335,7 +335,7 @@ export function ReasoningThread({
                       <button
                         type="button"
                         onClick={() => handleCopy(message.text, message.id)}
-                        className="inline-flex items-center justify-center p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        className="inline-flex items-center justify-center p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity"
                         title="Copy response"
                       >
                         {copiedId === message.id ? (

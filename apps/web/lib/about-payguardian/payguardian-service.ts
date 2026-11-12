@@ -98,37 +98,44 @@ export class AboutPayGuardianService {
    */
   public async *streamResponse(
     prompt: string,
-    modelId: string = "free/gpt-6-luna",
+    modelId: string = "gemini-3.8-flash",
   ): AsyncGenerator<string, void, unknown> {
     const googleApiKey =
       process.env.GOOGLE_API_KEY ||
       process.env.GEMINI_API_KEY ||
       process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-    const apinexApiKey = process.env.APINEX_API_KEY || process.env.OPENAI_API_KEY;
+    const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+    const openrouterBaseUrl =
+      process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
 
-    const isGeminiSelected = typeof modelId === "string" && modelId.startsWith("gemini");
-    const isApinexSelected =
-      typeof modelId === "string" &&
-      (modelId.includes("gpt") || modelId.includes("luna") || modelId.startsWith("free/"));
+    let targetModelId = typeof modelId === "string" && modelId.trim() ? modelId.trim() : "gemini-3.8-flash";
+    if (targetModelId === "gemini-3.1-pro") {
+      targetModelId = "gemini-3.1-pro-preview";
+    }
 
-    // Helper: Stream from APInex / OpenAI-compatible endpoint
-    const tryStreamApinex = async function* (
+    const isOpenRouterSelected =
+      targetModelId.includes("/") ||
+      targetModelId.includes("nemotron") ||
+      targetModelId.includes("ernie") ||
+      targetModelId.includes("openrouter");
+
+    // Helper: Stream from OpenRouter / OpenAI-compatible endpoint
+    const tryStreamOpenRouter = async function* (
       thisContext: AboutPayGuardianService,
       targetModel: string,
-    ): AsyncGenerator<string, boolean, unknown> {
-      if (!apinexApiKey) return false;
+    ): AsyncGenerator<string, { ok: boolean; error?: string }, unknown> {
+      if (!openrouterApiKey) return { ok: false, error: "Missing OpenRouter API key" };
       try {
-        const baseUrl = process.env.APINEX_BASE_URL || "https://api.apinex.bond/v1";
-        const effectiveModel = targetModel.includes("gpt") ? targetModel : "free/gpt-6-luna";
-
-        const response = await fetch(`${baseUrl}/chat/completions`, {
+        const response = await fetch(`${openrouterBaseUrl}/chat/completions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${apinexApiKey}`,
+            Authorization: `Bearer ${openrouterApiKey}`,
+            "HTTP-Referer": "https://payguardian.ai",
+            "X-Title": "PayGuardian",
           },
           body: JSON.stringify({
-            model: effectiveModel,
+            model: targetModel,
             stream: true,
             temperature: 0.4,
             max_tokens: 4096,
@@ -140,7 +147,9 @@ export class AboutPayGuardianService {
         });
 
         if (!response.ok || !response.body) {
-          return false;
+          const errData = await response.json().catch(() => ({}));
+          const errMsg = errData?.error?.message || `HTTP ${response.status}`;
+          return { ok: false, error: errMsg };
         }
 
         const reader = response.body.getReader();
@@ -160,11 +169,11 @@ export class AboutPayGuardianService {
             const trimmed = line.trim();
             if (trimmed.startsWith("data: ")) {
               const dataPart = trimmed.slice(6);
-              if (dataPart === "[DONE]") return true;
+              if (dataPart === "[DONE]") return { ok: true };
               try {
                 const parsed = JSON.parse(dataPart);
                 if (parsed.error) {
-                  throw new Error(parsed.error.message || "APInex stream error");
+                  return { ok: false, error: parsed.error.message || "OpenRouter stream error" };
                 }
                 const chunk = parsed?.choices?.[0]?.delta?.content;
                 if (typeof chunk === "string" && chunk.length > 0) {
@@ -177,9 +186,9 @@ export class AboutPayGuardianService {
             }
           }
         }
-        return streamedAny;
-      } catch {
-        return false;
+        return { ok: streamedAny };
+      } catch (err: any) {
+        return { ok: false, error: err?.message || "OpenRouter connection error" };
       }
     };
 
@@ -187,8 +196,8 @@ export class AboutPayGuardianService {
     const tryStreamGemini = async function* (
       thisContext: AboutPayGuardianService,
       targetModel: string,
-    ): AsyncGenerator<string, boolean, unknown> {
-      if (!googleApiKey) return false;
+    ): AsyncGenerator<string, { ok: boolean; error?: string }, unknown> {
+      if (!googleApiKey) return { ok: false, error: "Missing Google API key" };
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:streamGenerateContent?key=${googleApiKey}&alt=sse`;
 
@@ -213,7 +222,9 @@ export class AboutPayGuardianService {
         });
 
         if (!response.ok || !response.body) {
-          return false;
+          const errData = await response.json().catch(() => ({}));
+          const errMsg = errData?.error?.message || `HTTP ${response.status}`;
+          return { ok: false, error: errMsg };
         }
 
         const reader = response.body.getReader();
@@ -241,7 +252,7 @@ export class AboutPayGuardianService {
               try {
                 const parsed = JSON.parse(jsonStr);
                 if (parsed.error) {
-                  throw new Error(parsed.error.message || "Gemini stream error");
+                  return { ok: false, error: parsed.error.message || "Gemini stream error" };
                 }
                 const candidate = parsed?.candidates?.[0];
                 const text = candidate?.content?.parts?.[0]?.text;
@@ -259,67 +270,90 @@ export class AboutPayGuardianService {
           }
         }
 
-        return finishedCleanly || streamedAnyText;
-      } catch {
-        return false;
+        return { ok: finishedCleanly || streamedAnyText };
+      } catch (err: any) {
+        return { ok: false, error: err?.message || "Gemini connection error" };
       }
     };
 
-    // Candidate Gemini models in order of stability
-    const geminiCandidates = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"];
-    if (isGeminiSelected && !geminiCandidates.includes(modelId)) {
-      geminiCandidates.unshift(modelId);
-    }
-
     let successfullyCompleted = false;
 
-    // Strategy A: If user selected APInex or default, try APInex first
-    if (isApinexSelected || !isGeminiSelected) {
-      if (apinexApiKey) {
-        const apinexGen = tryStreamApinex(this, modelId || "free/gpt-6-luna");
-        for await (const chunk of apinexGen) {
-          yield chunk;
+    // Strategy 1: User explicitly selected an OpenRouter model
+    if (isOpenRouterSelected) {
+      if (openrouterApiKey) {
+        const openrouterGen = tryStreamOpenRouter(this, targetModelId);
+        let result = await openrouterGen.next();
+        while (!result.done) {
+          yield result.value;
           successfullyCompleted = true;
+          result = await openrouterGen.next();
         }
-        if (successfullyCompleted) return;
+
+        const status = result.value as { ok: boolean; error?: string } | undefined;
+        if (successfullyCompleted || status?.ok) {
+          return;
+        }
+
+        // If OpenRouter failed, notify the user and route to Gemini
+        if (status?.error) {
+          yield `> ⚠️ **OpenRouter Note**: Model \`${targetModelId}\` could not be reached (${status.error}). Routed response via Google Gemini.\n\n`;
+        }
       }
 
-      // Secondary fallback: Gemini
+      // Secondary fallback to Gemini (Gemini 3.8 Flash as default)
       if (googleApiKey) {
-        for (const candidate of geminiCandidates) {
+        const fallbackGemini = ["gemini-3.8-flash", "gemini-4-hydrogen", "gemini-3.6-flash"];
+        for (const candidate of fallbackGemini) {
           const geminiGen = tryStreamGemini(this, candidate);
-          for await (const chunk of geminiGen) {
-            yield chunk;
+          let result = await geminiGen.next();
+          while (!result.done) {
+            yield result.value;
             successfullyCompleted = true;
+            result = await geminiGen.next();
           }
           if (successfullyCompleted) return;
         }
       }
     } else {
-      // Strategy B: User specifically selected Gemini
+      // Strategy 2: User explicitly selected a Gemini model (or default)
       if (googleApiKey) {
-        for (const candidate of geminiCandidates) {
+        // First try the EXACT model requested by the user!
+        const primaryGen = tryStreamGemini(this, targetModelId);
+        let result = await primaryGen.next();
+        while (!result.done) {
+          yield result.value;
+          successfullyCompleted = true;
+          result = await primaryGen.next();
+        }
+
+        const status = result.value as { ok: boolean; error?: string } | undefined;
+        if (successfullyCompleted || status?.ok) {
+          return;
+        }
+
+        // If the primary requested Gemini model failed, try candidate alternatives with 3.8 Flash first:
+        const candidateFallbacks = ["gemini-3.8-flash", "gemini-4-hydrogen", "gemini-3.6-flash"].filter(
+          (m) => m !== targetModelId
+        );
+
+        if (status?.error) {
+          yield `> ⚠️ **Gemini Model Note**: \`${targetModelId}\` returned: "${status.error}". Falling back to \`${candidateFallbacks[0]}\`.\n\n`;
+        }
+
+        for (const candidate of candidateFallbacks) {
           const geminiGen = tryStreamGemini(this, candidate);
-          for await (const chunk of geminiGen) {
-            yield chunk;
+          let candidateRes = await geminiGen.next();
+          while (!candidateRes.done) {
+            yield candidateRes.value;
             successfullyCompleted = true;
+            candidateRes = await geminiGen.next();
           }
           if (successfullyCompleted) return;
         }
       }
-
-      // Secondary fallback: APInex
-      if (apinexApiKey) {
-        const apinexGen = tryStreamApinex(this, "free/gpt-6-luna");
-        for await (const chunk of apinexGen) {
-          yield chunk;
-          successfullyCompleted = true;
-        }
-        if (successfullyCompleted) return;
-      }
     }
 
-    // Strategy C: Dynamic architectural fallback if external models are unreachable
+    // Strategy 3: Dynamic architectural fallback if external models are unreachable
     const fallbackResponse = this.generateDynamicFallback(prompt);
     const words = fallbackResponse.split(" ");
     for (let i = 0; i < words.length; i++) {

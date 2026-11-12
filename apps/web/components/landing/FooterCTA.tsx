@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, MessageSquare } from "lucide-react";
 import { BotIcon } from "@/components/ui/bot-icon";
+import { AskAgentButton } from "@/components/ui/ask-agent-button";
 import { useAuth } from "@/app/auth-provider";
 import { Section9BackgroundSvg } from "./BackgroundSvgs";
 
@@ -165,13 +166,12 @@ export function FooterCTA() {
             <span>{user ? "Dashboard" : "Get started for free"}</span>
             <ArrowRight className="size-4" />
           </Link>
-          <Link
-            className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[10px] border border-border bg-muted px-[22px] text-foreground/85 font-medium transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+          <AskAgentButton
             href="/icognito"
-          >
-            <BotIcon size={18} className="text-primary shrink-0" />
-            <span>Ask agent</span>
-          </Link>
+            text="Ask agent"
+            className="h-[42px]"
+            innerClassName="px-[22px]"
+          />
         </div>
 
         <p className="mt-[14px] text-[12.5px] text-muted-foreground">

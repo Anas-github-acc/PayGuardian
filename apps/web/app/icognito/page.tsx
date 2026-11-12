@@ -7,7 +7,7 @@ import { AssistantView } from "../../components/chat/assistant-view";
 export default function IncognitoChatPage() {
   return (
     <ChatProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-zinc-950">
+      <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-zinc-950">
         <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden bg-zinc-950">
           <AssistantView isIncognito={true} />
         </div>

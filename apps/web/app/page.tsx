@@ -12,6 +12,7 @@ import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQ } from "@/components/landing/FAQ";
 import { FooterCTA } from "@/components/landing/FooterCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { FirstTimeAgentOverlay } from "@/components/landing/FirstTimeAgentOverlay";
 
 export default function RootLandingPage() {
   const [isDark, setIsDark] = useState(true);
@@ -39,6 +40,7 @@ export default function RootLandingPage() {
         <FooterCTA />
       </main>
       <LandingFooter />
+      <FirstTimeAgentOverlay />
     </div>
   );
 }

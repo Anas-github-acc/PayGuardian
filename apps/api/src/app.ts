@@ -192,19 +192,58 @@ export function buildApp(
         const apiKey = process.env.GEMINI_API_KEY;
         const primary = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-        const apinexModel = {
-          id: "free/gpt-6-luna",
-          label: "APInex GPT-6 Luna (Free)",
-          provider: "APInex",
-          default: true,
-        };
+        const openrouterModels = [
+          {
+            id: "nvidia/nemotron-3-ultra-550b-a55b:free",
+            label: "Nemotron 3 Ultra 550B (Free)",
+            provider: "OpenRouter",
+            default: false,
+          },
+          {
+            id: "baidu/ernie-5.5-flash-preview:free",
+            label: "ERNIE 5.5 Flash (Free)",
+            provider: "OpenRouter",
+            default: false,
+          },
+          {
+            id: "nvidia/nemotron-3.5-super-vl:free",
+            label: "Nemotron 3.5 Super VL (Free)",
+            provider: "OpenRouter",
+            default: false,
+          },
+        ];
 
         const googleModels: Array<{
           id: string;
           label: string;
           provider: string;
           default: boolean;
-        }> = [];
+        }> = [
+          {
+            id: "gemini-3.8-flash",
+            label: "Gemini 3.8 Flash",
+            provider: "Google Gemini",
+            default: true,
+          },
+          {
+            id: "gemini-4-hydrogen",
+            label: "Gemini 4 Hydrogen",
+            provider: "Google Gemini",
+            default: false,
+          },
+          {
+            id: "gemini-3.6-flash",
+            label: "Gemini 3.6 Flash",
+            provider: "Google Gemini",
+            default: false,
+          },
+          {
+            id: "gemini-3.1-pro-preview",
+            label: "Gemini 3.1 Pro",
+            provider: "Google Gemini",
+            default: false,
+          },
+        ];
 
         // If a Google AI API key is configured, dynamically discover available models from Google AI
         if (apiKey) {
@@ -268,7 +307,7 @@ export function buildApp(
           );
         }
 
-        return { models: [apinexModel, ...googleModels] };
+        return { models: [...googleModels, ...openrouterModels] };
       },
     );
 

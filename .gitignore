@@ -27,3 +27,7 @@ supabase/.branches/
 .agents/teamwork
 .agent-communication
 payguardian.zip
+.vercel
+.taste-skill/
+PayGuardian-repository-context/
+.env*
