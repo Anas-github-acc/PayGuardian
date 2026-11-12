@@ -348,7 +348,7 @@ export function ReasoningThread({
                   </div>
                 ) : null}
                 {message.text ? (
-                  <div className="flex h-7 min-h-[28px] items-center gap-2 justify-start px-1 pt-1">
+                  <div className="flex h-7 min-h-[28px] items-center justify-between px-1 pt-1">
                     {!message.streaming ? (
                       <button
                         type="button"
@@ -362,13 +362,15 @@ export function ReasoningThread({
                           <Copy className="size-4" />
                         )}
                       </button>
-                    ) : null}
+                    ) : (
+                      <span />
+                    )}
                     {!message.streaming ? (
                       <span
-                        className="inline-flex items-center text-xs text-zinc-400 select-none cursor-default opacity-0 group-hover:opacity-100 transition-opacity"
-                        title={`Responded with ${formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}`}
+                        className="inline-flex items-center text-sm text-zinc-400 select-none cursor-default opacity-0 group-hover:opacity-100 transition-opacity ml-auto"
+                        title={`Response by ${formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}`}
                       >
-                        {formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}
+                        Response By {formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}
                       </span>
                     ) : null}
                   </div>
