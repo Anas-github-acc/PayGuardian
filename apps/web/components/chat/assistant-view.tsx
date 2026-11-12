@@ -37,7 +37,12 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { AIComposer, type AIComposerSubmission } from "./ai-composer";
 import { SessionHistoryPanel } from "./session-history";
 import { useChat } from "./chat-context";
-import { ReasoningThread, type ThreadMessage, type ThreadStep } from "../ui/reasoning-thread";
+import {
+  ReasoningThread,
+  formatModelDisplayName,
+  type ThreadMessage,
+  type ThreadStep,
+} from "../ui/reasoning-thread";
 import { BackgroundInbox, type BackgroundInboxItem } from "../ui/background-inbox";
 import { OAuthConsentCard } from "../ui/oauth-consent-card";
 import { PaymentApprovalOverlay } from "../ui/payment-approval-overlay";
@@ -164,7 +169,7 @@ export function AssistantView({
 
   // Context window modal
   const [contextWindowOpen, setContextWindowOpen] = React.useState(false);
-  const [activeModelId, setActiveModelId] = React.useState<string>("free/gpt-6-luna");
+  const [activeModelId, setActiveModelId] = React.useState<string>("gemini-3.8-flash");
   const [assembledContext, setAssembledContext] = React.useState<{
     system_instruction?: string;
     system_prompt?: string;
@@ -259,7 +264,17 @@ export function AssistantView({
           const mapped: ThreadMessage[] = cached.map((m) =>
             m.senderType === "user" || (m as any).role === "user"
               ? { id: m.id, role: "user", text: m.content }
-              : { id: m.id, role: "assistant", text: m.content },
+              : {
+                  id: m.id,
+                  role: "assistant",
+                  text: m.content,
+                  modelName: formatModelDisplayName(
+                    (m.metadata?.model as string) ||
+                    (m.metadata?.modelName as string) ||
+                    (m as any).modelName ||
+                    "Gemini 3.8 Flash",
+                  ),
+                },
           );
           setThreadMessages(mapped);
           isNearBottomRef.current = true;
@@ -319,7 +334,18 @@ export function AssistantView({
               const msgs: ThreadMessage[] = rawMsgs.map((m: any) =>
                 m.role === "user" || m.sender_type === "user" || m.senderType === "user"
                   ? { id: m.id, role: "user", text: m.content }
-                  : { id: m.id, role: "assistant", text: m.content },
+                  : {
+                      id: m.id,
+                      role: "assistant",
+                      text: m.content,
+                      modelName: formatModelDisplayName(
+                        m.metadata?.model ||
+                        m.metadata?.modelName ||
+                        m.model ||
+                        m.modelName ||
+                        "Gemini 3.8 Flash",
+                      ),
+                    },
               );
               setThreadMessages(msgs);
               isNearBottomRef.current = true;
@@ -334,6 +360,14 @@ export function AssistantView({
                     ? "user"
                     : "assistant",
                 content: m.content,
+                metadata: {
+                  model:
+                    m.metadata?.model ||
+                    m.metadata?.modelName ||
+                    m.model ||
+                    m.modelName ||
+                    "Gemini 3.8 Flash",
+                },
                 createdAt: m.created_at || m.createdAt || new Date().toISOString(),
               }));
               await saveMessages(convId, toCache);
@@ -822,6 +856,12 @@ export function AssistantView({
               conversationId: currentTargetId,
               senderType: m.role === "user" ? "user" : "assistant",
               content: m.text,
+              metadata: {
+                model:
+                  m.role === "assistant"
+                    ? m.modelName || formatModelDisplayName(activeModelId)
+                    : undefined,
+              },
               createdAt: new Date().toISOString(),
             }));
             saveMessages(currentTargetId, toCache).catch(() => {});
@@ -853,6 +893,10 @@ export function AssistantView({
       setActiveModelId(submission.modelId);
     }
 
+    const chosenModelName = formatModelDisplayName(
+      submission.modelName || submission.modelId || activeModelId,
+    );
+
     // 1. Append user message to thread immediately
     const userMsgId = `usr-${Date.now()}`;
     const userMsg: ThreadMessage = {
@@ -878,6 +922,7 @@ export function AssistantView({
           role: "assistant",
           text: "",
           streaming: true,
+          modelName: chosenModelName,
         },
       ]);
 
@@ -1023,6 +1068,7 @@ export function AssistantView({
         role: "assistant",
         text: "",
         streaming: true,
+        modelName: chosenModelName,
       },
     ]);
 
@@ -1427,7 +1473,7 @@ export function AssistantView({
                               prompt: promptSuggestion,
                               mode: "About PayGuardian",
                               modelId: activeModelId,
-                              modelName: "APInex GPT-6 Luna",
+                              modelName: "Gemini 3.8 Flash",
                               effort: "Medium",
                               autoMode: false,
                               attachedFiles: [],

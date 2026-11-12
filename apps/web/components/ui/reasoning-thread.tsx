@@ -18,8 +18,25 @@ export type ThreadStep = {
   detail?: string;
 };
 
+export function formatModelDisplayName(model?: string): string {
+  if (!model) return "Gemini 3.8 Flash";
+  const m = model.toLowerCase();
+  if (m.includes("hydrogen") || m === "gemini-4-hydrogen") return "Gemini 4 Hydrogen";
+  if (m.includes("3.8") || m === "gemini-3.8-flash") return "Gemini 3.8 Flash";
+  if (m.includes("3.6") || m === "gemini-3.6-flash") return "Gemini 3.6 Flash";
+  if (m.includes("3.1") || m.includes("gemini-3.1-pro")) return "Gemini 3.1 Pro";
+  if (m.includes("nemotron-3-ultra") || m.includes("nemotron-3-ultra-550b")) return "Nemotron 3 Ultra 550B";
+  if (m.includes("ernie-5.5") || m.includes("ernie")) return "ERNIE 5.5 Flash";
+  if (m.includes("nemotron-3.5") || m.includes("nemotron-3.5-super-vl")) return "Nemotron 3.5 Super VL";
+  if (m.includes("2.5-flash-lite") || m.includes("flash-lite")) return "Gemini 2.5 Flash-Lite";
+  if (m.includes("2.5-flash")) return "Gemini 2.5 Flash";
+  if (m.includes("2.5-pro")) return "Gemini 2.5 Pro";
+  if (!model.includes("/") && !model.includes(":")) return model;
+  return model.split("/").pop()?.replace(/:free$/, "") || model;
+}
+
 export type ThreadMessage =
-  | { id: string; role: "user"; text: string }
+  | { id: string; role: "user"; text: string; modelName?: string }
   | {
       id: string;
       role: "assistant";
@@ -31,6 +48,7 @@ export type ThreadMessage =
       /** The answer is still arriving: a caret follows the text. */
       streaming?: boolean;
       progressLabel?: string;
+      modelName?: string;
     };
 
 export type ReasoningThreadProps = {
@@ -330,7 +348,7 @@ export function ReasoningThread({
                   </div>
                 ) : null}
                 {message.text ? (
-                  <div className="flex h-7 min-h-[28px] items-center justify-start px-1 pt-1">
+                  <div className="flex h-7 min-h-[28px] items-center gap-2 justify-start px-1 pt-1">
                     {!message.streaming ? (
                       <button
                         type="button"
@@ -344,6 +362,15 @@ export function ReasoningThread({
                           <Copy className="size-4" />
                         )}
                       </button>
+                    ) : null}
+                    {!message.streaming ? (
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900/70 border border-zinc-800/70 text-[11px] font-medium text-zinc-400 select-none opacity-80 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity"
+                        title={`Responded with ${formatModelDisplayName(message.modelName || "Gemini 3.8 Flash")}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+                        <span>{formatModelDisplayName(message.modelName || "Gemini 3.8 Flash")}</span>
+                      </span>
                     ) : null}
                   </div>
                 ) : null}
