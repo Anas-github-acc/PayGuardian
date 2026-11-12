@@ -33,7 +33,10 @@ class GatewayClient:
         timeout: float = 10.0,
     ) -> None:
         self.base_url = (
-            base_url or os.getenv("GATEWAY_API_URL") or "http://localhost:3001"
+            base_url
+            or os.getenv("GATEWAY_API_URL")
+            or os.getenv("PAYGUARDIAN_API_URL")
+            or "http://localhost:3001"
         ).rstrip("/")
         self.auth_token = auth_token or os.getenv("GATEWAY_AUTH_TOKEN")
         self.local_user_id = local_user_id or os.getenv("GATEWAY_LOCAL_USER_ID", "local-user")

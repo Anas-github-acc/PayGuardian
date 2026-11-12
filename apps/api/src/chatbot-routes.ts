@@ -925,9 +925,19 @@ Financial facts, pending proposals, and authorization states are controlled by t
             p_budget_currency: budgetCurrency,
             p_message: messageText,
           }),
-        }).catch((err) => {
-          app.log.warn({ err }, "Failed to publish into PGMQ agent_task_queue");
-        });
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const errBody = await res.text();
+              app.log.warn(
+                { status: res.status, body: errBody },
+                "Failed to publish into PGMQ agent_task_queue",
+              );
+            }
+          })
+          .catch((err) => {
+            app.log.warn({ err }, "Failed to publish into PGMQ agent_task_queue");
+          });
       }
 
       // 6. Direct async fallback to local agent runtime if running

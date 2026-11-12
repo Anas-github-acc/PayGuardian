@@ -70,7 +70,10 @@ class PGMQAgentWorker:
             or ""
         )
         self.gateway_url = (
-            gateway_url or os.getenv("GATEWAY_API_URL") or "http://localhost:3001"
+            gateway_url
+            or os.getenv("GATEWAY_API_URL")
+            or os.getenv("PAYGUARDIAN_API_URL")
+            or "http://localhost:3001"
         ).rstrip("/")
         self.visibility_timeout = visibility_timeout
 
