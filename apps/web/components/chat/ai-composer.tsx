@@ -899,7 +899,7 @@ export function AIComposer({
                 onMouseMove={() => {
                   clearHideEffortTimeout();
                   isHoveringModelRowRef.current = true;
-                  if (hoveredModelId !== m.id && modelMenuPointerReady) {
+                  if (hoveredModelId !== m.id) {
                     setHoveredModelId(m.id);
                   }
                 }}
@@ -907,28 +907,39 @@ export function AIComposer({
                   isHoveringModelRowRef.current = false;
                   scheduleHideEffortSubmenu();
                 }}
-                className={`aic-model-item-row group ${
-                  isSelected ? "selected" : ""
-                } ${isHovered ? "hovered" : ""}`}
+                className={`aic-model-row ${isHovered ? "active-hover" : ""}`}
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="w-5 h-5 rounded-full bg-[#0d0d10] flex items-center justify-center flex-shrink-0 border border-white/10">
+                <div className="flex items-center gap-2 min-w-0 flex-1 pr-1">
+                  <span className="w-[26px] h-[26px] rounded-full bg-[#0c0c0f] flex items-center justify-center flex-shrink-0 border border-white/10">
                     <ProviderBadgeIcon provider={m.provider} />
                   </span>
-                  <span
-                    className="text-[14.5px] font-normal tracking-[-0.011em] truncate"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {m.name}
+                  <span className="text-[14.5px] truncate">
+                    <span
+                      className="font-medium"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {m.name}
+                    </span>
+                    <span
+                      className="font-normal ml-1"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {m.effort}
+                    </span>
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     type="button"
                     onClick={(e) => handleToggleFavStar(e, m.id)}
-                    aria-label={m.isFav ? "Remove from favourites" : "Add to favourites"}
-                    className={`aic-star-btn ${m.isFav ? "starred" : ""}`}
+                    className={`aic-fav-star-btn ${m.isFav ? "starred" : ""}`}
+                    title={
+                      m.isFav
+                        ? "Remove from favourites"
+                        : "Add to favourites"
+                    }
+                    aria-label={`Toggle favourite for ${m.name}`}
                   >
                     {m.isFav ? (
                       <svg
@@ -937,7 +948,7 @@ export function AIComposer({
                         viewBox="0 0 16 16"
                         fill="#FACC15"
                         stroke="#FACC15"
-                        strokeWidth="1.35"
+                        strokeWidth="1.2"
                         strokeLinejoin="round"
                       >
                         <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
@@ -956,8 +967,8 @@ export function AIComposer({
                       </svg>
                     )}
                   </button>
+                  {isSelected && <CheckmarkIcon />}
                 </div>
-                {isSelected && <CheckmarkIcon />}
               </div>
             );
           })
