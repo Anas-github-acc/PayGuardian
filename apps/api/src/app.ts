@@ -76,8 +76,8 @@ export function buildApp(
     !rawCors || rawCors === "*" || rawCors === "true"
       ? true
       : rawCors.includes(",")
-        ? rawCors.split(",").map((s) => s.trim())
-        : rawCors;
+        ? rawCors.split(",").map((s) => s.trim().replace(/\/+$/, ""))
+        : rawCors.trim().replace(/\/+$/, "");
   app.register(cors, { origin: corsOrigin, credentials: true });
 
   app.register(swagger, {
