@@ -169,7 +169,7 @@ export function AssistantView({
 
   // Context window modal
   const [contextWindowOpen, setContextWindowOpen] = React.useState(false);
-  const [activeModelId, setActiveModelId] = React.useState<string>("gemini-3.8-flash");
+  const [activeModelId, setActiveModelId] = React.useState<string>("gemini-4-hydrogen");
   const [assembledContext, setAssembledContext] = React.useState<{
     system_instruction?: string;
     system_prompt?: string;

@@ -220,14 +220,14 @@ export function buildApp(
           default: boolean;
         }> = [
           {
-            id: "gemini-3.8-flash",
-            label: "Gemini 3.8 Flash",
+            id: "gemini-4-hydrogen",
+            label: "Gemini 4 Hydrogen",
             provider: "Google Gemini",
             default: true,
           },
           {
-            id: "gemini-4-hydrogen",
-            label: "Gemini 4 Hydrogen",
+            id: "gemini-3.8-flash",
+            label: "Gemini 3.8 Flash",
             provider: "Google Gemini",
             default: false,
           },

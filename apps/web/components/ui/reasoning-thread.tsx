@@ -19,7 +19,7 @@ export type ThreadStep = {
 };
 
 export function formatModelDisplayName(model?: string): string {
-  if (!model) return "Gemini 3.8 Flash";
+  if (!model) return "Gemini 4 Hydrogen";
   const m = model.toLowerCase();
   if (m.includes("hydrogen") || m === "gemini-4-hydrogen") return "Gemini 4 Hydrogen";
   if (m.includes("3.8") || m === "gemini-3.8-flash") return "Gemini 3.8 Flash";
@@ -366,10 +366,10 @@ export function ReasoningThread({
                     {!message.streaming ? (
                       <span
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900/70 border border-zinc-800/70 text-[11px] font-medium text-zinc-400 select-none opacity-80 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity"
-                        title={`Responded with ${formatModelDisplayName(message.modelName || "Gemini 3.8 Flash")}`}
+                        title={`Responded with ${formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}`}
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                        <span>{formatModelDisplayName(message.modelName || "Gemini 3.8 Flash")}</span>
+                        <span>{formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}</span>
                       </span>
                     ) : null}
                   </div>

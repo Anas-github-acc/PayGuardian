@@ -74,17 +74,17 @@ const CONTEXT_OPTIONS: ContextTagOption[] = [
 
 const FALLBACK_MODELS: ModelOption[] = [
   {
-    id: "gemini-3.8-flash",
-    name: "Gemini 3.8 Flash",
-    effort: "Medium",
+    id: "gemini-4-hydrogen",
+    name: "Gemini 4 Hydrogen",
+    effort: "High",
     provider: "gemini",
     isFav: true,
     efforts: ALL_EFFORTS,
   },
   {
-    id: "gemini-4-hydrogen",
-    name: "Gemini 4 Hydrogen",
-    effort: "High",
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash",
+    effort: "Medium",
     provider: "gemini",
     isFav: true,
     efforts: ALL_EFFORTS,
@@ -342,9 +342,9 @@ export function AIComposer({
     if (globalCachedActiveModelId) return globalCachedActiveModelId;
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(LAST_ACTIVE_MODEL_STORAGE_KEY);
-      if (stored && !stored.startsWith("free/")) return stored;
+      if (stored && !stored.startsWith("free/") && stored !== "gemini-3.8-flash") return stored;
     }
-    return "gemini-3.8-flash";
+    return "gemini-4-hydrogen";
   });
 
   const selectModelId = useCallback((id: string) => {

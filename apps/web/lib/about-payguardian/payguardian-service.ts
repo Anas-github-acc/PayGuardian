@@ -98,7 +98,7 @@ export class AboutPayGuardianService {
    */
   public async *streamResponse(
     prompt: string,
-    modelId: string = "gemini-3.8-flash",
+    modelId: string = "gemini-4-hydrogen",
   ): AsyncGenerator<string, void, unknown> {
     const googleApiKey =
       process.env.GOOGLE_API_KEY ||
@@ -108,7 +108,7 @@ export class AboutPayGuardianService {
     const openrouterBaseUrl =
       process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
 
-    let targetModelId = typeof modelId === "string" && modelId.trim() ? modelId.trim() : "gemini-3.8-flash";
+    let targetModelId = typeof modelId === "string" && modelId.trim() ? modelId.trim() : "gemini-4-hydrogen";
     if (targetModelId === "gemini-3.1-pro") {
       targetModelId = "gemini-3.1-pro-preview";
     }
@@ -300,9 +300,9 @@ export class AboutPayGuardianService {
         }
       }
 
-      // Secondary fallback to Gemini (Gemini 3.8 Flash as default)
+      // Secondary fallback to Gemini (Gemini 4 Hydrogen as default)
       if (googleApiKey) {
-        const fallbackGemini = ["gemini-3.8-flash", "gemini-4-hydrogen", "gemini-3.6-flash"];
+        const fallbackGemini = ["gemini-4-hydrogen", "gemini-3.8-flash", "gemini-3.6-flash"];
         for (const candidate of fallbackGemini) {
           const geminiGen = tryStreamGemini(this, candidate);
           let result = await geminiGen.next();
@@ -331,8 +331,8 @@ export class AboutPayGuardianService {
           return;
         }
 
-        // If the primary requested Gemini model failed, try candidate alternatives with 3.8 Flash first:
-        const candidateFallbacks = ["gemini-3.8-flash", "gemini-4-hydrogen", "gemini-3.6-flash"].filter(
+        // If the primary requested Gemini model failed, try candidate alternatives with 4 Hydrogen first:
+        const candidateFallbacks = ["gemini-4-hydrogen", "gemini-3.8-flash", "gemini-3.6-flash"].filter(
           (m) => m !== targetModelId
         );
 

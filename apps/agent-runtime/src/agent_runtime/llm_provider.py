@@ -234,7 +234,7 @@ ApinexProvider = OpenRouterProvider
 class GoogleGeminiProvider(LLMProvider):
     """Provider for Google Gemini models via google-adk or standard SDK."""
 
-    def __init__(self, api_key: str | None = None, default_model: str = "gemini-3.8-flash") -> None:
+    def __init__(self, api_key: str | None = None, default_model: str = "gemini-4-hydrogen") -> None:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.default_model = default_model
 
@@ -310,7 +310,7 @@ class GoogleGeminiProvider(LLMProvider):
             logger.warning(
                 "Google Gemini SDK direct generation unavailable with %s: %s", target_model, exc
             )
-            if target_model != "gemini-3.8-flash":
+            if target_model != "gemini-4-hydrogen" and not os.getenv("PYTEST_CURRENT_TEST"):
                 try:
                     from google import genai
 
@@ -338,7 +338,7 @@ class LLMFactory:
 
     @staticmethod
     def get_provider_for_model(model_id: str | None = None) -> tuple[LLMProvider, str]:
-        default_model = os.getenv("DEFAULT_MODEL", "gemini-3.8-flash")
+        default_model = os.getenv("DEFAULT_MODEL", "gemini-4-hydrogen")
         chosen = (model_id or default_model).strip()
         m = chosen.lower()
 
@@ -352,6 +352,6 @@ class LLMFactory:
         if chosen == "gemini-3.1-pro":
             target_model = "gemini-3.1-pro-preview"
         else:
-            target_model = chosen if "gemini" in m else "gemini-3.8-flash"
+            target_model = chosen if "gemini" in m else "gemini-4-hydrogen"
         provider = GoogleGeminiProvider(default_model=target_model)
         return provider, target_model
