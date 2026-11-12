@@ -1688,7 +1688,7 @@ export function AssistantView({
           </div>
 
           {/* Composer always stays at the bottom */}
-          <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-3 sm:px-6 pb-3 sm:pb-6 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-2 sm:px-6 pb-2 sm:pb-6 pt-1 sm:pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <AIComposer
               disabled={isStreaming}
               isStreaming={isStreaming}

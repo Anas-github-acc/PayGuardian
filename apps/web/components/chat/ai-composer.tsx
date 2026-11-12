@@ -711,6 +711,261 @@ export function AIComposer({
 
   const isSubmitReady = promptText.trim().length > 0 || attachedFiles.length > 0;
 
+  const renderModelMenuContent = () => (
+    <>
+      {/* Collapsible Search Models Input at Top */}
+      <div
+        onMouseEnter={() => {
+          isHoveringModelRowRef.current = false;
+          setHoveredModelId(null);
+        }}
+        className={`aic-search-row-wrap ${
+          searchRevealed || searchQuery.length > 0 ? "revealed" : ""
+        }`}
+      >
+        <div className="flex items-center gap-2 px-2.5 h-8 rounded-lg">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 16 16"
+            fill="none"
+            className="flex-shrink-0"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            <circle
+              cx="7.2"
+              cy="7.2"
+              r="4.8"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M10.8 10.8L13.8 13.8"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search models"
+            autoComplete="off"
+            className="w-full bg-transparent border-none outline-none text-[14.5px] font-normal tracking-[-0.011em]"
+            style={{ color: "var(--text-primary)" }}
+          />
+        </div>
+      </div>
+
+      {/* Auto Toggle Row */}
+      <div
+        onMouseEnter={() => {
+          isHoveringModelRowRef.current = false;
+          setHoveredModelId(null);
+        }}
+        className="flex items-center justify-between px-2.5 h-9"
+      >
+        <span
+          className="text-[15px] font-medium tracking-[-0.011em]"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Auto
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoMode}
+          onClick={handleToggleAutoInMenu}
+          className={`aic-ios-switch ${autoMode ? "on" : ""}`}
+        >
+          <span className="aic-ios-switch-thumb" />
+        </button>
+      </div>
+
+      {/* Segmented Filter Bar Below Auto */}
+      <div
+        role="tablist"
+        aria-label="Filter models"
+        onMouseEnter={() => {
+          isHoveringModelRowRef.current = false;
+          setHoveredModelId(null);
+        }}
+        className="aic-model-filter-bar"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={modelFilterTab === "fav"}
+          onClick={(e) => {
+            e.stopPropagation();
+            setModelFilterTab("fav");
+            setHoveredModelId(null);
+          }}
+          className={`aic-model-filter-pill ${
+            modelFilterTab === "fav" ? "active" : ""
+          }`}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 16 16"
+            fill={modelFilterTab === "fav" ? "#FACC15" : "none"}
+            stroke={modelFilterTab === "fav" ? "#FACC15" : "currentColor"}
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+            className="flex-shrink-0"
+          >
+            <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
+          </svg>
+          <span>fav</span>
+          {favCount > 0 && (
+            <span
+              className="text-[11.5px] font-normal opacity-75"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {favCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={modelFilterTab === "all"}
+          onClick={(e) => {
+            e.stopPropagation();
+            setModelFilterTab("all");
+            setHoveredModelId(null);
+          }}
+          className={`aic-model-filter-pill ${
+            modelFilterTab === "all" ? "active" : ""
+          }`}
+        >
+          <span>all</span>
+          <span
+            className="text-[11.5px] font-normal opacity-70"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {models.length}
+          </span>
+        </button>
+      </div>
+
+      {/* Models List */}
+      <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto no-scrollbar">
+        {visibleModels.length === 0 ? (
+          <div
+            className="px-3 py-3 text-center text-[13px] tracking-[-0.01em]"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {modelFilterTab === "fav" ? (
+              <>
+                No favourite models yet. Switch to{" "}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModelFilterTab("all");
+                  }}
+                  className="underline font-medium"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  all
+                </button>{" "}
+                and press ★ to add.
+              </>
+            ) : (
+              "No matching models"
+            )}
+          </div>
+        ) : (
+          visibleModels.map((m) => {
+            const isSelected = !autoMode && m.id === activeModelId;
+            const isHovered =
+              m.id === hoveredModelId && searchQuery.trim().length === 0;
+            return (
+              <div
+                key={m.id}
+                onClick={(e) => handleSelectModel(e, m.id)}
+                onMouseEnter={() => {
+                  clearHideEffortTimeout();
+                  isHoveringModelRowRef.current = true;
+                  if (modelMenuPointerReady) {
+                    setHoveredModelId(m.id);
+                  }
+                }}
+                onMouseMove={() => {
+                  clearHideEffortTimeout();
+                  isHoveringModelRowRef.current = true;
+                  if (hoveredModelId !== m.id && modelMenuPointerReady) {
+                    setHoveredModelId(m.id);
+                  }
+                }}
+                onMouseLeave={() => {
+                  isHoveringModelRowRef.current = false;
+                  scheduleHideEffortSubmenu();
+                }}
+                className={`aic-model-item-row group ${
+                  isSelected ? "selected" : ""
+                } ${isHovered ? "hovered" : ""}`}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="w-5 h-5 rounded-full bg-[#0d0d10] flex items-center justify-center flex-shrink-0 border border-white/10">
+                    <ProviderBadgeIcon provider={m.provider} />
+                  </span>
+                  <span
+                    className="text-[14.5px] font-normal tracking-[-0.011em] truncate"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {m.name}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleFavStar(e, m.id)}
+                    aria-label={m.isFav ? "Remove from favourites" : "Add to favourites"}
+                    className={`aic-star-btn ${m.isFav ? "starred" : ""}`}
+                  >
+                    {m.isFav ? (
+                      <svg
+                        width="13.5"
+                        height="13.5"
+                        viewBox="0 0 16 16"
+                        fill="#FACC15"
+                        stroke="#FACC15"
+                        strokeWidth="1.35"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="13.5"
+                        height="13.5"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.35"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {isSelected && <CheckmarkIcon />}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div
       data-theme={theme}
@@ -877,11 +1132,18 @@ export function AIComposer({
           width: 100%;
           overflow: visible;
           background: var(--card-bg);
-          border-radius: 24px;
+          border-radius: 20px;
           border: 1px solid var(--card-border);
           box-shadow: var(--card-shadow);
-          padding: 20px 18px 16px 18px;
+          padding: 11px 12px 10px 12px;
           transition: background-color 0.25s ease, border-color 0.2s ease, box-shadow 0.25s ease;
+        }
+
+        @media (min-width: 640px) {
+          .aic-composer-card {
+            border-radius: 24px;
+            padding: 20px 18px 16px 18px;
+          }
         }
 
         .aic-composer-card:focus-within {
@@ -896,16 +1158,26 @@ export function AIComposer({
           resize: none;
           color: var(--text-primary);
           font-family: inherit;
-          font-size: 16px;
-          line-height: 1.5;
+          font-size: 15px;
+          line-height: 1.45;
           font-weight: 400;
           letter-spacing: -0.011em;
-          min-height: 28px;
-          max-height: 180px;
+          min-height: 26px;
+          max-height: 160px;
           padding: 0 2px;
-          margin-bottom: 18px;
+          margin-bottom: 8px;
           user-select: text;
           transition: color 0.2s ease;
+        }
+
+        @media (min-width: 640px) {
+          .aic-prompt-input {
+            font-size: 16px;
+            line-height: 1.5;
+            min-height: 28px;
+            max-height: 180px;
+            margin-bottom: 18px;
+          }
         }
 
         .aic-prompt-input::placeholder {
@@ -914,7 +1186,7 @@ export function AIComposer({
         }
 
         .aic-pill-control {
-          height: 38px;
+          height: 34px;
           border-radius: 9999px;
           background: var(--pill-bg);
           border: 1px solid var(--pill-border);
@@ -932,6 +1204,12 @@ export function AIComposer({
             border-color 0.18s ease,
             color 0.18s ease,
             transform 0.12s ease;
+        }
+
+        @media (min-width: 640px) {
+          .aic-pill-control {
+            height: 38px;
+          }
         }
 
         .aic-pill-control:hover {
@@ -975,16 +1253,48 @@ export function AIComposer({
         }
 
         .aic-mode-btn {
-          padding: 0 13px 0 15px;
-          gap: 7px;
-          font-size: 15px;
+          padding: 0 11px 0 13px;
+          gap: 6px;
+          font-size: 14px;
           font-weight: 500;
           letter-spacing: -0.011em;
           flex-shrink: 0;
         }
 
+        @media (min-width: 640px) {
+          .aic-mode-btn {
+            padding: 0 13px 0 15px;
+            gap: 7px;
+            font-size: 15px;
+          }
+        }
+
         .aic-mode-btn.menu-open .mode-btn-text {
           color: var(--text-muted);
+        }
+
+        .aic-model-trigger-mobile {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 2px 7px 2px 5px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: var(--text-primary);
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: -0.01em;
+          cursor: pointer;
+          max-width: 100%;
+          transition: background-color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .aic-model-trigger-mobile:hover,
+        .aic-model-trigger-mobile.menu-open {
+          background: rgba(255, 255, 255, 0.09);
+          border-color: rgba(255, 255, 255, 0.14);
         }
 
         .aic-model-trigger-btn {
@@ -1060,16 +1370,33 @@ export function AIComposer({
         }
 
         .aic-record-btn {
-          width: 38px;
-          padding: 0 10px;
+          width: 34px;
+          height: 34px;
+          padding: 0 9px;
           justify-content: flex-start;
           flex-shrink: 0;
         }
 
+        @media (min-width: 640px) {
+          .aic-record-btn {
+            width: 38px;
+            height: 38px;
+            padding: 0 10px;
+          }
+        }
+
         .aic-record-btn:hover,
         .aic-record-btn.recording {
-          width: 105px;
-          padding: 0 14px 0 11px;
+          width: 95px;
+          padding: 0 12px 0 9px;
+        }
+
+        @media (min-width: 640px) {
+          .aic-record-btn:hover,
+          .aic-record-btn.recording {
+            width: 105px;
+            padding: 0 14px 0 11px;
+          }
         }
 
         .aic-record-btn.recording {
@@ -1082,14 +1409,21 @@ export function AIComposer({
           opacity: 0;
           transform: translateX(6px);
           white-space: nowrap;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 500;
           letter-spacing: -0.011em;
-          margin-left: 7px;
+          margin-left: 6px;
           transition:
             opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
             transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
           pointer-events: none;
+        }
+
+        @media (min-width: 640px) {
+          .aic-record-label {
+            font-size: 15px;
+            margin-left: 7px;
+          }
         }
 
         .aic-record-btn:hover .aic-record-label,
@@ -1099,8 +1433,8 @@ export function AIComposer({
         }
 
         .aic-submit-btn {
-          width: 38px;
-          height: 38px;
+          width: 34px;
+          height: 34px;
           border-radius: 9999px;
           background: var(--submit-bg);
           border: 1px solid var(--submit-border);
@@ -1111,6 +1445,13 @@ export function AIComposer({
           cursor: pointer;
           flex-shrink: 0;
           transition: all 0.18s ease;
+        }
+
+        @media (min-width: 640px) {
+          .aic-submit-btn {
+            width: 38px;
+            height: 38px;
+          }
         }
 
         .aic-submit-btn:hover,
@@ -1423,6 +1764,49 @@ export function AIComposer({
 
         {/* Primary Composer Card */}
         <section className="aic-composer-card">
+          {/* Mobile Top Row: Model Selection at Top Left (Model Name Only) */}
+          <div className="flex sm:hidden items-center justify-between mb-1.5 relative overflow-visible">
+            <div className="relative inline-flex items-center overflow-visible">
+              <button
+                type="button"
+                onClick={handleOpenModelMenu}
+                className={`aic-model-trigger-mobile ${modelMenuOpen ? "menu-open" : ""}`}
+                aria-haspopup="true"
+                aria-expanded={modelMenuOpen}
+              >
+                <span className="truncate max-w-[200px]" style={{ color: "var(--text-primary)" }}>
+                  {autoMode ? "Auto" : activeModel.name}
+                </span>
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="mt-0.5 flex-shrink-0"
+                  style={{ color: "var(--chevron-color)" }}
+                >
+                  <path
+                    d="M4 6L8 10L12 6"
+                    stroke="currentColor"
+                    strokeWidth="1.65"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              {/* Mobile Model Selector Popover */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`aic-glass-popover ${
+                  modelMenuOpen ? "aic-popover-visible" : "aic-popover-hidden"
+                } sm:hidden absolute left-0 bottom-[calc(100%+8px)] w-[min(280px,calc(100vw-32px))] rounded-[20px] p-2 z-50 shadow-2xl`}
+              >
+                {renderModelMenuContent()}
+              </div>
+            </div>
+          </div>
+
           {/* @ Context Mention Popover */}
           <div
             className={`aic-glass-popover ${
@@ -1476,11 +1860,11 @@ export function AIComposer({
           <div className="flex items-center justify-between gap-2 relative overflow-visible">
             {/* Left Controls Group */}
             <div className="flex items-center gap-2 sm:gap-2.5 overflow-visible">
-              {/* 1. "+ Add files" Expanding Button */}
+              {/* 1. "+ Add files" Expanding Button (hidden on mobile) */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="aic-pill-control aic-add-files-btn"
+                className="aic-pill-control aic-add-files-btn hidden sm:inline-flex"
                 aria-label="Add files"
               >
                 <svg
@@ -1517,7 +1901,12 @@ export function AIComposer({
                   aria-haspopup="true"
                   aria-expanded={modeMenuOpen}
                 >
-                  <span className="mode-btn-text transition-colors">{mode}</span>
+                  <span className="mode-btn-text transition-colors">
+                    <span className="inline sm:hidden">
+                      {mode === "About PayGuardian" ? "About" : mode}
+                    </span>
+                    <span className="hidden sm:inline">{mode}</span>
+                  </span>
                   <svg
                     width="13"
                     height="13"
@@ -1565,7 +1954,10 @@ export function AIComposer({
                           className="aic-mode-menu-item"
                         >
                           <span className="flex items-center gap-1.5">
-                            <span>{modeOption}</span>
+                            <span className="inline sm:hidden">
+                              {modeOption === "About PayGuardian" ? "About" : modeOption}
+                            </span>
+                            <span className="hidden sm:inline">{modeOption}</span>
                             {requiresAuth && (
                               <Lock className="h-3 w-3 text-zinc-500 shrink-0" />
                             )}
@@ -1579,7 +1971,7 @@ export function AIComposer({
               </div>
 
               {/* 3. Model & Effort Selector */}
-              <div className="relative inline-flex items-center overflow-visible">
+              <div className="relative hidden sm:inline-flex items-center overflow-visible">
                 {!autoMode ? (
                   <button
                     type="button"
@@ -1672,267 +2064,7 @@ export function AIComposer({
                     modelMenuOpen ? "aic-popover-visible" : "aic-popover-hidden"
                   } absolute left-0 bottom-[calc(100%+10px)] w-[270px] rounded-[20px] p-2 z-50 shadow-2xl`}
                 >
-                  {/* Collapsible Search Models Input at Top */}
-                  <div
-                    onMouseEnter={() => {
-                      isHoveringModelRowRef.current = false;
-                      setHoveredModelId(null);
-                    }}
-                    className={`aic-search-row-wrap ${
-                      searchRevealed || searchQuery.length > 0 ? "revealed" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 px-2.5 h-8 rounded-lg">
-                      <svg
-                        width="15"
-                        height="15"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        className="flex-shrink-0"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        <circle
-                          cx="7.2"
-                          cy="7.2"
-                          r="4.8"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        />
-                        <path
-                          d="M10.8 10.8L13.8 13.8"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <input
-                        ref={searchInputRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search models"
-                        autoComplete="off"
-                        className="w-full bg-transparent border-none outline-none text-[14.5px] font-normal tracking-[-0.011em]"
-                        style={{ color: "var(--text-primary)" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Auto Toggle Row */}
-                  <div
-                    onMouseEnter={() => {
-                      isHoveringModelRowRef.current = false;
-                      setHoveredModelId(null);
-                    }}
-                    className="flex items-center justify-between px-2.5 h-9"
-                  >
-                    <span
-                      className="text-[15px] font-medium tracking-[-0.011em]"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      Auto
-                    </span>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={autoMode}
-                      onClick={handleToggleAutoInMenu}
-                      className={`aic-ios-switch ${autoMode ? "on" : ""}`}
-                    >
-                      <span className="aic-ios-switch-thumb" />
-                    </button>
-                  </div>
-
-                  {/* Segmented Filter Bar Below Auto */}
-                  <div
-                    role="tablist"
-                    aria-label="Filter models"
-                    onMouseEnter={() => {
-                      isHoveringModelRowRef.current = false;
-                      setHoveredModelId(null);
-                    }}
-                    className="aic-model-filter-bar"
-                  >
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={modelFilterTab === "fav"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setModelFilterTab("fav");
-                        setHoveredModelId(null);
-                      }}
-                      className={`aic-model-filter-pill ${
-                        modelFilterTab === "fav" ? "active" : ""
-                      }`}
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 16 16"
-                        fill={modelFilterTab === "fav" ? "#FACC15" : "none"}
-                        stroke={modelFilterTab === "fav" ? "#FACC15" : "currentColor"}
-                        strokeWidth="1.4"
-                        strokeLinejoin="round"
-                        className="flex-shrink-0"
-                      >
-                        <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
-                      </svg>
-                      <span>fav</span>
-                      {favCount > 0 && (
-                        <span
-                          className="text-[11.5px] font-normal opacity-75"
-                          style={{ color: "var(--text-secondary)" }}
-                        >
-                          {favCount}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={modelFilterTab === "all"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setModelFilterTab("all");
-                        setHoveredModelId(null);
-                      }}
-                      className={`aic-model-filter-pill ${
-                        modelFilterTab === "all" ? "active" : ""
-                      }`}
-                    >
-                      <span>all</span>
-                      <span
-                        className="text-[11.5px] font-normal opacity-70"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {models.length}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Models List */}
-                  <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto no-scrollbar">
-                    {visibleModels.length === 0 ? (
-                      <div
-                        className="px-3 py-3 text-center text-[13px] tracking-[-0.01em]"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {modelFilterTab === "fav" ? (
-                          <>
-                            No favourite models yet. Switch to{" "}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setModelFilterTab("all");
-                              }}
-                              className="underline font-medium"
-                              style={{ color: "var(--text-primary)" }}
-                            >
-                              all
-                            </button>{" "}
-                            and press ★ to add.
-                          </>
-                        ) : (
-                          "No matching models"
-                        )}
-                      </div>
-                    ) : (
-                      visibleModels.map((m) => {
-                        const isSelected = !autoMode && m.id === activeModelId;
-                        const isHovered =
-                          m.id === hoveredModelId && searchQuery.trim().length === 0;
-                        return (
-                          <div
-                            key={m.id}
-                            onClick={(e) => handleSelectModel(e, m.id)}
-                            onMouseEnter={() => {
-                              clearHideEffortTimeout();
-                              isHoveringModelRowRef.current = true;
-                              if (modelMenuPointerReady) {
-                                setHoveredModelId(m.id);
-                              }
-                            }}
-                            onMouseMove={() => {
-                              clearHideEffortTimeout();
-                              isHoveringModelRowRef.current = true;
-                              if (!modelMenuPointerReady) {
-                                setModelMenuPointerReady(true);
-                              }
-                              if (hoveredModelId !== m.id) {
-                                setHoveredModelId(m.id);
-                              }
-                            }}
-                            onMouseLeave={() => {
-                              isHoveringModelRowRef.current = false;
-                              scheduleHideEffortSubmenu();
-                            }}
-                            className={`aic-model-row ${isHovered ? "active-hover" : ""}`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 pr-1">
-                              <span className="w-[26px] h-[26px] rounded-full bg-[#0c0c0f] flex items-center justify-center flex-shrink-0 border border-white/10">
-                                <ProviderBadgeIcon provider={m.provider} />
-                              </span>
-                              <span className="text-[14.5px] truncate">
-                                <span
-                                  className="font-medium"
-                                  style={{ color: "var(--text-primary)" }}
-                                >
-                                  {m.name}
-                                </span>
-                                <span
-                                  className="font-normal ml-1"
-                                  style={{ color: "var(--text-secondary)" }}
-                                >
-                                  {m.effort}
-                                </span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => handleToggleFavStar(e, m.id)}
-                                className={`aic-fav-star-btn ${m.isFav ? "starred" : ""}`}
-                                title={
-                                  m.isFav
-                                    ? "Remove from favourites"
-                                    : "Add to favourites"
-                                }
-                                aria-label={`Toggle favourite for ${m.name}`}
-                              >
-                                {m.isFav ? (
-                                  <svg
-                                    width="13.5"
-                                    height="13.5"
-                                    viewBox="0 0 16 16"
-                                    fill="#FACC15"
-                                    stroke="#FACC15"
-                                    strokeWidth="1.2"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    width="13.5"
-                                    height="13.5"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.35"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M8 1.6L9.95 5.55L14.3 6.18L11.15 9.25L11.89 13.58L8 11.53L4.11 13.58L4.85 9.25L1.7 6.18L6.05 5.55L8 1.6Z" />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                            {isSelected && <CheckmarkIcon />}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                  {renderModelMenuContent()}
                 </div>
 
                 {/* Floating Effort Submenu */}
@@ -1951,7 +2083,7 @@ export function AIComposer({
                   }}
                   className={`aic-glass-popover aic-effort-submenu-bridge ${
                     isEffortMenuVisible ? "aic-popover-visible" : "aic-popover-hidden"
-                  } absolute left-[280px] w-[148px] rounded-[18px] p-2 z-50 shadow-2xl`}
+                  } hidden sm:block absolute left-[280px] w-[148px] rounded-[18px] p-2 z-50 shadow-2xl`}
                 >
                   <div
                     className="px-2.5 py-1.5 text-[14.5px] font-medium tracking-[-0.011em]"
