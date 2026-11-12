@@ -12,6 +12,7 @@ type AuthContextValue = {
   user: User | null;
   signIn(email: string, password: string): Promise<void>;
   signUp(email: string, password: string): Promise<{ confirmationRequired: boolean }>;
+  signInWithGoogle(): Promise<void>;
   signOut(): Promise<void>;
 };
 
@@ -77,6 +78,21 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         return { confirmationRequired: !data.session };
+      },
+      async signInWithGoogle() {
+        if (!supabase) throw new Error("Supabase Auth is not configured.");
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+            },
+          },
+        });
+        if (error) throw error;
       },
       async signOut() {
         if (!supabase) return;
