@@ -2,16 +2,17 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { AlertCircle, CheckCircle2, DollarSign, KeyRound, Loader2, ShieldCheck } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  DollarSign,
+  KeyRound,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export type OAuthConsentDecision = "approve" | "deny";
 
@@ -31,8 +32,7 @@ export interface OAuthConsentCardProps extends React.ComponentPropsWithoutRef<"d
   onDeny?: () => void;
 }
 
-const getInitial = (value: string) =>
-  value.trim().charAt(0).toUpperCase() || "?";
+const getInitial = (value: string) => value.trim().charAt(0).toUpperCase() || "?";
 
 function formatMoney(amountMinor?: number, currency = "USD") {
   if (amountMinor === undefined) return null;
@@ -95,8 +95,8 @@ function ConsentCardShell({
               Action Approval Required
             </CardTitle>
             <CardDescription className="text-xs">
-              <span className="font-medium text-foreground">{clientName}</span> is requesting authorization via{" "}
-              <span className="font-medium text-foreground">{productName}</span>.
+              <span className="font-medium text-foreground">{clientName}</span> is requesting
+              authorization via <span className="font-medium text-foreground">{productName}</span>.
             </CardDescription>
           </div>
         </CardHeader>
@@ -205,7 +205,10 @@ export function OAuthConsentCard({
       </p>
 
       {error && (
-        <div role="alert" className="flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive"
+        >
           <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>

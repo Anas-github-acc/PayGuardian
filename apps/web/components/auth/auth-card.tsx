@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import {
-  Fingerprint,
-  Terminal,
-  Shield,
-  ArrowRight,
-} from "lucide-react";
+import { Fingerprint, Terminal, Shield, ArrowRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../app/auth-provider";
 import { workspaceStore } from "../../app/lib/workspace-store";
@@ -105,7 +100,7 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
         setMessage(
           res.confirmationRequired
             ? "Confirmation email sent. Please verify your email."
-            : "Account created successfully. Redirecting…"
+            : "Account created successfully. Redirecting…",
         );
         if (!res.confirmationRequired) {
           await routePostAuth();
@@ -123,7 +118,7 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
       <Card
         className={cn(
           "w-full max-w-md mx-auto border border-border bg-card p-6 text-foreground shadow-2xl top-shade",
-          className
+          className,
         )}
       >
         <CardHeader className="p-0 pb-5 text-center">

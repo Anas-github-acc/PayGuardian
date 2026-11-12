@@ -3,8 +3,10 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
 
-export interface SwitchProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange"> {
+export interface SwitchProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "onChange"
+> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }
@@ -21,10 +23,8 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onClick={() => onCheckedChange?.(!checked)}
         className={cn(
           "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-          checked
-            ? "bg-primary"
-            : "bg-neutral-800 border border-neutral-700",
-          className
+          checked ? "bg-primary" : "bg-neutral-800 border border-neutral-700",
+          className,
         )}
         {...props}
       >
@@ -33,11 +33,11 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
             "pointer-events-none block size-5 rounded-full shadow-lg ring-0 transition-transform",
             checked
               ? "translate-x-5 bg-background"
-              : "translate-x-0 bg-neutral-300 dark:bg-neutral-200"
+              : "translate-x-0 bg-neutral-300 dark:bg-neutral-200",
           )}
         />
       </button>
     );
-  }
+  },
 );
 Switch.displayName = "Switch";

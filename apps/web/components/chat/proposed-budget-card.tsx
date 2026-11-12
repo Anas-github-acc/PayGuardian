@@ -111,7 +111,7 @@ export function ProposedBudgetCard({
         transition={{ type: "spring", stiffness: 400, damping: 28 }}
         className={cn(
           "w-full max-w-[340px] rounded-xl border border-primary/30 bg-zinc-900/95 backdrop-blur-md shadow-xl shadow-black/50 p-3.5 flex flex-col gap-2.5 transition-all duration-200 hover:border-primary/50",
-          className
+          className,
         )}
       >
         <div className="flex items-center justify-between gap-2">
@@ -273,7 +273,13 @@ export function ProposedBudgetCard({
             {/* Revenue Trend / Buffer Badge */}
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="success" appearance="light" className="gap-1.5 font-mono">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="inline-block">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  className="inline-block"
+                >
                   <path
                     d="M3 5.5L7 9.5L11 5.5"
                     stroke="currentColor"
@@ -297,7 +303,9 @@ export function ProposedBudgetCard({
             </div>
             {allocations.map((item) => {
               const isChild = item.isChild || Boolean(item.parentAgent);
-              const itemMinor = Math.round(Number(item.requestedMandateMinor ?? item.quotedCostMinor) || 0);
+              const itemMinor = Math.round(
+                Number(item.requestedMandateMinor ?? item.quotedCostMinor) || 0,
+              );
               return (
                 <div
                   key={item.agent}
@@ -321,9 +329,7 @@ export function ProposedBudgetCard({
                     <span className="text-sm sm:text-base font-semibold font-mono text-foreground">
                       {formatMinorUnits(itemMinor, currency)}
                     </span>
-                    <div className="text-[10px] text-emerald-400 font-mono">
-                      child mandate
-                    </div>
+                    <div className="text-[10px] text-emerald-400 font-mono">child mandate</div>
                   </div>
                 </div>
               );
@@ -345,7 +351,9 @@ export function ProposedBudgetCard({
           <div className="flex items-start gap-2 rounded-xl bg-muted/30 p-3 text-xs text-muted-foreground border border-border/50">
             <Info className="size-4 text-primary shrink-0 mt-0.5" />
             <span>
-              <strong className="text-foreground">Security Guarantee:</strong> Child mandates remain unissued until you approve. Specialist agents cannot draw funds without signed cryptographic authority.
+              <strong className="text-foreground">Security Guarantee:</strong> Child mandates remain
+              unissued until you approve. Specialist agents cannot draw funds without signed
+              cryptographic authority.
             </span>
           </div>
 

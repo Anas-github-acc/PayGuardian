@@ -50,7 +50,9 @@ export function PaymentApprovalOverlay({
   const isRealPayPalUrl = (url?: string | null): boolean => {
     if (!url) return false;
     if (url.includes("ORDER-") || url.includes("simulated")) return false;
-    return url.startsWith("https://www.sandbox.paypal.com") || url.startsWith("https://www.paypal.com");
+    return (
+      url.startsWith("https://www.sandbox.paypal.com") || url.startsWith("https://www.paypal.com")
+    );
   };
 
   const effectiveApprovalUrl = isRealPayPalUrl(approvalUrl) ? approvalUrl : null;

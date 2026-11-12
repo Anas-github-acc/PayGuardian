@@ -113,7 +113,8 @@ export function ConnectionTester({
             MCP gateway endpoint
           </CardTitle>
           <CardDescription>
-            Point agents and IDEs at this Model Context Protocol endpoint, then run the checks below.
+            Point agents and IDEs at this Model Context Protocol endpoint, then run the checks
+            below.
           </CardDescription>
         </div>
 
@@ -123,13 +124,13 @@ export function ConnectionTester({
             <span
               className={cn(
                 "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
-                probe.ok ? "bg-success" : "bg-warning"
+                probe.ok ? "bg-success" : "bg-warning",
               )}
             />
             <span
               className={cn(
                 "relative inline-flex h-2 w-2 rounded-full",
-                probe.ok ? "bg-success" : "bg-warning"
+                probe.ok ? "bg-success" : "bg-warning",
               )}
             />
           </span>
@@ -139,7 +140,7 @@ export function ConnectionTester({
               <span
                 className={cn(
                   "rounded px-1 py-[0.05rem] font-mono text-[9px] font-bold",
-                  probe.ok ? "bg-success/15 text-success" : "bg-warning/15 text-warning"
+                  probe.ok ? "bg-success/15 text-success" : "bg-warning/15 text-warning",
                 )}
               >
                 {probe.latencyMs}ms
@@ -211,9 +212,7 @@ export function ConnectionTester({
                 key={step.id}
                 className={cn(
                   "flex items-center gap-3 rounded-md border p-3",
-                  isFailed
-                    ? "border-destructive/30 bg-destructive/10"
-                    : "border-border bg-card"
+                  isFailed ? "border-destructive/30 bg-destructive/10" : "border-border bg-card",
                 )}
               >
                 <span
@@ -222,7 +221,10 @@ export function ConnectionTester({
                     isRunning && "border-warning/30 bg-warning/10 text-warning",
                     isFailed && "border-destructive/30 bg-destructive/10 text-destructive",
                     isPassed && "border-success/30 bg-success/10 text-success",
-                    !isRunning && !isFailed && !isPassed && "border-border bg-secondary text-muted-foreground"
+                    !isRunning &&
+                      !isFailed &&
+                      !isPassed &&
+                      "border-border bg-secondary text-muted-foreground",
                   )}
                   aria-hidden
                 >
@@ -239,7 +241,9 @@ export function ConnectionTester({
 
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-foreground">{step.title}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{step.subtitle}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    {step.subtitle}
+                  </p>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
@@ -248,7 +252,7 @@ export function ConnectionTester({
                       "font-mono text-[11px]",
                       isRunning && "text-warning",
                       isFailed && "text-destructive",
-                      isPassed && "text-muted-foreground"
+                      isPassed && "text-muted-foreground",
                     )}
                   >
                     {isRunning ? "Checking…" : isFailed ? step.failLabel : step.passLabel}
@@ -292,7 +296,10 @@ export function ConnectionTester({
           {showToolsList && (
             <div className="mt-3 grid grid-cols-1 gap-2.5 animate-in fade-in-0 duration-150 lg:grid-cols-2">
               {DEFAULT_MCP_TOOLS.map((tool) => (
-                <div key={tool.name} className="rounded-md border border-border bg-card p-3 text-xs">
+                <div
+                  key={tool.name}
+                  className="rounded-md border border-border bg-card p-3 text-xs"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate font-mono text-xs font-semibold text-success">
                       {tool.name}

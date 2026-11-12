@@ -39,7 +39,7 @@ export function KpiStrip({
       : 0;
   const availablePercent = Math.max(
     0,
-    Math.round((100 - spentPercent - reservedPercent) * 10) / 10
+    Math.round((100 - spentPercent - reservedPercent) * 10) / 10,
   );
 
   return (
@@ -67,9 +67,7 @@ export function KpiStrip({
           <div className="text-2xl font-bold tracking-tight text-zinc-100 tabular-nums">
             {formatMinorUnits(spentMinor, currency)}
           </div>
-          <p className="mt-1 text-xs text-zinc-400">
-            {spentPercent}% utilized
-          </p>
+          <p className="mt-1 text-xs text-zinc-400">{spentPercent}% utilized</p>
         </div>
       </div>
 
@@ -80,9 +78,7 @@ export function KpiStrip({
           <div className="text-2xl font-bold tracking-tight text-orange-400 tabular-nums">
             {formatMinorUnits(reservedMinor, currency)}
           </div>
-          <p className="mt-1 text-xs text-zinc-400">
-            {reservedPercent}% on hold
-          </p>
+          <p className="mt-1 text-xs text-zinc-400">{reservedPercent}% on hold</p>
         </div>
       </div>
 
@@ -93,9 +89,7 @@ export function KpiStrip({
           <div className="text-2xl font-bold tracking-tight text-white tabular-nums">
             {formatMinorUnits(availableMinor, currency)}
           </div>
-          <p className="mt-1 text-xs text-zinc-400">
-            {availablePercent}% remaining
-          </p>
+          <p className="mt-1 text-xs text-zinc-400">{availablePercent}% remaining</p>
         </div>
       </div>
     </section>

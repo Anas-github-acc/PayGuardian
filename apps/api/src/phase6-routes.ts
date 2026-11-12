@@ -38,9 +38,10 @@ async function environmentFor(
   const owner = await principal(request, reply, resolvePrincipal);
   if (!owner) return null;
   if (owner.kind !== "user") {
-    await reply
-      .code(403)
-      .send({ code: "USER_AUTHORITY_REQUIRED", message: "This operation requires user authority." });
+    await reply.code(403).send({
+      code: "USER_AUTHORITY_REQUIRED",
+      message: "This operation requires user authority.",
+    });
     return null;
   }
   const environment = await registry.getEnvironment(owner.userId, environmentId);

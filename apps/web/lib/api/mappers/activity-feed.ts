@@ -30,11 +30,7 @@ export function mapAuditEventToFeedItem(
 
   const isSimulation = event.eventType.toLowerCase().includes("simulation");
   const outcome: "success" | "denied" | "pending" =
-    event.outcome === "success"
-      ? "success"
-      : event.outcome === "denied"
-      ? "denied"
-      : "pending";
+    event.outcome === "success" ? "success" : event.outcome === "denied" ? "denied" : "pending";
 
   let action = event.eventType.replace(/_/g, " ");
   if (typeof payload?.purpose === "string" && payload.purpose.trim() !== "") {

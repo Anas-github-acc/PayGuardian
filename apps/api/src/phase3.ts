@@ -65,11 +65,22 @@ export type LedgerStore = {
   capture(environmentId: string, actionId: string): Promise<Reservation>;
   release(environmentId: string, actionId: string, reason: string): Promise<Reservation>;
   getReservation(environmentId: string, actionId: string): Promise<Reservation | null>;
-  verifyAccountIntegrity(environmentId: string, accountId: string): Promise<IntegrityVerificationResult>;
+  verifyAccountIntegrity(
+    environmentId: string,
+    accountId: string,
+  ): Promise<IntegrityVerificationResult>;
   verifyEnvironmentIntegrity(environmentId: string): Promise<IntegrityVerificationResult>;
   getTransitions(environmentId: string, accountId: string): Promise<LedgerTransition[]>;
-  tamperAccount?(environmentId: string, accountId: string, mutator: (acc: LedgerAccount) => void): Promise<void>;
-  linkMandateVersion?(environmentId: string, newMandateId: string, existingMandateOrSeriesId: string): void;
+  tamperAccount?(
+    environmentId: string,
+    accountId: string,
+    mutator: (acc: LedgerAccount) => void,
+  ): Promise<void>;
+  linkMandateVersion?(
+    environmentId: string,
+    newMandateId: string,
+    existingMandateOrSeriesId: string,
+  ): void;
 };
 
 function validateAmount(amountMinor: number): void {
@@ -112,13 +123,20 @@ export class InMemoryLedgerStore implements LedgerStore {
     }
   }
 
-  async getAccountByMandate(environmentId: string, mandateId: string): Promise<LedgerAccount | null> {
+  async getAccountByMandate(
+    environmentId: string,
+    mandateId: string,
+  ): Promise<LedgerAccount | null> {
     const accountId = this.mandateAccounts.get(`${environmentId}:${mandateId}`);
     if (!accountId) return null;
     return this.getAccount(environmentId, accountId);
   }
 
-  linkMandateVersion(environmentId: string, newMandateId: string, existingMandateOrSeriesId: string): void {
+  linkMandateVersion(
+    environmentId: string,
+    newMandateId: string,
+    existingMandateOrSeriesId: string,
+  ): void {
     const accountId = this.mandateAccounts.get(`${environmentId}:${existingMandateOrSeriesId}`);
     if (accountId) {
       this.mandateAccounts.set(`${environmentId}:${newMandateId}`, accountId);
@@ -157,7 +175,8 @@ export class InMemoryLedgerStore implements LedgerStore {
     accountId: string,
     mutator: (acc: LedgerAccount) => void,
   ): Promise<void> {
-    if (this.accountEnvironments.get(accountId) !== environmentId) throw new Error("ACCOUNT_NOT_FOUND");
+    if (this.accountEnvironments.get(accountId) !== environmentId)
+      throw new Error("ACCOUNT_NOT_FOUND");
     this.ledger.tamperAccount(accountId, mutator);
   }
 
@@ -377,7 +396,10 @@ export class SupabaseLedgerStore implements LedgerStore {
     return data ? mapAccount(data as Row) : null;
   }
 
-  async getAccountByMandate(environmentId: string, mandateId: string): Promise<LedgerAccount | null> {
+  async getAccountByMandate(
+    environmentId: string,
+    mandateId: string,
+  ): Promise<LedgerAccount | null> {
     const { data, error } = await this.client
       .from("ledger_accounts")
       .select("id,parent_account_id,available_minor,reserved_minor,captured_minor")

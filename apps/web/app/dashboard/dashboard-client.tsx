@@ -4,11 +4,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { AuthBoundary } from "../auth-provider";
-import {
-  useDashboardNavigation,
-  type NavTab,
-  type TablesSubTab,
-} from "../lib/navigation";
+import { useDashboardNavigation, type NavTab, type TablesSubTab } from "../lib/navigation";
 import { workspaceStore, type Environment } from "../lib/workspace-store";
 import { useEnvironments } from "../../lib/api/hooks";
 import { AppShell } from "../../components/shell";
@@ -16,51 +12,49 @@ import { AppShell } from "../../components/shell";
 // Dynamic imports with SSR enabled for asynchronous and dynamic content
 const Overview = dynamic(
   () => import("../../components/dashboard/overview").then((m) => m.Overview),
-  { ssr: true }
+  { ssr: true },
 );
 const WorkspaceLayout = dynamic(
   () => import("../../components/workspace").then((m) => m.WorkspaceLayout),
-  { ssr: true }
+  { ssr: true },
 );
-const AssistantView = dynamic(
-  () => import("../../components/chat").then((m) => m.AssistantView),
-  { ssr: false }
-);
+const AssistantView = dynamic(() => import("../../components/chat").then((m) => m.AssistantView), {
+  ssr: false,
+});
 const ApprovalsInbox = dynamic(
   () => import("../../components/approvals").then((m) => m.ApprovalsInbox),
-  { ssr: false }
+  { ssr: false },
 );
 const PaymentTraceView = dynamic(
   () => import("../../components/traces").then((m) => m.PaymentTraceView),
-  { ssr: false }
+  { ssr: false },
 );
 const SecurityCenter = dynamic(
   () => import("../../components/security").then((m) => m.SecurityCenter),
-  { ssr: false }
+  { ssr: false },
 );
-const AgentLibrary = dynamic(
-  () => import("../../components/agents").then((m) => m.AgentLibrary),
-  { ssr: false }
-);
+const AgentLibrary = dynamic(() => import("../../components/agents").then((m) => m.AgentLibrary), {
+  ssr: false,
+});
 const DeveloperPortal = dynamic(
   () => import("../../components/developer").then((m) => m.DeveloperPortal),
-  { ssr: false }
+  { ssr: false },
 );
 const AttackSimulator = dynamic(
   () => import("../../components/simulator").then((m) => m.AttackSimulator),
-  { ssr: false }
+  { ssr: false },
 );
 const MandatesTable = dynamic(
   () => import("../../components/tables").then((m) => m.MandatesTable),
-  { ssr: false }
+  { ssr: false },
 );
 const ActivityAuditTable = dynamic(
   () => import("../../components/tables").then((m) => m.ActivityAuditTable),
-  { ssr: true }
+  { ssr: true },
 );
 const PoliciesTable = dynamic(
   () => import("../../components/tables").then((m) => m.PoliciesTable),
-  { ssr: true }
+  { ssr: true },
 );
 
 export interface DashboardClientProps {
@@ -89,11 +83,7 @@ export function DashboardClient({
   );
 }
 
-function UnifiedDashboard({
-  initialEnvironment,
-}: {
-  initialEnvironment?: Environment | null;
-}) {
+function UnifiedDashboard({ initialEnvironment }: { initialEnvironment?: Environment | null }) {
   const router = useRouter();
   // Driven directly from URL query params as the single source of truth
   const { activeTab, activeSubTab, navigateTab } = useDashboardNavigation();
@@ -122,7 +112,7 @@ function UnifiedDashboard({
       }
       navigateTab("traces");
     },
-    [navigateTab]
+    [navigateTab],
   );
 
   const handleCloseTrace = React.useCallback(() => {
@@ -183,9 +173,7 @@ function UnifiedDashboard({
         return <DeveloperPortal />;
 
       case "simulator":
-        return (
-          <AttackSimulator onNavigateTab={(targetTab) => navigateTab(targetTab)} />
-        );
+        return <AttackSimulator onNavigateTab={(targetTab) => navigateTab(targetTab)} />;
 
       default:
         return <Overview />;

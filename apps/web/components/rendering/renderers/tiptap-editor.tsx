@@ -182,39 +182,27 @@ export function TiptapEditor({
             <span className="h-4 w-px bg-zinc-800 mx-1" />
 
             <button
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 1 }).run()
-              }
+              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
               className={`rounded p-1.5 hover:bg-zinc-800 transition-colors ${
-                editor.isActive("heading", { level: 1 })
-                  ? "bg-zinc-800 text-white"
-                  : ""
+                editor.isActive("heading", { level: 1 }) ? "bg-zinc-800 text-white" : ""
               }`}
               title="Heading 1"
             >
               <Heading1 className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 2 }).run()
-              }
+              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
               className={`rounded p-1.5 hover:bg-zinc-800 transition-colors ${
-                editor.isActive("heading", { level: 2 })
-                  ? "bg-zinc-800 text-white"
-                  : ""
+                editor.isActive("heading", { level: 2 }) ? "bg-zinc-800 text-white" : ""
               }`}
               title="Heading 2"
             >
               <Heading2 className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 3 }).run()
-              }
+              onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
               className={`rounded p-1.5 hover:bg-zinc-800 transition-colors ${
-                editor.isActive("heading", { level: 3 })
-                  ? "bg-zinc-800 text-white"
-                  : ""
+                editor.isActive("heading", { level: 3 }) ? "bg-zinc-800 text-white" : ""
               }`}
               title="Heading 3"
             >

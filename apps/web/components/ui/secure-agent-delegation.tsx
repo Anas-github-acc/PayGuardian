@@ -3,14 +3,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  ShieldCheck,
-  Bot,
-  Cpu,
-  Lock,
-  Key,
-  CheckCircle2,
-} from "lucide-react";
+import { ShieldCheck, Bot, Cpu, Lock, Key, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface AgentNodeData {
@@ -131,7 +124,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
     <div
       className={cn(
         "relative w-full max-w-[560px] rounded-2xl border border-white/10 bg-[#070709]/95 p-4 sm:p-5 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-2xl overflow-hidden select-none",
-        className
+        className,
       )}
     >
       {/* Background Ambience: Subtle Radial Mesh Glow & Dot Grid */}
@@ -274,7 +267,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
               "group relative flex items-center gap-3 rounded-xl border p-2.5 transition-all duration-200 cursor-pointer",
               selectedAgent === "root"
                 ? "border-indigo-500/60 bg-indigo-950/40 shadow-[0_0_24px_rgba(99,102,241,0.25)] ring-1 ring-indigo-500/40"
-                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900"
+                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900",
             )}
           >
             <div className="relative flex size-10 shrink-0 items-center justify-center rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-400">
@@ -283,9 +276,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs text-white truncate">
-                  Root Orchestrator
-                </span>
+                <span className="font-semibold text-xs text-white truncate">Root Orchestrator</span>
                 <span className="text-[9px] font-mono text-indigo-300 font-semibold bg-indigo-500/20 px-1.5 py-0.2 rounded">
                   $10k Cap
                 </span>
@@ -306,7 +297,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
               "group relative flex items-center gap-2.5 rounded-xl border p-2.5 transition-all duration-200 cursor-pointer",
               selectedAgent === "travel"
                 ? "border-sky-500/60 bg-sky-950/40 shadow-[0_0_24px_rgba(56,189,248,0.25)] ring-1 ring-sky-500/40"
-                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900"
+                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900",
             )}
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400">
@@ -314,9 +305,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs text-white truncate">
-                  Travel Agent
-                </span>
+                <span className="font-semibold text-xs text-white truncate">Travel Agent</span>
                 <span className="text-[9px] font-mono text-sky-300 font-semibold bg-sky-500/20 px-1 py-0.2 rounded">
                   $4,000
                 </span>
@@ -336,7 +325,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
               "group relative flex items-center gap-2.5 rounded-xl border p-2.5 transition-all duration-200 cursor-pointer",
               selectedAgent === "infra"
                 ? "border-purple-500/60 bg-purple-950/40 shadow-[0_0_24px_rgba(192,132,252,0.25)] ring-1 ring-purple-500/40"
-                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900"
+                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900",
             )}
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400">
@@ -344,9 +333,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs text-white truncate">
-                  Infra Agent
-                </span>
+                <span className="font-semibold text-xs text-white truncate">Infra Agent</span>
                 <span className="text-[9px] font-mono text-purple-300 font-semibold bg-purple-500/20 px-1 py-0.2 rounded">
                   $3,000
                 </span>
@@ -366,7 +353,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
               "group relative flex items-center gap-2.5 rounded-xl border p-2.5 transition-all duration-200 cursor-pointer",
               selectedAgent === "hotel"
                 ? "border-emerald-500/60 bg-emerald-950/40 shadow-[0_0_24px_rgba(52,211,153,0.25)] ring-1 ring-emerald-500/40"
-                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900"
+                : "border-white/10 bg-zinc-900/80 hover:border-white/20 hover:bg-zinc-900",
             )}
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
@@ -374,9 +361,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs text-white truncate">
-                  Hotel Subagent
-                </span>
+                <span className="font-semibold text-xs text-white truncate">Hotel Subagent</span>
                 <span className="text-[9px] font-mono text-emerald-300 font-semibold bg-emerald-500/20 px-1.5 py-0.2 rounded">
                   $1,200
                 </span>
@@ -408,9 +393,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
             <span className="text-[10px] font-mono uppercase tracking-wider text-white/50">
               Selected Identity:
             </span>
-            <span className="text-xs font-semibold text-white">
-              {activeAgent.name}
-            </span>
+            <span className="text-xs font-semibold text-white">{activeAgent.name}</span>
           </div>
           <span className="text-[10px] font-mono text-white/70 bg-white/5 px-2 py-0.5 rounded">
             {activeAgent.tier}
@@ -466,9 +449,7 @@ export function SecureAgentDelegationVisual({ className }: { className?: string 
           </AnimatePresence>
         </div>
 
-        <span className="text-zinc-500 shrink-0 ml-2 hidden sm:inline">
-          {currentEvent.status}
-        </span>
+        <span className="text-zinc-500 shrink-0 ml-2 hidden sm:inline">{currentEvent.status}</span>
       </div>
     </div>
   );

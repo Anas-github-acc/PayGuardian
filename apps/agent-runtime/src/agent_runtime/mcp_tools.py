@@ -17,7 +17,13 @@ import uuid
 from typing import Any
 
 from agent_runtime.gateway_client import GatewayClient
-from agent_runtime.subagent_registry import SubagentCapability, SubagentRegistry, registry as default_registry
+from agent_runtime.subagent_registry import (
+    SubagentCapability,
+    SubagentRegistry,
+)
+from agent_runtime.subagent_registry import (
+    registry as default_registry,
+)
 
 logger = logging.getLogger("agent_runtime.mcp_tools")
 
@@ -285,8 +291,10 @@ PAYGUARDIAN_MCP_TOOL_SCHEMAS: list[dict[str, Any]] = [
 ]
 
 SPECIALIST_MCP_TOOL_SCHEMAS: list[dict[str, Any]] = [
-    t for t in PAYGUARDIAN_MCP_TOOL_SCHEMAS
-    if t["function"]["name"] in (
+    t
+    for t in PAYGUARDIAN_MCP_TOOL_SCHEMAS
+    if t["function"]["name"]
+    in (
         "get_delegated_balance",
         "request_payment",
         "get_payment_status",
@@ -341,9 +349,7 @@ class PayGuardianMCPTools:
     ) -> list[dict[str, Any]]:
         """Tool 1: discover_agents"""
         parent_canonical = (
-            self.subagent_registry.resolve_alias_to_id(parent_agent_id)
-            if parent_agent_id
-            else None
+            self.subagent_registry.resolve_alias_to_id(parent_agent_id) if parent_agent_id else None
         )
         agents = self.subagent_registry.list_capabilities(parent_agent_id=parent_canonical)
 
@@ -439,12 +445,18 @@ class PayGuardianMCPTools:
                     currency = root_m.get("currency", currency)
                     mandate_id = root_m.get("id", mandate_id)
                 active_raw = [
-                    m for m in env_mandates
-                    if m.get("parentMandateId") and m.get("state") == "active" and not m.get("supersededAt")
+                    m
+                    for m in env_mandates
+                    if m.get("parentMandateId")
+                    and m.get("state") == "active"
+                    and not m.get("supersededAt")
                 ]
                 series_map: dict[str, dict[str, Any]] = {}
                 for m in active_raw:
-                    s_id = m.get("mandateSeriesId") or f"{m.get('parentMandateId')}_{m.get('holderAgentId')}"
+                    s_id = (
+                        m.get("mandateSeriesId")
+                        or f"{m.get('parentMandateId')}_{m.get('holderAgentId')}"
+                    )
                     existing = series_map.get(s_id)
                     if not existing or m.get("version", 1) > existing.get("version", 1):
                         series_map[s_id] = m
@@ -458,7 +470,9 @@ class PayGuardianMCPTools:
 
         if total_delegated_minor == 0 and self.state.get("subagent_tasks"):
             for t in self.state["subagent_tasks"]:
-                if t.get("status") in ("authorized", "active", "completed") and not t.get("parent_task_id"):
+                if t.get("status") in ("authorized", "active", "completed") and not t.get(
+                    "parent_task_id"
+                ):
                     total_delegated_minor += t.get("amount_minor", 0)
 
         remaining_reserve_minor = max(0, limit_minor - total_delegated_minor)
@@ -485,11 +499,7 @@ class PayGuardianMCPTools:
 
         def format_node(t: dict[str, Any]) -> dict[str, Any]:
             tid = t.get("id", "")
-            children = [
-                format_node(ct)
-                for ct in tasks
-                if ct.get("parent_task_id") == tid
-            ]
+            children = [format_node(ct) for ct in tasks if ct.get("parent_task_id") == tid]
             node = {
                 "task_id": tid,
                 "agent": t.get("agent"),
@@ -498,7 +508,9 @@ class PayGuardianMCPTools:
                 "phase": t.get("phase"),
                 "amount_minor": t.get("amount_minor"),
                 "currency": t.get("currency", budget_info["currency"]),
-                "amount_display": _format_curr(t.get("amount_minor", 0), t.get("currency", budget_info["currency"])),
+                "amount_display": _format_curr(
+                    t.get("amount_minor", 0), t.get("currency", budget_info["currency"])
+                ),
             }
             if children:
                 node["child_tasks"] = children
@@ -542,7 +554,11 @@ class PayGuardianMCPTools:
                     return {
                         "error": f"Parent agent '{parent_agent.name}' manifest does not permit sub-delegation."
                     }
-                if parent_agent and parent_agent.allowed_child_agent_ids and agent.id not in parent_agent.allowed_child_agent_ids:
+                if (
+                    parent_agent
+                    and parent_agent.allowed_child_agent_ids
+                    and agent.id not in parent_agent.allowed_child_agent_ids
+                ):
                     return {
                         "error": f"Agent '{agent.name}' is not an allowed child of '{parent_agent.name}'."
                     }
@@ -597,14 +613,16 @@ class PayGuardianMCPTools:
             "tasks": tasks,
         }
 
-    def get_delegated_balance(
-        self, agent_id: str, mandate_id: str | None = None
-    ) -> dict[str, Any]:
+    def get_delegated_balance(self, agent_id: str, mandate_id: str | None = None) -> dict[str, Any]:
         """Tool 8: get_delegated_balance. Checks subagent's available delegated budget."""
         agent_clean = agent_id.lower().replace("agent-", "").split("-")[0]
         tasks = self.state.get("subagent_tasks", [])
         task = next(
-            (t for t in tasks if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)),
+            (
+                t
+                for t in tasks
+                if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)
+            ),
             None,
         )
 
@@ -618,8 +636,10 @@ class PayGuardianMCPTools:
                 m_list = self.gateway_client.list_mandates(env_id)
                 matched_m = next(
                     (
-                        m for m in m_list
-                        if m.get("holderAgentId") in (agent_id, f"agent-{agent_clean}-specialist", agent_clean)
+                        m
+                        for m in m_list
+                        if m.get("holderAgentId")
+                        in (agent_id, f"agent-{agent_clean}-specialist", agent_clean)
                         and m.get("state") == "active"
                         and not m.get("supersededAt")
                     ),
@@ -638,7 +658,9 @@ class PayGuardianMCPTools:
         if self.gateway_client and env_id and child_mandate_ref:
             try:
                 accounts = self.gateway_client.list_ledger_accounts(env_id)
-                child_acc = next((a for a in accounts if a.get("mandateId") == child_mandate_ref), None)
+                child_acc = next(
+                    (a for a in accounts if a.get("mandateId") == child_mandate_ref), None
+                )
                 if child_acc:
                     allocated_minor = child_acc.get("availableMinor", allocated_minor)
                     spent_minor = child_acc.get("settledMinor", 0)
@@ -674,11 +696,17 @@ class PayGuardianMCPTools:
         agent_clean = agent_id.lower().replace("agent-", "").split("-")[0]
         tasks = self.state.get("subagent_tasks", [])
         task = next(
-            (t for t in tasks if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)),
+            (
+                t
+                for t in tasks
+                if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)
+            ),
             None,
         )
 
-        child_mandate_ref = (task.get("child_mandate_id") if task else None) or mandate_id or self.mandate_id
+        child_mandate_ref = (
+            (task.get("child_mandate_id") if task else None) or mandate_id or self.mandate_id
+        )
         env_id = self.environment_id or self.state.get("environment_id")
         matched_m = None
         if self.gateway_client and env_id:
@@ -686,7 +714,8 @@ class PayGuardianMCPTools:
                 agents_list = self.gateway_client.list_agents(env_id) or []
                 matched_agent = next(
                     (
-                        a for a in agents_list
+                        a
+                        for a in agents_list
                         if a.get("id") == agent_id
                         or a.get("kind", "").lower() == agent_clean
                         or agent_clean in a.get("name", "").lower()
@@ -700,7 +729,8 @@ class PayGuardianMCPTools:
                     m_list = self.gateway_client.list_mandates(env_id)
                     matched_m = next(
                         (
-                            m for m in m_list
+                            m
+                            for m in m_list
                             if m.get("holderAgentId") == agent_id
                             and m.get("state") == "active"
                             and not m.get("supersededAt")
@@ -710,15 +740,24 @@ class PayGuardianMCPTools:
                     if not matched_m:
                         matched_m = next(
                             (
-                                m for m in m_list
-                                if m.get("holderAgentId") in (agent_id, f"agent-{agent_clean}-specialist", agent_clean)
+                                m
+                                for m in m_list
+                                if m.get("holderAgentId")
+                                in (agent_id, f"agent-{agent_clean}-specialist", agent_clean)
                                 and m.get("state") == "active"
                                 and not m.get("supersededAt")
                             ),
                             None,
                         )
                     if not matched_m:
-                        matched_m = next((m for m in m_list if not m.get("parentMandateId") and m.get("state") == "active"), None)
+                        matched_m = next(
+                            (
+                                m
+                                for m in m_list
+                                if not m.get("parentMandateId") and m.get("state") == "active"
+                            ),
+                            None,
+                        )
                     if matched_m:
                         child_mandate_ref = matched_m["id"]
             except Exception:
@@ -779,7 +818,10 @@ class PayGuardianMCPTools:
                 logger.warning("Gateway check_authority exception: %s", gw_exc)
 
         import hashlib
-        req_hash = hashlib.sha256(f"{agent_id}:{child_mandate_ref}:{amount_minor}:{action}".encode()).hexdigest()
+
+        req_hash = hashlib.sha256(
+            f"{agent_id}:{child_mandate_ref}:{amount_minor}:{action}".encode()
+        ).hexdigest()
 
         # If human authorization is required, dispatch approval request to Gateway
         if is_approval_required:
@@ -812,8 +854,15 @@ class PayGuardianMCPTools:
                     accounts = self.gateway_client.list_ledger_accounts(env_id) or []
                 except Exception:
                     pass
-                target_acc = next((a for a in accounts if a.get("mandateId") == child_mandate_ref), accounts[0] if accounts else None)
-                acc_id = target_acc["id"] if (target_acc and isinstance(target_acc, dict) and "id" in target_acc) else f"acc_{child_mandate_ref}"
+                target_acc = next(
+                    (a for a in accounts if a.get("mandateId") == child_mandate_ref),
+                    accounts[0] if accounts else None,
+                )
+                acc_id = (
+                    target_acc["id"]
+                    if (target_acc and isinstance(target_acc, dict) and "id" in target_acc)
+                    else f"acc_{child_mandate_ref}"
+                )
                 pp_res = self.gateway_client.create_paypal_order(
                     environment_id=env_id,
                     agent_id=agent_id,
@@ -875,7 +924,9 @@ class PayGuardianMCPTools:
                 "rail": "PayPal" if paypal_approval_url else "GatewayLedger",
             }
 
-        if self.event_emitter and (status == "awaiting_approval" or paypal_approval_url or approval_id):
+        if self.event_emitter and (
+            status == "awaiting_approval" or paypal_approval_url or approval_id
+        ):
             try:
                 self.event_emitter.emit(
                     "approval.requested",
@@ -930,8 +981,16 @@ class PayGuardianMCPTools:
             "message": (
                 f"Payment request of {_format_curr(amount_minor, currency)} for {recipient} "
                 f"successfully initiated by {agent_id} under child mandate {child_mandate_ref} ({status})."
-                + (f" Approval request {approval_id} registered on Gateway for human authorization." if status == "awaiting_approval" else "")
-                + (f" Complete payment via PayPal Sandbox: {paypal_approval_url}" if paypal_approval_url else "")
+                + (
+                    f" Approval request {approval_id} registered on Gateway for human authorization."
+                    if status == "awaiting_approval"
+                    else ""
+                )
+                + (
+                    f" Complete payment via PayPal Sandbox: {paypal_approval_url}"
+                    if paypal_approval_url
+                    else ""
+                )
             ),
         }
 
@@ -944,9 +1003,19 @@ class PayGuardianMCPTools:
             tasks = self.state.get("subagent_tasks", [])
             for t in tasks:
                 pa = t.get("payment_authorization")
-                if pa and (pa.get("action_id") == payment_intent_id or pa.get("payment_intent") == payment_intent_id):
-                    return {"payment_intent_id": payment_intent_id, "status": pa.get("status", "unknown"), "details": pa}
-            return {"error": f"Payment intent '{payment_intent_id}' not found.", "status": "not_found"}
+                if pa and (
+                    pa.get("action_id") == payment_intent_id
+                    or pa.get("payment_intent") == payment_intent_id
+                ):
+                    return {
+                        "payment_intent_id": payment_intent_id,
+                        "status": pa.get("status", "unknown"),
+                        "details": pa,
+                    }
+            return {
+                "error": f"Payment intent '{payment_intent_id}' not found.",
+                "status": "not_found",
+            }
 
         return {
             "payment_intent_id": payment_intent_id,
@@ -973,7 +1042,11 @@ class PayGuardianMCPTools:
         agent_clean = agent_id.lower().replace("agent-", "").split("-")[0]
         tasks = self.state.get("subagent_tasks", [])
         task = next(
-            (t for t in tasks if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)),
+            (
+                t
+                for t in tasks
+                if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)
+            ),
             None,
         )
 
@@ -998,17 +1071,22 @@ class PayGuardianMCPTools:
             if self.gateway_client and env_id and mandate_id and child_ref:
                 try:
                     accounts = self.gateway_client.list_ledger_accounts(env_id)
-                    parent_acc = next((a for a in accounts if a.get("mandateId") == mandate_id), None)
+                    parent_acc = next(
+                        (a for a in accounts if a.get("mandateId") == mandate_id), None
+                    )
                     child_acc = next((a for a in accounts if a.get("mandateId") == child_ref), None)
                     if parent_acc and child_acc:
                         import hashlib
+
                         self.gateway_client.allocate_ledger(
                             environment_id=env_id,
                             parent_account_id=parent_acc["id"],
                             child_account_id=child_acc["id"],
                             amount_minor=additional_amount_minor,
                             idempotency_key=f"topup_{uuid.uuid4().hex[:12]}",
-                            request_hash=hashlib.sha256(f"{parent_acc['id']}:{child_acc['id']}:{additional_amount_minor}".encode()).hexdigest(),
+                            request_hash=hashlib.sha256(
+                                f"{parent_acc['id']}:{child_acc['id']}:{additional_amount_minor}".encode()
+                            ).hexdigest(),
                         )
                 except Exception as topup_exc:
                     logger.debug("Ledger top-up skipped: %s", topup_exc)
@@ -1051,7 +1129,9 @@ class PayGuardianMCPTools:
         env_id = self.environment_id or self.state.get("environment_id")
         if not env_id and self.gateway_client:
             try:
-                envs = self.gateway_client._client.get("/v1/environments", headers=self.gateway_client._headers()).json()
+                envs = self.gateway_client._client.get(
+                    "/v1/environments", headers=self.gateway_client._headers()
+                ).json()
                 env_list = envs.get("environments", [])
                 if env_list:
                     env_id = env_list[0].get("id")
@@ -1088,7 +1168,9 @@ class PayGuardianMCPTools:
 
         # Fallback inspection from local state
         tasks = self.state.get("subagent_tasks", [])
-        pending_tasks = [t for t in tasks if t.get("status") in ("authorization_pending", "quote_received")]
+        pending_tasks = [
+            t for t in tasks if t.get("status") in ("authorization_pending", "quote_received")
+        ]
         return {
             "count": len(tasks),
             "has_pending": len(pending_tasks) > 0,

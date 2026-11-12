@@ -98,7 +98,10 @@ export type AuthorityStore = {
   evaluate(id: string, input: AuthorityCheckInput, userId: string): Promise<PolicyDecision>;
   createGrant(input: CreateDelegationGrantInput): Promise<DelegationGrant>;
   getGrant(jti: string): Promise<DelegationGrant | null>;
-  findGrantByRequestHash(environmentId: string, requestHash: string): Promise<DelegationGrant | null>;
+  findGrantByRequestHash(
+    environmentId: string,
+    requestHash: string,
+  ): Promise<DelegationGrant | null>;
   revokeGrantsForParent(parentMandateId: string): Promise<void>;
 };
 
@@ -300,7 +303,11 @@ export class InMemoryAuthorityStore implements AuthorityStore {
         if (existing) {
           return {
             mandate: existing,
-            decision: { allowed: true, code: "ALLOW", reason: "Delegation returned from idempotent execution." },
+            decision: {
+              allowed: true,
+              code: "ALLOW",
+              reason: "Delegation returned from idempotent execution.",
+            },
           };
         }
       }
@@ -367,7 +374,11 @@ export class InMemoryAuthorityStore implements AuthorityStore {
             },
           };
         }
-        if (input.caller && input.caller.kind === "agent" && grant.agentId !== input.caller.agentId) {
+        if (
+          input.caller &&
+          input.caller.kind === "agent" &&
+          grant.agentId !== input.caller.agentId
+        ) {
           return {
             mandate: null,
             decision: {
@@ -388,7 +399,10 @@ export class InMemoryAuthorityStore implements AuthorityStore {
           };
         }
         const now = new Date();
-        if (new Date(grant.expiresAt) <= now || new Date(grant.expiresAt) > new Date(parent.expiresAt)) {
+        if (
+          new Date(grant.expiresAt) <= now ||
+          new Date(grant.expiresAt) > new Date(parent.expiresAt)
+        ) {
           grant.status = "expired";
           grant.updatedAt = now.toISOString();
           return {
@@ -579,7 +593,8 @@ export class InMemoryAuthorityStore implements AuthorityStore {
       budgetLimitMinor: input.additionalBudgetMinor,
       currency: parent?.currency ?? "INR",
       permittedActions: input.permittedActions ?? parent?.permittedActions ?? [],
-      expiresAt: input.expiresAt ?? parent?.expiresAt ?? new Date(Date.now() + 86400000).toISOString(),
+      expiresAt:
+        input.expiresAt ?? parent?.expiresAt ?? new Date(Date.now() + 86400000).toISOString(),
       canDelegate: input.canDelegate ?? false,
       maxDelegationDepth: input.maxDelegationDepth ?? 0,
       approvalRequired: input.approvalRequired ?? false,
@@ -678,10 +693,7 @@ export class SupabaseAuthorityStore implements AuthorityStore {
   }
 
   async get(id: string, userId?: string): Promise<Mandate | null> {
-    let query = this.client
-      .from("mandates")
-      .select("*")
-      .eq("id", id);
+    let query = this.client.from("mandates").select("*").eq("id", id);
     if (userId) query = query.eq("issuer_user_id", userId);
     const { data, error } = await query.maybeSingle();
     if (error) throw error;
@@ -819,7 +831,10 @@ export class SupabaseAuthorityStore implements AuthorityStore {
             .eq("id", prev.id as string);
 
           if (prev.parent_mandate_id === parentId && parent) {
-            const newAllocated = Math.max(0, parent.allocatedMinor - Number(prev.budget_limit_minor));
+            const newAllocated = Math.max(
+              0,
+              parent.allocatedMinor - Number(prev.budget_limit_minor),
+            );
             await this.client
               .from("mandates")
               .update({ allocated_minor: newAllocated })
@@ -956,9 +971,7 @@ function mapGrant(row: Record<string, unknown>): DelegationGrant {
     allowedChildAgents: Array.isArray(row.allowed_child_agents)
       ? row.allowed_child_agents.map(String)
       : [],
-    permittedActions: Array.isArray(row.permitted_actions)
-      ? row.permitted_actions.map(String)
-      : [],
+    permittedActions: Array.isArray(row.permitted_actions) ? row.permitted_actions.map(String) : [],
     maxBudgetMinor: Number(row.max_budget_minor),
     amountUsedMinor: Number(row.amount_used_minor),
     maxDepth: Number(row.max_depth),

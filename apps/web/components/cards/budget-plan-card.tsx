@@ -37,9 +37,24 @@ export function BudgetPlanCard({
   currency = "USD",
   status = "pending",
   subAllocations = [
-    { agentId: "ag-travel-01", agentName: "Travel Subagent", role: "Logistics", amountMinor: 400000 },
-    { agentId: "ag-hotel-02", agentName: "Hotel Subagent", role: "Hospitality", amountMinor: 400000 },
-    { agentId: "ag-reserve-00", agentName: "Unallocated Reserve", role: "Contingency", amountMinor: 200000 },
+    {
+      agentId: "ag-travel-01",
+      agentName: "Travel Subagent",
+      role: "Logistics",
+      amountMinor: 400000,
+    },
+    {
+      agentId: "ag-hotel-02",
+      agentName: "Hotel Subagent",
+      role: "Hospitality",
+      amountMinor: 400000,
+    },
+    {
+      agentId: "ag-reserve-00",
+      agentName: "Unallocated Reserve",
+      role: "Contingency",
+      amountMinor: 200000,
+    },
   ],
   policyNotes = "Allocation complies with Mandate Policy #POL-8820: Total does not exceed root parent limit.",
   verifiedAt = new Date().toISOString(),
@@ -81,17 +96,21 @@ export function BudgetPlanCard({
       {/* Header with Verification Pill & Timestamp */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2">
-          <Badge variant="authorized" showDot className="bg-success/10 text-success border-success/30">
+          <Badge
+            variant="authorized"
+            showDot
+            className="bg-success/10 text-success border-success/30"
+          >
             <ShieldCheck className="h-3 w-3 mr-1" />
             GATEWAY VERIFIED
           </Badge>
-          <span className="text-[11px] font-mono text-muted-foreground">
-            {parentMandateId}
-          </span>
+          <span className="text-[11px] font-mono text-muted-foreground">{parentMandateId}</span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
           <Clock className="h-3 w-3" />
-          <span>{new Date(verifiedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          <span>
+            {new Date(verifiedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
         </div>
       </div>
 
@@ -104,7 +123,9 @@ export function BudgetPlanCard({
           </p>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Requested Total</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+            Requested Total
+          </div>
           <div className="text-sm font-semibold font-mono text-success tabular-nums">
             {formatMinorUnits(totalRequestedMinor, currency)}
           </div>

@@ -3,7 +3,14 @@
 import * as React from "react";
 import { SlidersHorizontal, Info, Check } from "lucide-react";
 import { formatMinorUnits, parseMajorToMinor, minorToMajorString } from "../../app/lib/currency";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { DEFAULT_POLICIES, type PolicyRow } from "./types";
@@ -31,8 +38,14 @@ export function PoliciesTable({ className = "" }: PoliciesTableProps) {
     if (!editingPolicy) return;
     setIsSaving(true);
     try {
-      const nextSingleActionMinor = parseMajorToMinor(formSingleAction || "0", editingPolicy.currency);
-      const nextThresholdMinor = parseMajorToMinor(formApprovalThreshold || "0", editingPolicy.currency);
+      const nextSingleActionMinor = parseMajorToMinor(
+        formSingleAction || "0",
+        editingPolicy.currency,
+      );
+      const nextThresholdMinor = parseMajorToMinor(
+        formApprovalThreshold || "0",
+        editingPolicy.currency,
+      );
 
       setPolicies((prev) =>
         prev.map((p) =>
@@ -44,8 +57,8 @@ export function PoliciesTable({ className = "" }: PoliciesTableProps) {
                 maxSharePercent: formMaxShare,
                 updatedAt: new Date().toISOString(),
               }
-            : p
-        )
+            : p,
+        ),
       );
       setEditingPolicy(null);
     } finally {
@@ -58,7 +71,8 @@ export function PoliciesTable({ className = "" }: PoliciesTableProps) {
       <div>
         <h2 className="text-sm font-semibold text-foreground">Policies</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Cryptographic boundaries, autonomous sign-off limits, and category allowlists enforced per agent node.
+          Cryptographic boundaries, autonomous sign-off limits, and category allowlists enforced per
+          agent node.
         </p>
       </div>
 
@@ -145,7 +159,8 @@ export function PoliciesTable({ className = "" }: PoliciesTableProps) {
               <div>
                 <strong className="font-semibold text-warning">Accounting Invariant: </strong>
                 <span className="text-foreground">
-                  Spent budget is never reset upon limit increase. Historical deductions remain permanently recorded.
+                  Spent budget is never reset upon limit increase. Historical deductions remain
+                  permanently recorded.
                 </span>
               </div>
             </div>

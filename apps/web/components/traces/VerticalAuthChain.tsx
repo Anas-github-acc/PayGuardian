@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ArrowDown,
-  Layers,
-  Scale,
-  Key,
-  Cpu,
-} from "lucide-react";
+import { ArrowDown, Layers, Scale, Key, Cpu } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { Badge } from "../ui/badge";
 import type { TraceAuthNode } from "./types";
@@ -24,9 +18,7 @@ export function VerticalAuthChain({ nodes, className = "" }: VerticalAuthChainPr
         className={`rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center min-h-[320px] flex flex-col items-center justify-center ${className}`}
       >
         <Layers className="h-8 w-8 text-zinc-600 mb-2" />
-        <h4 className="text-sm font-semibold text-white">
-          No Mandate Authority Chain
-        </h4>
+        <h4 className="text-sm font-semibold text-white">No Mandate Authority Chain</h4>
         <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
           No delegated mandate hierarchy is associated with this action record.
         </p>
@@ -82,7 +74,10 @@ export function VerticalAuthChain({ nodes, className = "" }: VerticalAuthChainPr
                       <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                     <span className="text-xs font-semibold text-foreground">{node.name}</span>
-                    <Badge variant={node.status === "active" ? "authorized" : "revoked"} className="text-[10px] py-0 px-1.5">
+                    <Badge
+                      variant={node.status === "active" ? "authorized" : "revoked"}
+                      className="text-[10px] py-0 px-1.5"
+                    >
                       {node.role}
                     </Badge>
                   </div>
@@ -95,7 +90,9 @@ export function VerticalAuthChain({ nodes, className = "" }: VerticalAuthChainPr
                 {/* Financial Balances Row */}
                 <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
                   <div>
-                    <span className="text-[10px] uppercase text-muted-foreground block">Allocated</span>
+                    <span className="text-[10px] uppercase text-muted-foreground block">
+                      Allocated
+                    </span>
                     <span className="tabular-nums text-foreground">
                       {formatMinorUnits(node.allocatedMinor, node.currency)}
                     </span>
@@ -107,13 +104,17 @@ export function VerticalAuthChain({ nodes, className = "" }: VerticalAuthChainPr
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase text-muted-foreground block">Reserved</span>
+                    <span className="text-[10px] uppercase text-muted-foreground block">
+                      Reserved
+                    </span>
                     <span className="tabular-nums text-warning">
                       {formatMinorUnits(node.reservedMinor, node.currency)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase text-muted-foreground block">Available</span>
+                    <span className="text-[10px] uppercase text-muted-foreground block">
+                      Available
+                    </span>
                     <span className="tabular-nums text-success font-medium">
                       {formatMinorUnits(node.availableMinor, node.currency)}
                     </span>

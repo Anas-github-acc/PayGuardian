@@ -38,4 +38,3 @@ export interface ApprovalItem {
 }
 
 export type ApprovalFilter = "all" | "pending" | "approved" | "rejected";
-

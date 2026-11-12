@@ -65,7 +65,7 @@ export function AgentCard({
     <div
       className={cn(
         "group flex flex-col rounded-md border border-border bg-card p-4 transition-colors hover:border-input",
-        className
+        className,
       )}
     >
       {/* Header: icon tile + status badge, then full-width title on its own line */}

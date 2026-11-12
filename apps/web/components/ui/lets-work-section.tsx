@@ -89,9 +89,7 @@ export function LetsWorkTogether({
               onClick={handlePrimaryClick}
               className="group relative flex items-center gap-3 overflow-hidden rounded-full border border-white/20 bg-white px-7 py-3 sm:px-9 sm:py-3.5 text-black transition-all duration-300 hover:scale-[1.02] hover:bg-zinc-100 cursor-pointer"
             >
-              <span className="text-sm sm:text-base font-semibold tracking-wide">
-                {actionText}
-              </span>
+              <span className="text-sm sm:text-base font-semibold tracking-wide">{actionText}</span>
               <ArrowRight
                 className="size-4 sm:size-5 transition-transform duration-300 group-hover:translate-x-1"
                 strokeWidth={2}

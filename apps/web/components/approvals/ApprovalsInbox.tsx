@@ -27,14 +27,7 @@ export function ApprovalsInbox({
   const { navigateTab } = useDashboardNavigation();
   const activeEnvId = environmentId ?? store.currentEnvironmentId ?? "env-sandbox-travel-01";
 
-  const {
-    approvals,
-    isLoading,
-    error,
-    approve,
-    reject,
-    refetch,
-  } = useApprovals(activeEnvId);
+  const { approvals, isLoading, error, approve, reject, refetch } = useApprovals(activeEnvId);
 
   const [filter, setFilter] = React.useState<ApprovalFilter>("pending");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
@@ -135,7 +128,8 @@ export function ApprovalsInbox({
   // Average operator response time across decided requests
   const avgResponseLabel = React.useMemo(() => {
     const decided = approvals.filter(
-      (a) => a.status === "approved" && a.approvedAt && !Number.isNaN(new Date(a.createdAt).getTime()),
+      (a) =>
+        a.status === "approved" && a.approvedAt && !Number.isNaN(new Date(a.createdAt).getTime()),
     );
     if (decided.length === 0) return "—";
     const totalMs = decided.reduce((sum, a) => {
@@ -180,9 +174,7 @@ export function ApprovalsInbox({
         {/* Page header */}
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold tracking-tight text-white">
-              Approvals
-            </h1>
+            <h1 className="text-lg font-semibold tracking-tight text-white">Approvals</h1>
             <span className="text-zinc-600 font-normal">/</span>
             <span className="text-lg font-semibold tracking-tight text-zinc-300">
               Human Sign-off Queue
@@ -202,7 +194,9 @@ export function ApprovalsInbox({
               aria-label="Refresh approvals"
               className="h-8 border-zinc-800 bg-zinc-900/80 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white"
             >
-              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isRefreshing || isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`mr-1.5 h-3.5 w-3.5 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </div>
@@ -252,9 +246,7 @@ export function ApprovalsInbox({
                     Queue overview
                   </h3>
                 </div>
-                <span className="text-xs font-mono text-zinc-500">
-                  Environment: {activeEnvId}
-                </span>
+                <span className="text-xs font-mono text-zinc-500">Environment: {activeEnvId}</span>
               </div>
 
               <div className="p-5">
@@ -263,7 +255,9 @@ export function ApprovalsInbox({
                   <span className="text-3xl font-semibold tabular-nums text-white font-mono">
                     {pendingCount}
                   </span>
-                  <span className="text-xs text-zinc-400">awaiting your cryptographic sign-off</span>
+                  <span className="text-xs text-zinc-400">
+                    awaiting your cryptographic sign-off
+                  </span>
                 </div>
 
                 {/* Delta chip + context */}
@@ -278,7 +272,8 @@ export function ApprovalsInbox({
                     {pendingCount > 0 ? "needs attention" : "all clear"}
                   </span>
                   <span className="text-xs text-zinc-500">
-                    across {approvals.length} request{approvals.length === 1 ? "" : "s"} in this environment
+                    across {approvals.length} request{approvals.length === 1 ? "" : "s"} in this
+                    environment
                   </span>
                 </div>
 
@@ -296,15 +291,21 @@ export function ApprovalsInbox({
                   </div>
                   <div className="flex items-center justify-between px-3.5 py-2.5 text-xs">
                     <dt className="text-zinc-400">Approved today</dt>
-                    <dd className="font-mono font-medium tabular-nums text-blue-400">{approvedCount}</dd>
+                    <dd className="font-mono font-medium tabular-nums text-blue-400">
+                      {approvedCount}
+                    </dd>
                   </div>
                   <div className="flex items-center justify-between px-3.5 py-2.5 text-xs">
                     <dt className="text-zinc-400">Denied today</dt>
-                    <dd className="font-mono font-medium tabular-nums text-red-400">{rejectedCount}</dd>
+                    <dd className="font-mono font-medium tabular-nums text-red-400">
+                      {rejectedCount}
+                    </dd>
                   </div>
                   <div className="flex items-center justify-between px-3.5 py-2.5 text-xs">
                     <dt className="text-zinc-400">Avg response time</dt>
-                    <dd className="font-mono font-medium tabular-nums text-zinc-300">{avgResponseLabel}</dd>
+                    <dd className="font-mono font-medium tabular-nums text-zinc-300">
+                      {avgResponseLabel}
+                    </dd>
                   </div>
                 </dl>
               </div>

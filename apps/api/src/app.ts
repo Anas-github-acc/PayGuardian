@@ -55,17 +55,21 @@ export function buildApp(
   const app = Fastify({ logger: options.logger ?? false });
 
   app.removeContentTypeParser("application/json");
-  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body: string, done) => {
-    try {
-      if (!body || body.trim() === "") {
-        done(null, {});
-        return;
+  app.addContentTypeParser(
+    "application/json",
+    { parseAs: "string" },
+    (_req, body: string, done) => {
+      try {
+        if (!body || body.trim() === "") {
+          done(null, {});
+          return;
+        }
+        done(null, JSON.parse(body));
+      } catch (err) {
+        done(err as Error, undefined);
       }
-      done(null, JSON.parse(body));
-    } catch (err) {
-      done(err as Error, undefined);
-    }
-  });
+    },
+  );
 
   const rawCors = process.env.CORS_ORIGIN;
   const corsOrigin =
@@ -195,12 +199,19 @@ export function buildApp(
           default: true,
         };
 
-        const googleModels: Array<{ id: string; label: string; provider: string; default: boolean }> = [];
+        const googleModels: Array<{
+          id: string;
+          label: string;
+          provider: string;
+          default: boolean;
+        }> = [];
 
         // If a Google AI API key is configured, dynamically discover available models from Google AI
         if (apiKey) {
           try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const res = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+            );
             if (res.ok) {
               const data = (await res.json()) as { models?: Array<any> };
               if (Array.isArray(data.models)) {
@@ -213,7 +224,9 @@ export function buildApp(
                     const id = m.name.replace(/^models\//, "");
                     googleModels.push({
                       id,
-                      label: m.displayName || id.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+                      label:
+                        m.displayName ||
+                        id.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
                       provider: "Google Gemini",
                       default: false,
                     });
@@ -228,10 +241,30 @@ export function buildApp(
 
         if (googleModels.length === 0) {
           googleModels.push(
-            { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Free)", provider: "Google Gemini", default: false },
-            { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "Google Gemini", default: false },
-            { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google Gemini", default: false },
-            { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite (Free)", provider: "Google Gemini", default: false },
+            {
+              id: "gemini-3.8-flash",
+              label: "Gemini 3.8 Flash (Free)",
+              provider: "Google Gemini",
+              default: false,
+            },
+            {
+              id: "gemini-2.5-flash",
+              label: "Gemini 2.5 Flash",
+              provider: "Google Gemini",
+              default: false,
+            },
+            {
+              id: "gemini-2.5-pro",
+              label: "Gemini 2.5 Pro",
+              provider: "Google Gemini",
+              default: false,
+            },
+            {
+              id: "gemini-2.5-flash-lite",
+              label: "Gemini 2.5 Flash-Lite (Free)",
+              provider: "Google Gemini",
+              default: false,
+            },
           );
         }
 
@@ -281,7 +314,15 @@ export function buildApp(
     audit,
   });
   registerPhase6Routes(app, { registry, authority, resolvePrincipal, audit });
-  registerChatbotRoutes(app, { registry, authority, chatbot, providerJobs, resolvePrincipal, audit, approvals });
+  registerChatbotRoutes(app, {
+    registry,
+    authority,
+    chatbot,
+    providerJobs,
+    resolvePrincipal,
+    audit,
+    approvals,
+  });
 
   return app;
 }

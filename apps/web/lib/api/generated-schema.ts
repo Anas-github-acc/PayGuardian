@@ -4,2252 +4,2262 @@
  */
 
 export interface paths {
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Gateway Health Check */
-        get: operations["getHealth"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/system/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** System Status */
-        get: operations["getSystemStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Gateway Health Check */
+    get: operations["getHealth"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/system/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Available Models */
-        get: operations["listModels"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** System Status */
+    get: operations["getSystemStatus"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/models": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List user environments */
-        get: operations["listEnvironments"];
-        put?: never;
-        /** Create an isolated environment */
-        post: operations["createEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Available Models */
+    get: operations["listModels"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get environment details */
-        get: operations["getEnvironment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List user environments */
+    get: operations["listEnvironments"];
+    put?: never;
+    /** Create an isolated environment */
+    post: operations["createEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/pause": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pause environment */
-        post: operations["pauseEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get environment details */
+    get: operations["getEnvironment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/pause": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/resume": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resume environment */
-        post: operations["resumeEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Pause environment */
+    post: operations["pauseEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/resume": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/revoke": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke environment */
-        post: operations["revokeEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Resume environment */
+    post: operations["resumeEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/revoke": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/agents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List agents in environment */
-        get: operations["listAgents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Revoke environment */
+    post: operations["revokeEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/agents/root": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Register root agent */
-        post: operations["createRootAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List agents in environment */
+    get: operations["listAgents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/agents/root": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/agents/children": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Register child agent */
-        post: operations["registerChildAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Register root agent */
+    post: operations["createRootAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/agents/children": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/agents/{agentId}/disable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Disable an agent */
-        post: operations["disableAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Register child agent */
+    post: operations["registerChildAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/agents/{agentId}/disable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/agents/{agentId}/revoke": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke an agent */
-        post: operations["revokeAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Disable an agent */
+    post: operations["disableAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/agents/{agentId}/revoke": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/mandates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List mandates in environment */
-        get: operations["listMandates"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Revoke an agent */
+    post: operations["revokeAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/mandates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/mandates/root": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create root mandate */
-        post: operations["createRootMandate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List mandates in environment */
+    get: operations["listMandates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/mandates/root": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/mandates/{mandateId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get mandate details */
-        get: operations["getMandate"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create root mandate */
+    post: operations["createRootMandate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/mandates/{mandateId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/mandates/{mandateId}/delegations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Delegate narrower mandate to child agent */
-        post: operations["delegateMandate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get mandate details */
+    get: operations["getMandate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/mandates/{mandateId}/delegations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/mandates/{mandateId}/revocations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke mandate cascade */
-        post: operations["revokeMandate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Delegate narrower mandate to child agent */
+    post: operations["delegateMandate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/mandates/{mandateId}/revocations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/mandates/{mandateId}/check": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Check mandate policy without executing */
-        post: operations["checkMandatePolicy"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Revoke mandate cascade */
+    post: operations["revokeMandate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/mandates/{mandateId}/check": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/ledger/accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List ledger accounts in environment */
-        get: operations["listLedgerAccounts"];
-        put?: never;
-        /** Create ledger account */
-        post: operations["createLedgerAccount"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Check mandate policy without executing */
+    post: operations["checkMandatePolicy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/ledger/accounts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/ledger/accounts/{accountId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get ledger account details */
-        get: operations["getLedgerAccount"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List ledger accounts in environment */
+    get: operations["listLedgerAccounts"];
+    put?: never;
+    /** Create ledger account */
+    post: operations["createLedgerAccount"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/ledger/accounts/{accountId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/ledger/allocations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Transfer budget between ledger accounts */
-        post: operations["allocateLedgerFunds"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get ledger account details */
+    get: operations["getLedgerAccount"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/ledger/allocations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/actions/reserve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reserve funds for protected action */
-        post: operations["reserveAction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Transfer budget between ledger accounts */
+    post: operations["allocateLedgerFunds"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/actions/reserve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/actions/{actionId}/capture": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Capture held reservation */
-        post: operations["captureAction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reserve funds for protected action */
+    post: operations["reserveAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/actions/{actionId}/capture": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/actions/{actionId}/release": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Release held reservation back to account */
-        post: operations["releaseAction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Capture held reservation */
+    post: operations["captureAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/actions/{actionId}/release": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/actions/simulate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Simulate action execution */
-        post: operations["simulateAction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Release held reservation back to account */
+    post: operations["releaseAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/actions/simulate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/approvals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List approvals in environment */
-        get: operations["listApprovals"];
-        put?: never;
-        /** Submit action for human approval */
-        post: operations["createApproval"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Simulate action execution */
+    post: operations["simulateAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/approvals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/approvals/{approvalId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get approval details */
-        get: operations["getApproval"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List approvals in environment */
+    get: operations["listApprovals"];
+    put?: never;
+    /** Submit action for human approval */
+    post: operations["createApproval"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/approvals/{approvalId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/approvals/{approvalId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve approval request */
-        post: operations["approveApproval"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get approval details */
+    get: operations["getApproval"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/approvals/{approvalId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/approvals/{approvalId}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject approval request */
-        post: operations["rejectApproval"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Approve approval request */
+    post: operations["approveApproval"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/approvals/{approvalId}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List sessions in environment */
-        get: operations["listSessions"];
-        put?: never;
-        /** Create a session */
-        post: operations["createSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reject approval request */
+    post: operations["rejectApproval"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/sessions/{sessionId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get session details */
-        get: operations["getSession"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update session status or context */
-        patch: operations["updateSession"];
-        trace?: never;
+    /** List sessions in environment */
+    get: operations["listSessions"];
+    put?: never;
+    /** Create a session */
+    post: operations["createSession"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/sessions/{sessionId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/sessions/{sessionId}/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List session runs */
-        get: operations["listSessionRuns"];
-        put?: never;
-        /** Start a session run */
-        post: operations["createSessionRun"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get session details */
+    get: operations["getSession"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update session status or context */
+    patch: operations["updateSession"];
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/sessions/{sessionId}/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/sessions/{sessionId}/runs/{runId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update run checkpoint or status */
-        patch: operations["updateSessionRun"];
-        trace?: never;
+    /** List session runs */
+    get: operations["listSessionRuns"];
+    put?: never;
+    /** Start a session run */
+    post: operations["createSessionRun"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/sessions/{sessionId}/runs/{runId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/payments/paypal/orders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create idempotent PayPal Sandbox order */
-        post: operations["createPayPalOrder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update run checkpoint or status */
+    patch: operations["updateSessionRun"];
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/payments/paypal/orders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/payments/paypal/{actionId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get PayPal operation and reconciliation status */
-        get: operations["getPayPalOperation"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create idempotent PayPal Sandbox order */
+    post: operations["createPayPalOrder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/payments/paypal/{actionId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/payments/paypal/{actionId}/capture": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Capture approved PayPal order */
-        post: operations["capturePayPalOrder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get PayPal operation and reconciliation status */
+    get: operations["getPayPalOperation"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/payments/paypal/{actionId}/capture": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/payments/paypal/operations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List PayPal operations in environment */
-        get: operations["listPayPalOperations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Capture approved PayPal order */
+    post: operations["capturePayPalOrder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/payments/paypal/operations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/webhooks/paypal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** PayPal webhook handler */
-        post: operations["handlePayPalWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List PayPal operations in environment */
+    get: operations["listPayPalOperations"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/webhooks/paypal": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Retrieve tamper-evident audit activity events */
-        get: operations["listActivityEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** PayPal webhook handler */
+    post: operations["handlePayPalWebhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/activity": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/agents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Agent Runtime available agents */
-        get: operations["runtimeGetAgents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Retrieve tamper-evident audit activity events */
+    get: operations["listActivityEvents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/tools": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Agent Runtime available tools */
-        get: operations["runtimeGetTools"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Agent Runtime available agents */
+    get: operations["runtimeGetAgents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/tools": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Execute agent prompt run */
-        post: operations["runtimeRunAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Agent Runtime available tools */
+    get: operations["runtimeGetTools"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/run": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /** Execute agent prompt run */
+    post: operations["runtimeRunAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        HealthResponse: {
-            /** @enum {string} */
-            status: "ok";
-            service: string;
-            phase: string;
-        };
-        SystemStatusResponse: {
-            service: string;
-            authorityEnforcement: string;
-            message: string;
-        };
-        EnvironmentDto: {
-            id: string;
-            name: string;
-            purpose: string;
-            currency: string;
-            budgetLimitMinor: number;
-            /** @enum {string} */
-            status: "active" | "paused" | "revoked";
-            createdAt: string;
-        };
-        CreateEnvironmentRequest: {
-            name: string;
-            purpose: string;
-            currency: string;
-            budgetLimitMinor: number;
-        };
-        AgentDto: {
-            id: string;
-            environmentId: string;
-            name: string;
-            kind: string;
-            parentAgentId?: string | null;
-            /** @enum {string} */
-            status: "active" | "disabled" | "revoked";
-            createdAt: string;
-        };
-        CreateRootAgentRequest: {
-            name: string;
-            capabilities?: string[];
-        };
-        RegisterChildAgentRequest: {
-            parentAgentId: string;
-            name: string;
-            kind: string;
-            capabilities?: string[];
-        };
-        MandateDto: {
-            id: string;
-            environmentId: string;
-            issuerUserId: string;
-            holderAgentId: string;
-            parentMandateId?: string | null;
-            budgetLimitMinor: number;
-            allocatedMinor: number;
-            spentMinor: number;
-            reservedMinor: number;
-            currency: string;
-            permittedActions: string[];
-            expiresAt: string;
-            canDelegate: boolean;
-            maxDelegationDepth: number;
-            approvalRequired: boolean;
-            /** @enum {string} */
-            state: "active" | "expired" | "revoked";
-            revokedAt?: string | null;
-            createdAt: string;
-        };
-        CreateRootMandateRequest: {
-            holderAgentId: string;
-            budgetLimitMinor: number;
-            currency: string;
-            permittedActions: string[];
-            expiresAt: string;
-            canDelegate: boolean;
-            maxDelegationDepth: number;
-            approvalRequired: boolean;
-        };
-        DelegateMandateRequest: {
-            holderAgentId: string;
-            budgetLimitMinor: number;
-            currency: string;
-            permittedActions: string[];
-            expiresAt: string;
-            canDelegate: boolean;
-            maxDelegationDepth: number;
-            approvalRequired: boolean;
-        };
-        PolicyDecisionDto: {
-            allowed: boolean;
-            /** @enum {string} */
-            code: "ALLOW" | "MANDATE_NOT_FOUND" | "MANDATE_REVOKED" | "MANDATE_EXPIRED" | "ACTION_NOT_PERMITTED" | "BUDGET_EXCEEDED" | "DELEGATION_NOT_PERMITTED" | "DELEGATION_DEPTH_EXCEEDED" | "CURRENCY_MISMATCH" | "APPROVAL_REQUIRED";
-            reason: string;
-        };
-        LedgerAccountDto: {
-            id: string;
-            environmentId: string;
-            mandateId: string;
-            parentAccountId?: string | null;
-            currency: string;
-            availableMinor: number;
-            reservedMinor: number;
-            capturedMinor: number;
-        };
-        ActionReserveRequest: {
-            agentId: string;
-            mandateId: string;
-            ledgerAccountId: string;
-            idempotencyKey: string;
-            requestHash: string;
-            action: string;
-            amountMinor: number;
-            currency: string;
-            approvalId?: string;
-        };
-        ActionReserveResponse: {
-            action: {
-                id: string;
-                environmentId: string;
-                agentId: string;
-                mandateId: string;
-                idempotencyKey: string;
-                requestHash: string;
-                action: string;
-                amountMinor: number;
-                currency: string;
-                authorizationState: string;
-                executionState: string;
-                createdAt: string;
-            };
-            reservation: {
-                actionId: string;
-                accountId: string;
-                amountMinor: number;
-                /** @enum {string} */
-                state: "held" | "captured" | "released";
-            };
-        };
-        ApprovalDto: {
-            id: string;
-            environmentId: string;
-            mandateId: string;
-            agentId: string;
-            action: string;
-            amountMinor: number;
-            currency: string;
-            requestHash: string;
-            /** @enum {string} */
-            status: "pending" | "approved" | "rejected";
-            approvedBy?: string | null;
-            approvedAt?: string | null;
-            rejectionReason?: string | null;
-            createdAt: string;
-            updatedAt: string;
-        };
-        SessionDto: {
-            id: string;
-            environmentId: string;
-            agentId?: string | null;
-            name: string;
-            /** @enum {string} */
-            status: "active" | "paused" | "completed" | "cancelled";
-            context: {
-                [key: string]: unknown;
-            };
-            createdAt: string;
-            updatedAt: string;
-        };
-        SessionRunDto: {
-            id: string;
-            sessionId: string;
-            agentId: string;
-            /** @enum {string} */
-            status: "running" | "paused" | "completed" | "failed";
-            checkpoint: {
-                [key: string]: unknown;
-            };
-            createdAt: string;
-            updatedAt: string;
-        };
-        PayPalOrderRequest: {
-            agentId: string;
-            mandateId: string;
-            ledgerAccountId: string;
-            idempotencyKey: string;
-            requestHash: string;
-            action: string;
-            amountMinor: number;
-            /** @enum {string} */
-            currency: "USD";
-            approvalId?: string;
-            returnUrl?: string;
-            cancelUrl?: string;
-        };
-        PayPalOperationSummaryDto: {
-            actionId: string;
-            /** @enum {string} */
-            provider: "paypal";
-            providerOrderId?: string | null;
-            status: string;
-            observedProviderStatus?: string | null;
-            captureId?: string | null;
-            /** @enum {string} */
-            reconciliationState: "pending" | "resolved" | "uncertain";
-            amountMinor?: number | null;
-            currency?: string | null;
-            authorizationState?: string | null;
-            executionState?: string | null;
-            lastCheckedAt?: string | null;
-            lastEventAt?: string | null;
-            lastErrorCode?: string | null;
-            createdAt: string;
-            updatedAt: string;
-        };
-        AuditEventDto: {
-            id: string;
-            environmentId: string;
-            /** @enum {string} */
-            actorType: "user" | "agent" | "service" | "system";
-            actorId?: string | null;
-            sessionId?: string | null;
-            mandateId?: string | null;
-            actionId?: string | null;
-            eventType: string;
-            /** @enum {string} */
-            outcome: "success" | "denied" | "failure";
-            reasonCode?: string | null;
-            payload: {
-                [key: string]: unknown;
-            };
-            previousHash?: string | null;
-            eventHash: string;
-            createdAt: string;
-        };
-        RunRequest: {
-            /** @default personal */
-            agent: string;
-            message: string;
-            /** @default true */
-            dry_run: boolean;
-            environment_id?: string | null;
-            mandate_id?: string | null;
-            action?: string | null;
-            amount_minor?: number | null;
-            /** @default USD */
-            currency: string;
-            parameters?: {
-                [key: string]: unknown;
-            } | null;
-        };
+  schemas: {
+    HealthResponse: {
+      /** @enum {string} */
+      status: "ok";
+      service: string;
+      phase: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    SystemStatusResponse: {
+      service: string;
+      authorityEnforcement: string;
+      message: string;
+    };
+    EnvironmentDto: {
+      id: string;
+      name: string;
+      purpose: string;
+      currency: string;
+      budgetLimitMinor: number;
+      /** @enum {string} */
+      status: "active" | "paused" | "revoked";
+      createdAt: string;
+    };
+    CreateEnvironmentRequest: {
+      name: string;
+      purpose: string;
+      currency: string;
+      budgetLimitMinor: number;
+    };
+    AgentDto: {
+      id: string;
+      environmentId: string;
+      name: string;
+      kind: string;
+      parentAgentId?: string | null;
+      /** @enum {string} */
+      status: "active" | "disabled" | "revoked";
+      createdAt: string;
+    };
+    CreateRootAgentRequest: {
+      name: string;
+      capabilities?: string[];
+    };
+    RegisterChildAgentRequest: {
+      parentAgentId: string;
+      name: string;
+      kind: string;
+      capabilities?: string[];
+    };
+    MandateDto: {
+      id: string;
+      environmentId: string;
+      issuerUserId: string;
+      holderAgentId: string;
+      parentMandateId?: string | null;
+      budgetLimitMinor: number;
+      allocatedMinor: number;
+      spentMinor: number;
+      reservedMinor: number;
+      currency: string;
+      permittedActions: string[];
+      expiresAt: string;
+      canDelegate: boolean;
+      maxDelegationDepth: number;
+      approvalRequired: boolean;
+      /** @enum {string} */
+      state: "active" | "expired" | "revoked";
+      revokedAt?: string | null;
+      createdAt: string;
+    };
+    CreateRootMandateRequest: {
+      holderAgentId: string;
+      budgetLimitMinor: number;
+      currency: string;
+      permittedActions: string[];
+      expiresAt: string;
+      canDelegate: boolean;
+      maxDelegationDepth: number;
+      approvalRequired: boolean;
+    };
+    DelegateMandateRequest: {
+      holderAgentId: string;
+      budgetLimitMinor: number;
+      currency: string;
+      permittedActions: string[];
+      expiresAt: string;
+      canDelegate: boolean;
+      maxDelegationDepth: number;
+      approvalRequired: boolean;
+    };
+    PolicyDecisionDto: {
+      allowed: boolean;
+      /** @enum {string} */
+      code:
+        | "ALLOW"
+        | "MANDATE_NOT_FOUND"
+        | "MANDATE_REVOKED"
+        | "MANDATE_EXPIRED"
+        | "ACTION_NOT_PERMITTED"
+        | "BUDGET_EXCEEDED"
+        | "DELEGATION_NOT_PERMITTED"
+        | "DELEGATION_DEPTH_EXCEEDED"
+        | "CURRENCY_MISMATCH"
+        | "APPROVAL_REQUIRED";
+      reason: string;
+    };
+    LedgerAccountDto: {
+      id: string;
+      environmentId: string;
+      mandateId: string;
+      parentAccountId?: string | null;
+      currency: string;
+      availableMinor: number;
+      reservedMinor: number;
+      capturedMinor: number;
+    };
+    ActionReserveRequest: {
+      agentId: string;
+      mandateId: string;
+      ledgerAccountId: string;
+      idempotencyKey: string;
+      requestHash: string;
+      action: string;
+      amountMinor: number;
+      currency: string;
+      approvalId?: string;
+    };
+    ActionReserveResponse: {
+      action: {
+        id: string;
+        environmentId: string;
+        agentId: string;
+        mandateId: string;
+        idempotencyKey: string;
+        requestHash: string;
+        action: string;
+        amountMinor: number;
+        currency: string;
+        authorizationState: string;
+        executionState: string;
+        createdAt: string;
+      };
+      reservation: {
+        actionId: string;
+        accountId: string;
+        amountMinor: number;
+        /** @enum {string} */
+        state: "held" | "captured" | "released";
+      };
+    };
+    ApprovalDto: {
+      id: string;
+      environmentId: string;
+      mandateId: string;
+      agentId: string;
+      action: string;
+      amountMinor: number;
+      currency: string;
+      requestHash: string;
+      /** @enum {string} */
+      status: "pending" | "approved" | "rejected";
+      approvedBy?: string | null;
+      approvedAt?: string | null;
+      rejectionReason?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    SessionDto: {
+      id: string;
+      environmentId: string;
+      agentId?: string | null;
+      name: string;
+      /** @enum {string} */
+      status: "active" | "paused" | "completed" | "cancelled";
+      context: {
+        [key: string]: unknown;
+      };
+      createdAt: string;
+      updatedAt: string;
+    };
+    SessionRunDto: {
+      id: string;
+      sessionId: string;
+      agentId: string;
+      /** @enum {string} */
+      status: "running" | "paused" | "completed" | "failed";
+      checkpoint: {
+        [key: string]: unknown;
+      };
+      createdAt: string;
+      updatedAt: string;
+    };
+    PayPalOrderRequest: {
+      agentId: string;
+      mandateId: string;
+      ledgerAccountId: string;
+      idempotencyKey: string;
+      requestHash: string;
+      action: string;
+      amountMinor: number;
+      /** @enum {string} */
+      currency: "USD";
+      approvalId?: string;
+      returnUrl?: string;
+      cancelUrl?: string;
+    };
+    PayPalOperationSummaryDto: {
+      actionId: string;
+      /** @enum {string} */
+      provider: "paypal";
+      providerOrderId?: string | null;
+      status: string;
+      observedProviderStatus?: string | null;
+      captureId?: string | null;
+      /** @enum {string} */
+      reconciliationState: "pending" | "resolved" | "uncertain";
+      amountMinor?: number | null;
+      currency?: string | null;
+      authorizationState?: string | null;
+      executionState?: string | null;
+      lastCheckedAt?: string | null;
+      lastEventAt?: string | null;
+      lastErrorCode?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+    AuditEventDto: {
+      id: string;
+      environmentId: string;
+      /** @enum {string} */
+      actorType: "user" | "agent" | "service" | "system";
+      actorId?: string | null;
+      sessionId?: string | null;
+      mandateId?: string | null;
+      actionId?: string | null;
+      eventType: string;
+      /** @enum {string} */
+      outcome: "success" | "denied" | "failure";
+      reasonCode?: string | null;
+      payload: {
+        [key: string]: unknown;
+      };
+      previousHash?: string | null;
+      eventHash: string;
+      createdAt: string;
+    };
+    RunRequest: {
+      /** @default personal */
+      agent: string;
+      message: string;
+      /** @default true */
+      dry_run: boolean;
+      environment_id?: string | null;
+      mandate_id?: string | null;
+      action?: string | null;
+      amount_minor?: number | null;
+      /** @default USD */
+      currency: string;
+      parameters?: {
+        [key: string]: unknown;
+      } | null;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getHealth: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Service health status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HealthResponse"];
-                };
-            };
-        };
+  getHealth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getSystemStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Service health status */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description System status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemStatusResponse"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["HealthResponse"];
         };
+      };
     };
-    listModels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of models */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        models: {
-                            id: string;
-                            label: string;
-                            provider: string;
-                            default?: boolean;
-                        }[];
-                    };
-                };
-            };
-        };
+  };
+  getSystemStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    listEnvironments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description System status */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of environments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentDto"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["SystemStatusResponse"];
         };
+      };
     };
-    createEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Environment created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentDto"];
-                };
-            };
-        };
+  };
+  listModels: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of models */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Environment details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentDto"];
-                };
-            };
+        content: {
+          "application/json": {
+            models: {
+              id: string;
+              label: string;
+              provider: string;
+              default?: boolean;
+            }[];
+          };
         };
+      };
     };
-    pauseEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated environment */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentDto"];
-                };
-            };
-        };
+  };
+  listEnvironments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    resumeEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of environments */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Updated environment */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EnvironmentDto"][];
         };
+      };
     };
-    revokeEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated environment */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentDto"];
-                };
-            };
-        };
+  };
+  createEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    listAgents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of agents */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentDto"][];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateEnvironmentRequest"];
+      };
     };
-    createRootAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Environment created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRootAgentRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["EnvironmentDto"];
         };
-        responses: {
-            /** @description Root agent created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentDto"];
-                };
-            };
-        };
+      };
     };
-    registerChildAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterChildAgentRequest"];
-            };
-        };
-        responses: {
-            /** @description Child agent registered */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentDto"];
-                };
-            };
-        };
+  };
+  getEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    disableAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                agentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Environment details */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Disabled agent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EnvironmentDto"];
         };
+      };
     };
-    revokeAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                agentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Revoked agent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentDto"];
-                };
-            };
-        };
+  };
+  pauseEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    listMandates: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Updated environment */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of mandates */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateDto"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EnvironmentDto"];
         };
+      };
     };
-    createRootMandate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRootMandateRequest"];
-            };
-        };
-        responses: {
-            /** @description Created mandate */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateDto"];
-                };
-            };
-        };
+  };
+  resumeEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    getMandate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                mandateId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Updated environment */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Mandate details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EnvironmentDto"];
         };
+      };
     };
-    delegateMandate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                mandateId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DelegateMandateRequest"];
-            };
-        };
-        responses: {
-            /** @description Delegated child mandate */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateDto"];
-                };
-            };
-        };
+  };
+  revokeEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    revokeMandate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                mandateId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Updated environment */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Revoked mandate */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MandateDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EnvironmentDto"];
         };
+      };
     };
-    checkMandatePolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                mandateId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    action: string;
-                    amountMinor: number;
-                    currency: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Policy check result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyDecisionDto"];
-                };
-            };
-        };
+  };
+  listAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    listLedgerAccounts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of agents */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of ledger accounts */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerAccountDto"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["AgentDto"][];
         };
+      };
     };
-    createLedgerAccount: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    mandateId: string;
-                    parentAccountId?: string | null;
-                    currency: string;
-                    initialDepositMinor?: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Created ledger account */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerAccountDto"];
-                };
-            };
-        };
+  };
+  createRootAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    getLedgerAccount: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                accountId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Ledger account details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LedgerAccountDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateRootAgentRequest"];
+      };
     };
-    allocateLedgerFunds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Root agent created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    fromAccountId: string;
-                    toAccountId: string;
-                    amountMinor: number;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["AgentDto"];
         };
-        responses: {
-            /** @description Allocation result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                        allocationId: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    reserveAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActionReserveRequest"];
-            };
-        };
-        responses: {
-            /** @description Reservation response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActionReserveResponse"];
-                };
-            };
-        };
+  };
+  registerChildAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    captureAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                actionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    amountMinor?: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Capture result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                        capturedMinor: number;
-                    };
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterChildAgentRequest"];
+      };
     };
-    releaseAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                actionId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Child agent registered */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Release result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                        releasedMinor: number;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["AgentDto"];
         };
+      };
     };
-    simulateAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    agentId: string;
-                    mandateId: string;
-                    action: string;
-                    amountMinor: number;
-                    currency: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Simulation result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        allowed: boolean;
-                        reason?: string;
-                    };
-                };
-            };
-        };
+  };
+  disableAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        agentId: string;
+      };
+      cookie?: never;
     };
-    listApprovals: {
-        parameters: {
-            query?: {
-                status?: "pending" | "approved" | "rejected";
-            };
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Disabled agent */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of approvals */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalDto"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["AgentDto"];
         };
+      };
     };
-    createApproval: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    mandateId: string;
-                    agentId: string;
-                    action: string;
-                    amountMinor: number;
-                    currency: string;
-                    requestHash: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Created approval request */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalDto"];
-                };
-            };
-        };
+  };
+  revokeAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        agentId: string;
+      };
+      cookie?: never;
     };
-    getApproval: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                approvalId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Revoked agent */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Approval details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["AgentDto"];
         };
+      };
     };
-    approveApproval: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                approvalId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Approved approval */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalDto"];
-                };
-            };
-        };
+  };
+  listMandates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    rejectApproval: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                approvalId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of mandates */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["MandateDto"][];
         };
-        responses: {
-            /** @description Rejected approval */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalDto"];
-                };
-            };
-        };
+      };
     };
-    listSessions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of sessions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionDto"][];
-                };
-            };
-        };
+  };
+  createRootMandate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    createSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    agentId?: string | null;
-                    context?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Created session */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateRootMandateRequest"];
+      };
     };
-    getSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                sessionId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Created mandate */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Session details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["MandateDto"];
         };
+      };
     };
-    updateSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name?: string;
-                    /** @enum {string} */
-                    status?: "active" | "paused" | "completed" | "cancelled";
-                    context?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Updated session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionDto"];
-                };
-            };
-        };
+  };
+  getMandate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mandateId: string;
+      };
+      cookie?: never;
     };
-    listSessionRuns: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                sessionId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Mandate details */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of session runs */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionRunDto"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["MandateDto"];
         };
+      };
     };
-    createSessionRun: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                sessionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    agentId: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Created session run */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionRunDto"];
-                };
-            };
-        };
+  };
+  delegateMandate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mandateId: string;
+      };
+      cookie?: never;
     };
-    updateSessionRun: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                sessionId: string;
-                runId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    status?: "running" | "paused" | "completed" | "failed";
-                    checkpoint?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Updated session run */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionRunDto"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DelegateMandateRequest"];
+      };
     };
-    createPayPalOrder: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Delegated child mandate */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PayPalOrderRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["MandateDto"];
         };
-        responses: {
-            /** @description PayPal order created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        actionId: string;
-                        orderId: string;
-                        approveUrl?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    getPayPalOperation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                actionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description PayPal operation summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PayPalOperationSummaryDto"];
-                };
-            };
-        };
+  };
+  revokeMandate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mandateId: string;
+      };
+      cookie?: never;
     };
-    capturePayPalOrder: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                environmentId: string;
-                actionId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Revoked mandate */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Captured operation summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PayPalOperationSummaryDto"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["MandateDto"];
         };
+      };
     };
-    listPayPalOperations: {
-        parameters: {
-            query?: {
-                since?: string;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of PayPal operations */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PayPalOperationSummaryDto"][];
-                };
-            };
-        };
+  };
+  checkMandatePolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mandateId: string;
+      };
+      cookie?: never;
     };
-    handlePayPalWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          action: string;
+          amountMinor: number;
+          currency: string;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
-            };
-        };
-        responses: {
-            /** @description Webhook receipt */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        received: boolean;
-                    };
-                };
-            };
-        };
+      };
     };
-    listActivityEvents: {
-        parameters: {
-            query?: {
-                since?: string;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                environmentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Policy check result */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of audit events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditEventDto"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["PolicyDecisionDto"];
         };
+      };
     };
-    runtimeGetAgents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of runtime agents */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
+  };
+  listLedgerAccounts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    runtimeGetTools: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of ledger accounts */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List of runtime tools */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["LedgerAccountDto"][];
         };
+      };
     };
-    runtimeRunAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RunRequest"];
-            };
-        };
-        responses: {
-            /** @description Agent run response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
+  };
+  createLedgerAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": {
+          mandateId: string;
+          parentAccountId?: string | null;
+          currency: string;
+          initialDepositMinor?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Created ledger account */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerAccountDto"];
+        };
+      };
+    };
+  };
+  getLedgerAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        accountId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ledger account details */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LedgerAccountDto"];
+        };
+      };
+    };
+  };
+  allocateLedgerFunds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          fromAccountId: string;
+          toAccountId: string;
+          amountMinor: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Allocation result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+            allocationId: string;
+          };
+        };
+      };
+    };
+  };
+  reserveAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ActionReserveRequest"];
+      };
+    };
+    responses: {
+      /** @description Reservation response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ActionReserveResponse"];
+        };
+      };
+    };
+  };
+  captureAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          amountMinor?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Capture result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+            capturedMinor: number;
+          };
+        };
+      };
+    };
+  };
+  releaseAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+            releasedMinor: number;
+          };
+        };
+      };
+    };
+  };
+  simulateAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          agentId: string;
+          mandateId: string;
+          action: string;
+          amountMinor: number;
+          currency: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Simulation result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            allowed: boolean;
+            reason?: string;
+          };
+        };
+      };
+    };
+  };
+  listApprovals: {
+    parameters: {
+      query?: {
+        status?: "pending" | "approved" | "rejected";
+      };
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of approvals */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalDto"][];
+        };
+      };
+    };
+  };
+  createApproval: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          mandateId: string;
+          agentId: string;
+          action: string;
+          amountMinor: number;
+          currency: string;
+          requestHash: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Created approval request */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalDto"];
+        };
+      };
+    };
+  };
+  getApproval: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        approvalId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Approval details */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalDto"];
+        };
+      };
+    };
+  };
+  approveApproval: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        approvalId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Approved approval */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalDto"];
+        };
+      };
+    };
+  };
+  rejectApproval: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        approvalId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Rejected approval */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalDto"];
+        };
+      };
+    };
+  };
+  listSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of sessions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionDto"][];
+        };
+      };
+    };
+  };
+  createSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          agentId?: string | null;
+          context?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Created session */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionDto"];
+        };
+      };
+    };
+  };
+  getSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Session details */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionDto"];
+        };
+      };
+    };
+  };
+  updateSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name?: string;
+          /** @enum {string} */
+          status?: "active" | "paused" | "completed" | "cancelled";
+          context?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Updated session */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionDto"];
+        };
+      };
+    };
+  };
+  listSessionRuns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of session runs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionRunDto"][];
+        };
+      };
+    };
+  };
+  createSessionRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        sessionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          agentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Created session run */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionRunDto"];
+        };
+      };
+    };
+  };
+  updateSessionRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        sessionId: string;
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @enum {string} */
+          status?: "running" | "paused" | "completed" | "failed";
+          checkpoint?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Updated session run */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionRunDto"];
+        };
+      };
+    };
+  };
+  createPayPalOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PayPalOrderRequest"];
+      };
+    };
+    responses: {
+      /** @description PayPal order created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            actionId: string;
+            orderId: string;
+            approveUrl?: string;
+          };
+        };
+      };
+    };
+  };
+  getPayPalOperation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description PayPal operation summary */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayPalOperationSummaryDto"];
+        };
+      };
+    };
+  };
+  capturePayPalOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        environmentId: string;
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Captured operation summary */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayPalOperationSummaryDto"];
+        };
+      };
+    };
+  };
+  listPayPalOperations: {
+    parameters: {
+      query?: {
+        since?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of PayPal operations */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayPalOperationSummaryDto"][];
+        };
+      };
+    };
+  };
+  handlePayPalWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          [key: string]: unknown;
+        };
+      };
+    };
+    responses: {
+      /** @description Webhook receipt */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            received: boolean;
+          };
+        };
+      };
+    };
+  };
+  listActivityEvents: {
+    parameters: {
+      query?: {
+        since?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of audit events */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuditEventDto"][];
+        };
+      };
+    };
+  };
+  runtimeGetAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of runtime agents */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  runtimeGetTools: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of runtime tools */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  runtimeRunAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RunRequest"];
+      };
+    };
+    responses: {
+      /** @description Agent run response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
 }

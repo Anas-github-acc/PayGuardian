@@ -20,8 +20,8 @@ export function mapSessionDtoToItem(dto: SessionDto): SessionItem {
     dto.status === "completed" || dto.status === "cancelled"
       ? "done"
       : dto.status === "paused"
-      ? "waiting for you"
-      : "active";
+        ? "waiting for you"
+        : "active";
 
   const description =
     typeof dto.context?.description === "string"

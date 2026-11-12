@@ -33,9 +33,6 @@ export default async function DashboardPage() {
   }
 
   return (
-    <DashboardClient
-      initialEnvironmentId={activeEnvId}
-      initialEnvironment={initialEnvironment}
-    />
+    <DashboardClient initialEnvironmentId={activeEnvId} initialEnvironment={initialEnvironment} />
   );
 }

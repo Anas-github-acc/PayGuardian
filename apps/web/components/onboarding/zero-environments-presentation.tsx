@@ -147,7 +147,7 @@ export function ZeroEnvironmentsPresentation({
     <div
       className={cn(
         "relative min-h-[calc(100vh-3.5rem)] w-full overflow-y-auto bg-black text-white selection:bg-zinc-800 selection:text-white px-4 py-10 sm:px-8 lg:px-12",
-        className
+        className,
       )}
     >
       {/* Background Decorative Gradient Orbs */}
@@ -179,9 +179,9 @@ export function ZeroEnvironmentsPresentation({
           </h1>
 
           <p className="max-w-2xl text-base sm:text-lg text-zinc-400 leading-relaxed">
-            Autonomous AI agents cannot touch payment rails directly. PayGuardian
-            creates strict cryptographic sandbox environments where financial authority is
-            monotonically bounded and verified before every transaction.
+            Autonomous AI agents cannot touch payment rails directly. PayGuardian creates strict
+            cryptographic sandbox environments where financial authority is monotonically bounded
+            and verified before every transaction.
           </p>
 
           {/* Quick Action Buttons */}
@@ -244,7 +244,10 @@ export function ZeroEnvironmentsPresentation({
                 How PayGuardian Bounds Autonomous AI Execution
               </h2>
             </div>
-            <Badge variant="secondary" className="hidden sm:inline-flex border-zinc-800 text-zinc-400 font-mono text-[11px]">
+            <Badge
+              variant="secondary"
+              className="hidden sm:inline-flex border-zinc-800 text-zinc-400 font-mono text-[11px]"
+            >
               FIDO2 · DAG ≤ 2 · Minor Units
             </Badge>
           </div>
@@ -261,7 +264,8 @@ export function ZeroEnvironmentsPresentation({
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Operator defines an isolated Environment, bounding max budget ($10k) and setting passkey verification thresholds.
+                  Operator defines an isolated Environment, bounding max budget ($10k) and setting
+                  passkey verification thresholds.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-500">
@@ -280,7 +284,8 @@ export function ZeroEnvironmentsPresentation({
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Root Personal Orchestrator holds the master spending mandate. Can only sub-delegate fractions down the DAG.
+                  Root Personal Orchestrator holds the master spending mandate. Can only
+                  sub-delegate fractions down the DAG.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-blue-400/80">
@@ -299,7 +304,8 @@ export function ZeroEnvironmentsPresentation({
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Specialist subagents (e.g. Flight, Hotel) receive scoped child mandates ($4,000 max) strictly bounded by role.
+                  Specialist subagents (e.g. Flight, Hotel) receive scoped child mandates ($4,000
+                  max) strictly bounded by role.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-emerald-400/80">
@@ -318,7 +324,8 @@ export function ZeroEnvironmentsPresentation({
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Gateway verifies signature, checks double-entry balance, confirms approvals, and settles to rails (PayPal/Sim).
+                  Gateway verifies signature, checks double-entry balance, confirms approvals, and
+                  settles to rails (PayPal/Sim).
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-400">
@@ -357,7 +364,7 @@ export function ZeroEnvironmentsPresentation({
                     "group relative cursor-pointer flex flex-col justify-between rounded-xl border p-5 transition-all duration-300 select-none",
                     isSelected
                       ? cn("bg-zinc-900/90 shadow-xl", pillar.borderColor)
-                      : "border-zinc-800/80 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900/40"
+                      : "border-zinc-800/80 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900/40",
                   )}
                 >
                   <div className="space-y-3">
@@ -365,7 +372,7 @@ export function ZeroEnvironmentsPresentation({
                       <div
                         className={cn(
                           "flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 transition-colors",
-                          pillar.iconColor
+                          pillar.iconColor,
                         )}
                       >
                         <Icon className="h-5 w-5" />
@@ -398,7 +405,7 @@ export function ZeroEnvironmentsPresentation({
               <div
                 className={cn(
                   "pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-bl blur-[80px]",
-                  architecturalPillars[activePillarIndex]?.accentGlow
+                  architecturalPillars[activePillarIndex]?.accentGlow,
                 )}
               />
 
@@ -406,7 +413,8 @@ export function ZeroEnvironmentsPresentation({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <span className="font-mono text-xs uppercase tracking-wider text-zinc-400">
-                      Pillar 0{activePillarIndex + 1} · {architecturalPillars[activePillarIndex]?.subtitle}
+                      Pillar 0{activePillarIndex + 1} ·{" "}
+                      {architecturalPillars[activePillarIndex]?.subtitle}
                     </span>
                     <h3 className="text-xl font-bold text-white mt-0.5">
                       {architecturalPillars[activePillarIndex]?.title}

@@ -55,8 +55,8 @@ describe("Screen 3 (Approvals) & Screen 4 (Payment Trace) Integration Contracts"
       parentMandateId: "man-root",
       budgetLimitMinor: 500000, // $5,000.00
       allocatedMinor: 500000,
-      spentMinor: 100000,       // $1,000.00
-      reservedMinor: 50000,     // $500.00
+      spentMinor: 100000, // $1,000.00
+      reservedMinor: 50000, // $500.00
       currency: "USD",
       permittedActions: ["vendor.pay"],
       expiresAt: "2026-12-01T00:00:00Z",

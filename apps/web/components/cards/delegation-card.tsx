@@ -45,7 +45,11 @@ export function DelegationCard({
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2">
           {isFunded ? (
-            <Badge variant="authorized" showDot className="bg-success/10 text-success border-success/30">
+            <Badge
+              variant="authorized"
+              showDot
+              className="bg-success/10 text-success border-success/30"
+            >
               <ShieldCheck className="h-3 w-3 mr-1" />
               AUTHORITY DELEGATED
             </Badge>
@@ -59,15 +63,21 @@ export function DelegationCard({
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
           <Clock className="h-3 w-3" />
-          <span>{new Date(verifiedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          <span>
+            {new Date(verifiedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
         </div>
       </div>
 
       {/* Parent -> Child Chain */}
       <div className="mt-3.5 flex items-center gap-2 text-xs">
         <div className="flex-1 rounded border border-border bg-secondary p-2 text-center">
-          <span className="text-[10px] text-muted-foreground block uppercase font-mono">Parent Mandate</span>
-          <span className="font-medium text-foreground truncate block mt-0.5">{parentAgentName}</span>
+          <span className="text-[10px] text-muted-foreground block uppercase font-mono">
+            Parent Mandate
+          </span>
+          <span className="font-medium text-foreground truncate block mt-0.5">
+            {parentAgentName}
+          </span>
         </div>
 
         <div className="flex flex-col items-center px-1 text-success">
@@ -76,7 +86,9 @@ export function DelegationCard({
         </div>
 
         <div className="flex-1 rounded border border-success/30 bg-success/5 p-2 text-center">
-          <span className="text-[10px] text-success block uppercase font-mono">Authorized Subagent</span>
+          <span className="text-[10px] text-success block uppercase font-mono">
+            Authorized Subagent
+          </span>
           <span className="font-medium text-foreground truncate block mt-0.5">{subagentName}</span>
         </div>
       </div>
@@ -84,21 +96,25 @@ export function DelegationCard({
       {/* Budget Limit & Details */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs border-t border-border pt-3">
         <div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Delegated Budget Limit</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Delegated Budget Limit
+          </span>
           <span className="font-mono text-sm font-semibold text-success tabular-nums block mt-0.5">
             {isFunded ? formatMinorUnits(delegatedBudgetMinor, currency) : "Unfunded ($0)"}
           </span>
         </div>
 
         <div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Sub-Delegation Depth</span>
-          <span className="text-foreground text-[11px] block mt-1">
-            Max {maxDepth} hops
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Sub-Delegation Depth
           </span>
+          <span className="text-foreground text-[11px] block mt-1">Max {maxDepth} hops</span>
         </div>
 
         <div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Permitted Rails</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Permitted Rails
+          </span>
           <div className="flex flex-wrap gap-1 mt-1">
             {allowedRails.map((rail) => (
               <span
@@ -112,9 +128,15 @@ export function DelegationCard({
         </div>
 
         <div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Authority Expiry</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Authority Expiry
+          </span>
           <span className="font-mono text-[11px] text-muted-foreground block mt-1">
-            {new Date(expiresAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+            {new Date(expiresAt).toLocaleDateString([], {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </span>
         </div>
       </div>

@@ -1,7 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Check, Copy, Download, Code2, Edit3, Terminal, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Download,
+  Code2,
+  Edit3,
+  Terminal,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { getShikiHighlighter } from "../utils/shiki-highlighter";
 import { CodeMirrorEditor } from "./codemirror-editor";
 import { MonacoIDE } from "./monaco-ide";
@@ -69,7 +78,9 @@ export function ShikiCodeBlock({
   };
 
   return (
-    <div className={`group my-4 overflow-hidden rounded-xl border border-zinc-800 bg-[#0d1117] shadow-xl ${className}`}>
+    <div
+      className={`group my-4 overflow-hidden rounded-xl border border-zinc-800 bg-[#0d1117] shadow-xl ${className}`}
+    >
       {/* Top Header Bar */}
       <div className="flex flex-wrap items-center justify-between border-b border-zinc-800 bg-zinc-900/90 px-3.5 py-2 text-xs text-zinc-400">
         {/* Left: Language & Filename */}
@@ -78,9 +89,7 @@ export function ShikiCodeBlock({
           {filename ? (
             <span className="font-mono font-medium text-zinc-200">{filename}</span>
           ) : (
-            <span className="font-mono uppercase tracking-wider text-zinc-300">
-              {language}
-            </span>
+            <span className="font-mono uppercase tracking-wider text-zinc-300">{language}</span>
           )}
           <span className="text-[10px] text-zinc-500 font-mono">
             {linesCount} {linesCount === 1 ? "line" : "lines"}

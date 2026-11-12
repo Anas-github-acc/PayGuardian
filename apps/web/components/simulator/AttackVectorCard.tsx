@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ShieldAlert,
-  Play,
-  RotateCw,
-} from "lucide-react";
+import { ShieldAlert, Play, RotateCw } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { Button } from "../ui/button";
@@ -54,8 +50,9 @@ export function AttackVectorCard({
     <div
       className={cn(
         "group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all duration-200 hover:border-border hover:bg-secondary top-shade",
-        isExecuting && "border-warning/40 bg-warning/[0.03] shadow-[0_0_15px_oklch(var(--warning-solid)/0.1)]",
-        className
+        isExecuting &&
+          "border-warning/40 bg-warning/[0.03] shadow-[0_0_15px_oklch(var(--warning-solid)/0.1)]",
+        className,
       )}
     >
       <div>
@@ -70,9 +67,7 @@ export function AttackVectorCard({
                 {vector.shortTitle}
               </h3>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              {vector.scenario}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{vector.scenario}</p>
           </div>
           <div className="shrink-0">{getSeverityBadge()}</div>
         </div>
@@ -133,7 +128,11 @@ export function AttackVectorCard({
           <SimulationBadge />
           {lastExecutedAt && (
             <span className="text-[10px] font-mono text-muted-foreground">
-              Last run {new Date(lastExecutedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              Last run{" "}
+              {new Date(lastExecutedAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           )}
         </div>
@@ -146,7 +145,7 @@ export function AttackVectorCard({
             "h-8 px-3 text-xs font-semibold transition-all",
             isExecuting
               ? "bg-warning/20 text-warning border border-warning/40"
-              : "bg-white/[0.08] text-foreground hover:bg-destructive hover:text-black border border-border"
+              : "bg-white/[0.08] text-foreground hover:bg-destructive hover:text-black border border-border",
           )}
         >
           {isExecuting ? (

@@ -449,13 +449,12 @@ export function registerPhase3Routes(
           decision: {
             allowed: false,
             code: "WALLET_INTEGRITY_VIOLATION",
-            reason: error instanceof Error ? error.message : "Wallet integrity verification failed.",
+            reason:
+              error instanceof Error ? error.message : "Wallet integrity verification failed.",
           },
         });
       }
-      return reply
-        .code(400)
-        .send({ code, message: "Action reservation failed." });
+      return reply.code(400).send({ code, message: "Action reservation failed." });
     }
   });
 
@@ -602,43 +601,49 @@ export function registerPhase3Routes(
 
   app.get<{
     Params: { environmentId: string; accountId: string };
-  }>("/v1/environments/:environmentId/ledger/accounts/:accountId/integrity", async (request, reply) => {
-    const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
-    if (!owner) return;
-    const environment = await dependencies.registry.getEnvironment(
-      owner.userId,
-      request.params.environmentId,
-    );
-    if (!environment) {
-      return reply
-        .code(404)
-        .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
-    }
-    const result = await dependencies.ledger.verifyAccountIntegrity(
-      environment.id,
-      request.params.accountId,
-    );
-    return { accountId: request.params.accountId, ...result };
-  });
+  }>(
+    "/v1/environments/:environmentId/ledger/accounts/:accountId/integrity",
+    async (request, reply) => {
+      const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+      if (!owner) return;
+      const environment = await dependencies.registry.getEnvironment(
+        owner.userId,
+        request.params.environmentId,
+      );
+      if (!environment) {
+        return reply
+          .code(404)
+          .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+      }
+      const result = await dependencies.ledger.verifyAccountIntegrity(
+        environment.id,
+        request.params.accountId,
+      );
+      return { accountId: request.params.accountId, ...result };
+    },
+  );
 
   app.get<{
     Params: { environmentId: string; accountId: string };
-  }>("/v1/environments/:environmentId/ledger/accounts/:accountId/transitions", async (request, reply) => {
-    const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
-    if (!owner) return;
-    const environment = await dependencies.registry.getEnvironment(
-      owner.userId,
-      request.params.environmentId,
-    );
-    if (!environment) {
-      return reply
-        .code(404)
-        .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
-    }
-    const transitions = await dependencies.ledger.getTransitions(
-      environment.id,
-      request.params.accountId,
-    );
-    return { transitions };
-  });
+  }>(
+    "/v1/environments/:environmentId/ledger/accounts/:accountId/transitions",
+    async (request, reply) => {
+      const owner = await principal(request as AppRequest, reply, dependencies.resolvePrincipal);
+      if (!owner) return;
+      const environment = await dependencies.registry.getEnvironment(
+        owner.userId,
+        request.params.environmentId,
+      );
+      if (!environment) {
+        return reply
+          .code(404)
+          .send({ code: "ENVIRONMENT_NOT_FOUND", message: "Environment not found." });
+      }
+      const transitions = await dependencies.ledger.getTransitions(
+        environment.id,
+        request.params.accountId,
+      );
+      return { transitions };
+    },
+  );
 }

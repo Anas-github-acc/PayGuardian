@@ -59,11 +59,46 @@ const CONTEXT_OPTIONS: ContextTagOption[] = [
 ];
 
 const FALLBACK_MODELS: ComposerModel[] = [
-  { id: "free/gpt-6-luna", name: "APInex GPT-6 Luna (Free)", effort: "Medium", provider: "openai", isFav: true, efforts: ALL_EFFORTS },
-  { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash", effort: "Medium", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", effort: "Medium", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", effort: "High", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
-  { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash-Lite", effort: "Low", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
+  {
+    id: "free/gpt-6-luna",
+    name: "APInex GPT-6 Luna (Free)",
+    effort: "Medium",
+    provider: "openai",
+    isFav: true,
+    efforts: ALL_EFFORTS,
+  },
+  {
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash",
+    effort: "Medium",
+    provider: "gemini",
+    isFav: false,
+    efforts: ALL_EFFORTS,
+  },
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    effort: "Medium",
+    provider: "gemini",
+    isFav: false,
+    efforts: ALL_EFFORTS,
+  },
+  {
+    id: "gemini-2.5-pro",
+    name: "Gemini 2.5 Pro",
+    effort: "High",
+    provider: "gemini",
+    isFav: false,
+    efforts: ALL_EFFORTS,
+  },
+  {
+    id: "gemini-2.5-flash-lite",
+    name: "Gemini 2.5 Flash-Lite",
+    effort: "Low",
+    provider: "gemini",
+    isFav: false,
+    efforts: ALL_EFFORTS,
+  },
 ];
 
 const FAVS_STORAGE_KEY = "pg_composer_fav_models";
@@ -167,7 +202,9 @@ export function AIComposer({
   const [searchRevealed, setSearchRevealed] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [modelFilterTab, setModelFilterTab] = React.useState<ModelFilterTab>("fav");
-  const [models, setModels] = React.useState<ComposerModel[]>(() => globalCachedModels ?? FALLBACK_MODELS);
+  const [models, setModels] = React.useState<ComposerModel[]>(
+    () => globalCachedModels ?? FALLBACK_MODELS,
+  );
   const [modelsLoading, setModelsLoading] = React.useState<boolean>(globalCachedModels === null);
   const [activeModelId, setActiveModelId] = React.useState<string>(() => {
     if (globalCachedActiveModelId) return globalCachedActiveModelId;
@@ -231,25 +268,29 @@ export function AIComposer({
 
     fetch(`${API_BASE}/v1/models`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((data: { models?: { id: string; label: string; provider?: string; default?: boolean }[] }) => {
-        if (cancelled) return;
-        const remote = Array.isArray(data.models) && data.models.length > 0 ? data.models : null;
-        const list: ComposerModel[] = (remote ?? FALLBACK_MODELS).map((m) => ({
-          id: m.id,
-          name: "label" in m ? m.label : m.id,
-          effort: "Medium",
-          provider: providerKeyFor("provider" in m ? m.provider : undefined),
-          isFav: false,
-          efforts: ALL_EFFORTS,
-        }));
-        const withFavs = loadFavs(list);
-        globalCachedModels = withFavs;
-        setModels(withFavs);
-        if (!globalCachedActiveModelId) {
-          const def = remote?.find((m) => m.default) ?? list[0];
-          selectModelId(def.id);
-        }
-      })
+      .then(
+        (data: {
+          models?: { id: string; label: string; provider?: string; default?: boolean }[];
+        }) => {
+          if (cancelled) return;
+          const remote = Array.isArray(data.models) && data.models.length > 0 ? data.models : null;
+          const list: ComposerModel[] = (remote ?? FALLBACK_MODELS).map((m) => ({
+            id: m.id,
+            name: "label" in m ? m.label : m.id,
+            effort: "Medium",
+            provider: providerKeyFor("provider" in m ? m.provider : undefined),
+            isFav: false,
+            efforts: ALL_EFFORTS,
+          }));
+          const withFavs = loadFavs(list);
+          globalCachedModels = withFavs;
+          setModels(withFavs);
+          if (!globalCachedActiveModelId) {
+            const def = remote?.find((m) => m.default) ?? list[0];
+            selectModelId(def.id);
+          }
+        },
+      )
       .catch(() => {
         if (!cancelled) {
           const fallbackWithFavs = loadFavs(FALLBACK_MODELS);
@@ -322,7 +363,7 @@ export function AIComposer({
 
   const activeModel = React.useMemo(
     () => models.find((m) => m.id === activeModelId) ?? models[0],
-    [models, activeModelId]
+    [models, activeModelId],
   );
 
   const favCount = React.useMemo(() => models.filter((m) => m.isFav).length, [models]);
@@ -337,8 +378,8 @@ export function AIComposer({
   }, [models, modelFilterTab, searchQuery]);
 
   const hoveredModel = React.useMemo(
-    () => (hoveredModelId ? models.find((m) => m.id === hoveredModelId) ?? null : null),
-    [models, hoveredModelId]
+    () => (hoveredModelId ? (models.find((m) => m.id === hoveredModelId) ?? null) : null),
+    [models, hoveredModelId],
   );
 
   // Effort submenu tracks the hovered model row vertically.
@@ -367,7 +408,7 @@ export function AIComposer({
       try {
         localStorage.setItem(
           FAVS_STORAGE_KEY,
-          JSON.stringify(updated.filter((m) => m.isFav).map((m) => m.id))
+          JSON.stringify(updated.filter((m) => m.isFav).map((m) => m.id)),
         );
       } catch {
         // Ignore storage access errors in sandboxed contexts
@@ -492,9 +533,7 @@ export function AIComposer({
       return;
     }
 
-    const routingLabel = autoMode
-      ? "Auto Router"
-      : `${activeModel.name} · ${activeModel.effort}`;
+    const routingLabel = autoMode ? "Auto Router" : `${activeModel.name} · ${activeModel.effort}`;
     onSubmit({
       prompt: trimmed,
       mode,
@@ -529,7 +568,13 @@ export function AIComposer({
               key={`${fileName}-${idx}`}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-foreground shadow-sm"
             >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-muted-foreground">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="text-muted-foreground"
+              >
                 <path
                   d="M9.5 2H4.5C3.67 2 3 2.67 3 3.5V12.5C3 13.33 3.67 14 4.5 14H11.5C12.33 14 13 13.33 13 12.5V5.5L9.5 2Z"
                   stroke="currentColor"
@@ -577,7 +622,7 @@ export function AIComposer({
             "absolute bottom-[76px] left-4 z-40 w-56 origin-bottom-left rounded-xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-xl transition-all duration-200",
             contextMenuOpen
               ? "pointer-events-auto scale-100 translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0"
+              : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0",
           )}
         >
           <div className="px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider text-zinc-500">
@@ -625,7 +670,7 @@ export function AIComposer({
               aria-label="Add files"
               className={cn(
                 pillBase,
-                "flex w-9 items-center overflow-hidden px-2.5 hover:w-[112px]"
+                "flex w-9 items-center overflow-hidden px-2.5 hover:w-[112px]",
               )}
             >
               <Plus className="h-4 w-4 shrink-0 text-foreground" />
@@ -647,7 +692,7 @@ export function AIComposer({
                 className={cn(
                   pillBase,
                   "flex items-center gap-1.5 px-3.5 text-[13px] font-medium hover:bg-secondary/80",
-                  modeMenuOpen && "text-muted-foreground"
+                  modeMenuOpen && "text-muted-foreground",
                 )}
               >
                 <span>{mode}</span>
@@ -661,7 +706,7 @@ export function AIComposer({
                   "absolute bottom-[calc(100%+8px)] left-0 z-30 w-36 origin-bottom-left rounded-xl border border-zinc-800 bg-zinc-950 p-1.5 shadow-xl transition-all duration-200",
                   modeMenuOpen
                     ? "pointer-events-auto scale-100 translate-y-0 opacity-100"
-                    : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0"
+                    : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0",
                 )}
               >
                 <div className="flex flex-col gap-0.5">
@@ -700,7 +745,7 @@ export function AIComposer({
                   className={cn(
                     pillBase,
                     "flex items-center gap-2 px-2 hover:bg-secondary/80",
-                    modelsLoading && "text-muted-foreground"
+                    modelsLoading && "text-muted-foreground",
                   )}
                 >
                   <span className="flex shrink-0 items-center justify-center text-foreground">
@@ -769,7 +814,7 @@ export function AIComposer({
                   "absolute bottom-[calc(100%+8px)] left-0 z-30 w-64 origin-bottom-left rounded-xl border border-zinc-800 bg-zinc-950 p-2 shadow-xl transition-all duration-200",
                   modelMenuOpen
                     ? "pointer-events-auto scale-100 translate-y-0 opacity-100"
-                    : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0"
+                    : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0",
                 )}
               >
                 {/* Collapsible search input */}
@@ -782,7 +827,7 @@ export function AIComposer({
                     "overflow-hidden opacity-0 transition-all duration-200",
                     searchRevealed || searchQuery.length > 0
                       ? "mb-1 max-h-10 opacity-100"
-                      : "mb-0 max-h-0"
+                      : "mb-0 max-h-0",
                   )}
                 >
                   <div className="flex h-8 items-center gap-2 rounded-lg px-2.5">
@@ -794,7 +839,12 @@ export function AIComposer({
                       className="shrink-0 text-muted-foreground"
                     >
                       <circle cx="7.2" cy="7.2" r="4.8" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M10.8 10.8L13.8 13.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <path
+                        d="M10.8 10.8L13.8 13.8"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
                     </svg>
                     <input
                       ref={searchInputRef}
@@ -825,13 +875,13 @@ export function AIComposer({
                     onClick={handleToggleAutoInMenu}
                     className={cn(
                       "relative h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-                      autoMode ? "bg-primary" : "bg-muted"
+                      autoMode ? "bg-primary" : "bg-muted",
                     )}
                   >
                     <span
                       className={cn(
                         "absolute left-[3px] top-[2px] h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200",
-                        autoMode && "translate-x-4"
+                        autoMode && "translate-x-4",
                       )}
                     />
                   </button>
@@ -862,7 +912,7 @@ export function AIComposer({
                         "flex h-6 flex-1 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[12px] font-medium capitalize transition-colors",
                         modelFilterTab === tab
                           ? "border-border bg-secondary text-foreground shadow-sm"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
                       )}
                     >
                       {tab === "fav" && (
@@ -883,7 +933,9 @@ export function AIComposer({
                       {tab === "fav" && favCount > 0 && (
                         <span className="text-[11px] font-normal opacity-75">{favCount}</span>
                       )}
-                      {tab === "all" && <span className="text-[11px] font-normal opacity-75">{models.length}</span>}
+                      {tab === "all" && (
+                        <span className="text-[11px] font-normal opacity-75">{models.length}</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -937,7 +989,7 @@ export function AIComposer({
                           }}
                           className={cn(
                             "flex h-9 cursor-pointer items-center justify-between rounded-full pl-1.5 pr-2.5 transition-colors",
-                            isHovered && "bg-secondary"
+                            isHovered && "bg-secondary",
                           )}
                         >
                           <div className="flex min-w-0 items-center gap-2 pr-1">
@@ -946,7 +998,9 @@ export function AIComposer({
                             </span>
                             <span className="truncate text-[13px]">
                               <span className="font-medium text-foreground">{m.name}</span>
-                              <span className="ml-1 font-normal text-muted-foreground">{m.effort}</span>
+                              <span className="ml-1 font-normal text-muted-foreground">
+                                {m.effort}
+                              </span>
                             </span>
                             <button
                               type="button"
@@ -955,7 +1009,9 @@ export function AIComposer({
                               title={m.isFav ? "Remove from favourites" : "Add to favourites"}
                               className={cn(
                                 "flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-90",
-                                m.isFav ? "text-warning" : "text-muted-foreground hover:text-warning"
+                                m.isFav
+                                  ? "text-warning"
+                                  : "text-muted-foreground hover:text-warning",
                               )}
                             >
                               <svg
@@ -995,10 +1051,12 @@ export function AIComposer({
                   "absolute bottom-3 left-[calc(100%+8px)] z-30 w-36 origin-bottom-left rounded-2xl border border-border bg-popover p-2 shadow-xl transition-all duration-200 before:absolute before:-left-2 before:inset-y-0 before:w-2 before:content-['']",
                   isEffortMenuVisible
                     ? "pointer-events-auto scale-100 translate-y-0 opacity-100"
-                    : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0"
+                    : "pointer-events-none translate-y-1.5 scale-[0.97] opacity-0",
                 )}
               >
-                <div className="px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground">Effort</div>
+                <div className="px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground">
+                  Effort
+                </div>
                 <div className="flex flex-col gap-0.5">
                   {hoveredModel?.efforts.map((level) => {
                     const isCurrentEffort = hoveredModel.effort === level;
@@ -1032,7 +1090,7 @@ export function AIComposer({
                 "flex h-9 w-9 shrink-0 items-center justify-center p-0",
                 isRecording
                   ? "border-destructive/40 bg-destructive/10 text-destructive"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-zinc-400 hover:text-white",
               )}
             >
               {isRecording ? (
@@ -1063,7 +1121,7 @@ export function AIComposer({
                   "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 disabled:pointer-events-none disabled:opacity-40",
                   isSubmitReady
                     ? "border-zinc-700 bg-white text-black hover:bg-zinc-200 active:scale-95"
-                    : "border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-200"
+                    : "border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-200",
                 )}
               >
                 <ArrowUp className="h-4 w-4" />

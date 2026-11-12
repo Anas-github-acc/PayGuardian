@@ -57,7 +57,10 @@ export function usePaymentTrace(
       }
 
       const payload: BackendTracePayload = {
-        action: (backendTrace?.action ?? actionData?.action ?? null) as Record<string, unknown> | null,
+        action: (backendTrace?.action ?? actionData?.action ?? null) as Record<
+          string,
+          unknown
+        > | null,
         agent: backendTrace?.agent ?? null,
         mandateChain: backendTrace?.mandateChain ?? [],
         rootMandate: backendTrace?.rootMandate ?? null,

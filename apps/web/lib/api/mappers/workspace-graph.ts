@@ -74,13 +74,16 @@ export function mapWorkspaceGraph(
     const account = mandate ? accountByMandate.get(mandate.id) : undefined;
     // For child agents, their allocated authority ceiling is their mandate budget limit
     const allocatedMinor =
-      (mandate?.budgetLimitMinor && mandate.budgetLimitMinor > 0)
+      mandate?.budgetLimitMinor && mandate.budgetLimitMinor > 0
         ? mandate.budgetLimitMinor
         : (mandate?.allocatedMinor ?? 0);
     const subDelegatedMinor = mandate?.allocatedMinor ?? 0;
     const spentMinor = account?.capturedMinor ?? mandate?.spentMinor ?? 0;
     const reservedMinor = account?.reservedMinor ?? mandate?.reservedMinor ?? 0;
-    const availableMinor = Math.max(0, allocatedMinor - subDelegatedMinor - spentMinor - reservedMinor);
+    const availableMinor = Math.max(
+      0,
+      allocatedMinor - subDelegatedMinor - spentMinor - reservedMinor,
+    );
     const isFunded = allocatedMinor > 0 && mandate?.state === "active";
 
     let status: AgentNodeData["status"] = "active";

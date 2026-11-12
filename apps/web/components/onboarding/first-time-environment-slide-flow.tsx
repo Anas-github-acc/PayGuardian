@@ -4,17 +4,8 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FlutedGlass } from "@paper-design/shaders-react";
-import {
-  ArrowRight,
-  ArrowLeft,
-  Sparkles,
-  AlertCircle,
-  Loader2,
-  Compass,
-  Cpu,
-} from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, AlertCircle, Loader2, Compass, Cpu } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { LetsWorkTogether } from "@/components/ui/lets-work-section";
 import { formatMinorUnits, parseMajorToMinor } from "../../app/lib/currency";
 import { workspaceStore, type Environment } from "../../app/lib/workspace-store";
 import { apiClient } from "../../lib/api/client";
@@ -76,7 +67,6 @@ const SLIDE_EXPLANATIONS: Record<SlideStep, SlideExplanation> = {
 export function FirstTimeEnvironmentSlideFlow() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [viewMode, setViewMode] = useState<"hero" | "create">("hero");
   const [step, setStep] = useState<SlideStep>(1);
 
   // Form State
@@ -84,7 +74,7 @@ export function FirstTimeEnvironmentSlideFlow() {
   const [slug, setSlug] = useState("procurement-travel");
   const [envType, setEnvType] = useState<"sandbox" | "production">("sandbox");
   const [purpose, setPurpose] = useState(
-    "Autonomous hotel and flight booking, vendor procurement, and corporate travel reconciliation."
+    "Autonomous hotel and flight booking, vendor procurement, and corporate travel reconciliation.",
   );
 
   // Mandate & Budget
@@ -96,10 +86,7 @@ export function FirstTimeEnvironmentSlideFlow() {
   // Guardrails
   const [thresholdDisplay, setThresholdDisplay] = useState("500.00");
   const [maxDelegationDepth, setMaxDelegationDepth] = useState(2);
-  const [allowedRails, setAllowedRails] = useState<string[]>([
-    "PayPal",
-    "Simulation",
-  ]);
+  const [allowedRails, setAllowedRails] = useState<string[]>(["PayPal", "Simulation"]);
   const [requirePasskey, setRequirePasskey] = useState(true);
   const [cascadeRevoke, setCascadeRevoke] = useState(true);
 
@@ -128,9 +115,7 @@ export function FirstTimeEnvironmentSlideFlow() {
       setName("Travel & Hospitality Sandbox");
       setSlug("travel-hospitality");
       setEnvType("sandbox");
-      setPurpose(
-        "Autonomous flight booking, hotel procurement, and itinerary settlement."
-      );
+      setPurpose("Autonomous flight booking, hotel procurement, and itinerary settlement.");
       setCurrency("USD");
       setBudgetDisplay("10,000.00");
       setThresholdDisplay("500.00");
@@ -141,7 +126,7 @@ export function FirstTimeEnvironmentSlideFlow() {
       setSlug("prod-cloud-ops");
       setEnvType("production");
       setPurpose(
-        "Live infrastructure auto-scaling, vendor compute procurement, and incident settlement."
+        "Live infrastructure auto-scaling, vendor compute procurement, and incident settlement.",
       );
       setCurrency("USD");
       setBudgetDisplay("50,000.00");
@@ -177,7 +162,7 @@ export function FirstTimeEnvironmentSlideFlow() {
     const formattedBudget = formatMinorUnits(calculatedBudgetMinor, currency);
     const formattedThreshold = formatMinorUnits(calculatedThresholdMinor, currency);
     return `By proceeding, you grant authority to environment '${name}' to execute bounded transactions up to ${formattedBudget} via ${allowedRails.join(
-      ", "
+      ", ",
     )}. Any action exceeding ${formattedThreshold} strictly demands cryptographic FIDO2 passkey biometric verification. Max delegation depth is capped at ${maxDelegationDepth} tiers. Authority expires in ${expiryDays} days.`;
   }, [
     name,
@@ -282,32 +267,7 @@ export function FirstTimeEnvironmentSlideFlow() {
           "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02) 45%, transparent 75%)",
       }}
     >
-      <AnimatePresence mode="wait">
-        {viewMode === "hero" ? (
-          <motion.div
-            key="hero-view"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, y: -24, filter: "blur(6px)" }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="flex h-full w-full items-center justify-center p-0 overflow-hidden"
-          >
-            <LetsWorkTogether
-              onGetStarted={() => setViewMode("create")}
-              actionText="Get Started"
-              learnMoreText="Learn More"
-              className="h-full w-full max-h-screen overflow-hidden bg-transparent"
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="create-view"
-            initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: 24, filter: "blur(6px)" }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="grid h-full max-h-[calc(100vh-1rem)] gap-6 p-3 sm:p-4 lg:grid-cols-[0.94fr_1.06fr] overflow-y-auto"
-          >
+      <div className="grid h-full max-h-[calc(100vh-1rem)] gap-6 p-3 sm:p-4 lg:grid-cols-[0.94fr_1.06fr] overflow-y-auto">
         {/* Left Column: Slide-by-Slide Environment Creation Form */}
         <div className="flex min-h-[760px] items-center justify-center rounded-md border border-black/10 bg-white px-6 py-12 dark:border-white/5 dark:bg-[#0a0a0c] lg:min-h-0 lg:px-14 lg:py-16 xl:px-20">
           <div className="mx-auto w-full max-w-[480px]">
@@ -315,8 +275,7 @@ export function FirstTimeEnvironmentSlideFlow() {
             <div className="mb-6 space-y-2">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="font-semibold uppercase tracking-wider text-black/50 dark:text-white/40">
-                  Slide {step} of 4 ·{" "}
-                  {step === 1 && "Identity & Isolation"}
+                  Slide {step} of 4 · {step === 1 && "Identity & Isolation"}
                   {step === 2 && "Set your spending authority"}
                   {step === 3 && "Define delegation rules"}
                   {step === 4 && "Review & activate"}
@@ -560,26 +519,21 @@ export function FirstTimeEnvironmentSlideFlow() {
                                 : "border-black/15 bg-white text-black/70 hover:bg-black/[0.02] dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
                             }`}
                           >
-                            {depth} {depth === 1 ? "Tier (Root Only)" : "Tiers (Root + Specialists)"}
+                            {depth}{" "}
+                            {depth === 1 ? "Tier (Root Only)" : "Tiers (Root + Specialists)"}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div className="space-y-3 pt-2 text-xs leading-5 text-black/60 dark:text-white/50">
-                      <CheckboxLine
-                        checked={requirePasskey}
-                        onChange={setRequirePasskey}
-                      >
-                        Mandatory WebAuthn / FIDO2 passkey confirmation for any
-                        action exceeding the threshold.
+                      <CheckboxLine checked={requirePasskey} onChange={setRequirePasskey}>
+                        Mandatory WebAuthn / FIDO2 passkey confirmation for any action exceeding the
+                        threshold.
                       </CheckboxLine>
-                      <CheckboxLine
-                        checked={cascadeRevoke}
-                        onChange={setCascadeRevoke}
-                      >
-                        Enforce instant cascading revocation across all child
-                        delegations upon environment pause or shutdown.
+                      <CheckboxLine checked={cascadeRevoke} onChange={setCascadeRevoke}>
+                        Enforce instant cascading revocation across all child delegations upon
+                        environment pause or shutdown.
                       </CheckboxLine>
                     </div>
                   </motion.div>
@@ -597,9 +551,7 @@ export function FirstTimeEnvironmentSlideFlow() {
                     {/* Contract Summary Box */}
                     <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3.5 space-y-2 text-xs dark:border-white/10 dark:bg-white/5">
                       <div className="flex justify-between items-center pb-2 border-b border-black/10 dark:border-white/10">
-                        <span className="font-semibold text-black dark:text-white">
-                          {name}
-                        </span>
+                        <span className="font-semibold text-black dark:text-white">{name}</span>
                         <span className="font-mono uppercase text-[10px] px-2 py-0.5 rounded bg-black/5 text-black/70 border border-black/15 dark:bg-white/10 dark:text-white/80 dark:border-white/20">
                           {envType}
                         </span>
@@ -654,16 +606,7 @@ export function FirstTimeEnvironmentSlideFlow() {
                     <ArrowLeft className="size-4" />
                     <span>Back</span>
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("hero")}
-                    className="flex h-11 items-center justify-center gap-1.5 rounded-lg border border-black/15 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 cursor-pointer"
-                  >
-                    <ArrowLeft className="size-4" />
-                    <span>Intro</span>
-                  </button>
-                )}
+                ) : null}
 
                 {step === 1 && (
                   <button
@@ -843,9 +786,7 @@ export function FirstTimeEnvironmentSlideFlow() {
                       <span className="font-semibold text-zinc-100">
                         {name || "Environment Graph"}
                       </span>
-                      <span className="text-[10px] text-zinc-400 font-mono">
-                        ({envType})
-                      </span>
+                      <span className="text-[10px] text-zinc-400 font-mono">({envType})</span>
                     </div>
                     <span className="font-mono text-[10px] text-zinc-400">
                       Depth: {maxDelegationDepth} Tiers
@@ -891,7 +832,7 @@ export function FirstTimeEnvironmentSlideFlow() {
                       <div className="font-mono text-[10px] text-zinc-300 font-medium">
                         {formatMinorUnits(
                           Math.min(400000, Math.floor(calculatedBudgetMinor * 0.4)),
-                          currency
+                          currency,
                         )}
                       </div>
                     </div>
@@ -907,10 +848,8 @@ export function FirstTimeEnvironmentSlideFlow() {
             </div>
           </div>
         </div>
-      </motion.div>
-    )}
-  </AnimatePresence>
-</section>
+      </div>
+    </section>
   );
 }
 
@@ -927,9 +866,7 @@ function InputField({
 }) {
   return (
     <div className="space-y-1.5 text-left w-full">
-      <label className="text-xs font-semibold text-black/60 dark:text-white/60">
-        {label}
-      </label>
+      <label className="text-xs font-semibold text-black/60 dark:text-white/60">{label}</label>
       <div className="relative flex h-11 items-center rounded-lg border border-black/15 bg-white px-3.5 dark:border-white/10 dark:bg-white/5">
         <input
           type="text"

@@ -34,10 +34,13 @@ async function main() {
       if (listError) throw listError;
       const existingUser = usersData.users.find((u) => u.email === email);
       if (existingUser) {
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
-          password,
-          email_confirm: true,
-        });
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+          existingUser.id,
+          {
+            password,
+            email_confirm: true,
+          },
+        );
         if (updateError) throw updateError;
         console.log("User successfully updated and confirmed!");
       }

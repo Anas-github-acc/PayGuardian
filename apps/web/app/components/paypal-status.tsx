@@ -146,7 +146,10 @@ export function PayPalStatus({ cancelled = false }: { cancelled?: boolean }) {
             </div>
           </dl>
         ) : null}
-        <div className="action-row" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "1.25rem" }}>
+        <div
+          className="action-row"
+          style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "1.25rem" }}
+        >
           {!cancelled && payment?.operation.status !== "COMPLETED" ? (
             <button type="button" onClick={() => void capture()} disabled={busy}>
               {busy ? "Working…" : "Capture payment"}

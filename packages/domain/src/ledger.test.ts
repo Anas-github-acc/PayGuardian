@@ -159,7 +159,9 @@ describe("ledger accounting", () => {
 
       const integrity = ledger.verifyAccountIntegrity("acc");
       expect(integrity.valid).toBe(false);
-      expect(integrity.reason).toMatch(/Account balance does not match cryptographic balance record/);
+      expect(integrity.reason).toMatch(
+        /Account balance does not match cryptographic balance record/,
+      );
 
       // Attempting to reserve/spend fails closed with WALLET_INTEGRITY_VIOLATION
       expect(() => ledger.reserve("spend-attempt", "acc", 100)).toThrowError(

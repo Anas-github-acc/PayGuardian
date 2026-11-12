@@ -17,11 +17,7 @@ export interface DropdownMenuProps {
   children: React.ReactNode;
 }
 
-export function DropdownMenu({
-  open: controlledOpen,
-  onOpenChange,
-  children,
-}: DropdownMenuProps) {
+export function DropdownMenu({ open: controlledOpen, onOpenChange, children }: DropdownMenuProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
@@ -33,7 +29,7 @@ export function DropdownMenu({
       }
       onOpenChange?.(newOpen);
     },
-    [isControlled, onOpenChange]
+    [isControlled, onOpenChange],
   );
 
   return (
@@ -51,7 +47,10 @@ export const DropdownMenuTrigger = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Trigger
     ref={ref}
-    className={cn("outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-md", className)}
+    className={cn(
+      "outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-md",
+      className,
+    )}
     {...props}
   />
 ));
@@ -81,7 +80,7 @@ export const DropdownMenuContent = React.forwardRef<
               transition={{ duration: 0.15, ease: "easeOut" }}
               className={cn(
                 "z-50 min-w-[10rem] overflow-hidden rounded-md border border-border bg-popover p-1 text-foreground shadow-lg",
-                className
+                className,
               )}
             >
               {children}
@@ -94,8 +93,9 @@ export const DropdownMenuContent = React.forwardRef<
 });
 DropdownMenuContent.displayName = "DropdownMenuContent";
 
-export interface DropdownMenuItemProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> {
+export interface DropdownMenuItemProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.Item
+> {
   variant?: "destructive";
 }
 
@@ -109,7 +109,7 @@ export const DropdownMenuItem = React.forwardRef<
       "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-xs outline-none transition-colors focus:bg-secondary focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       variant === "destructive" &&
         "text-destructive hover:text-destructive focus:text-destructive focus:bg-destructive/10",
-      className
+      className,
     )}
     {...props}
   />

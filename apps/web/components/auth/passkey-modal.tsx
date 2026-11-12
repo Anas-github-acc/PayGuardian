@@ -11,7 +11,14 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../ui/dialog";
 import { Button } from "../ui/button";
 
 export interface PasskeyModalProps {
@@ -101,7 +108,9 @@ export function PasskeyModal({
       }
     } catch (err) {
       setStep("error");
-      setErrorMessage(err instanceof Error ? err.message : "Passkey verification was cancelled or timed out.");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Passkey verification was cancelled or timed out.",
+      );
     }
   };
 
@@ -205,9 +214,7 @@ export function PasskeyModal({
               <div className="flex h-14 w-14 items-center justify-center rounded-full border border-destructive/40 bg-destructive/20 text-destructive">
                 <AlertCircle className="h-7 w-7 text-destructive" />
               </div>
-              <span className="font-semibold text-xs text-destructive">
-                Authentication Failed
-              </span>
+              <span className="font-semibold text-xs text-destructive">Authentication Failed</span>
               <p className="text-[11px] text-muted-foreground max-w-[240px]">
                 {errorMessage ?? "Unable to complete cryptographic assertion."}
               </p>
@@ -232,7 +239,9 @@ export function PasskeyModal({
                 Local Dev Mode Fallback
               </span>
             </div>
-            <span className="font-mono text-[9px] text-muted-foreground uppercase">x-local-user-id</span>
+            <span className="font-mono text-[9px] text-muted-foreground uppercase">
+              x-local-user-id
+            </span>
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
             Bypass biometric requirement for automated scripts and local development.

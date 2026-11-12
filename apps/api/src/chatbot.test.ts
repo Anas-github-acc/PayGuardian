@@ -309,8 +309,12 @@ describe("Chatbot API Routes", () => {
     expect(streamRes.headers["content-type"]).toBe("text/event-stream");
     const streamText = streamRes.body;
     expect(streamText).toContain(`id: ${ev1.id}\nevent: agent.started\ndata: {"step":1}`);
-    expect(streamText).toContain(`id: ${ev2.id}\nevent: agent.thought\ndata: {"step":2,"note":"Analyzing intent"}`);
-    expect(streamText).toContain(`id: ${ev3.id}\nevent: agent.completed\ndata: {"step":3,"result":"done"}`);
+    expect(streamText).toContain(
+      `id: ${ev2.id}\nevent: agent.thought\ndata: {"step":2,"note":"Analyzing intent"}`,
+    );
+    expect(streamText).toContain(
+      `id: ${ev3.id}\nevent: agent.completed\ndata: {"step":3,"result":"done"}`,
+    );
 
     // 2. Replay with Last-Event-ID header (should skip ev1)
     const filteredRes = await app.inject({

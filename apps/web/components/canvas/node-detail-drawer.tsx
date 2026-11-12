@@ -1,17 +1,18 @@
 "use client";
 
 import * as React from "react";
-import {
-  ShieldCheck,
-  Link2,
-  MessageSquare,
-  Trash2,
-  AlertTriangle,
-} from "lucide-react";
+import { ShieldCheck, Link2, MessageSquare, Trash2, AlertTriangle } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import type { AgentNodeData } from "./types";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "../ui/sheet";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 
@@ -41,7 +42,9 @@ export function NodeDetailDrawer({
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
   const currency = propCurrency ?? env?.currency ?? "USD";
-  const [activeTab, setActiveTab] = React.useState<"overview" | "authority" | "activity">("overview");
+  const [activeTab, setActiveTab] = React.useState<"overview" | "authority" | "activity">(
+    "overview",
+  );
   const [showRevokeConfirm, setShowRevokeConfirm] = React.useState(false);
 
   // Find node by id in store graphNodes
@@ -65,7 +68,7 @@ export function NodeDetailDrawer({
   const availableMinor = calculateAvailableMinor(
     targetNode.allocatedMinor,
     targetNode.spentMinor,
-    targetNode.reservedMinor
+    targetNode.reservedMinor,
   );
 
   const spentPercent =
@@ -75,7 +78,10 @@ export function NodeDetailDrawer({
 
   const reservedPercent =
     targetNode.allocatedMinor > 0
-      ? Math.min(100 - spentPercent, Math.round((targetNode.reservedMinor / targetNode.allocatedMinor) * 100))
+      ? Math.min(
+          100 - spentPercent,
+          Math.round((targetNode.reservedMinor / targetNode.allocatedMinor) * 100),
+        )
       : 0;
 
   const availablePercent = Math.max(0, 100 - spentPercent - reservedPercent);
@@ -167,7 +173,9 @@ export function NodeDetailDrawer({
               <div className="rounded-lg border border-border bg-secondary p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Status</span>
-                  <span className="font-medium text-foreground capitalize">{targetNode.status}</span>
+                  <span className="font-medium text-foreground capitalize">
+                    {targetNode.status}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Source</span>
@@ -189,7 +197,9 @@ export function NodeDetailDrawer({
                   Mandate Scope & Instructions
                 </span>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Autonomous task executor authorized to initiate vendor reservations and payments within prescribed minor-unit limits. Single payments exceeding $500.00 require human signature.
+                  Autonomous task executor authorized to initiate vendor reservations and payments
+                  within prescribed minor-unit limits. Single payments exceeding $500.00 require
+                  human signature.
                 </p>
               </div>
             </div>
@@ -313,7 +323,9 @@ export function NodeDetailDrawer({
               Confirm Subtree Authority Revocation
             </div>
             <p className="mt-1 text-[11px] text-foreground leading-relaxed">
-              Revoking authority will immediately desaturate this agent and all attached child subagents. All unspent allocated funds ({formatMinorUnits(availableMinor, currency)}) will be returned to parent.
+              Revoking authority will immediately desaturate this agent and all attached child
+              subagents. All unspent allocated funds ({formatMinorUnits(availableMinor, currency)})
+              will be returned to parent.
             </p>
             <div className="mt-2.5 flex items-center justify-end gap-2">
               <Button

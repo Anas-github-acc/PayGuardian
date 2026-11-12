@@ -4,14 +4,24 @@ import type {
   AgentDto,
   MandateDto,
 } from "@payguardian/contracts";
-import type { PaymentTrace, TraceStatus, TraceRail, TraceAuthNode } from "@/components/traces/types";
+import type {
+  PaymentTrace,
+  TraceStatus,
+  TraceRail,
+  TraceAuthNode,
+} from "@/components/traces/types";
 
 export interface BackendTracePayload {
   action?: Record<string, unknown> | null;
   agent?: AgentDto | null;
   mandateChain?: MandateDto[] | null;
   rootMandate?: MandateDto | null;
-  reservation?: { actionId: string; accountId?: string; amountMinor?: number; state?: string } | null;
+  reservation?: {
+    actionId: string;
+    accountId?: string;
+    amountMinor?: number;
+    state?: string;
+  } | null;
   operation?: PayPalOperationSummaryDto | null;
   auditEvent?: AuditEventDto | null;
 }
@@ -24,14 +34,14 @@ export function mapBackendTraceToView(
 ): PaymentTrace {
   const isAuditEvent = Boolean(
     traceSource &&
-      typeof (traceSource as AuditEventDto).eventType === "string" &&
-      typeof (traceSource as AuditEventDto).outcome === "string",
+    typeof (traceSource as AuditEventDto).eventType === "string" &&
+    typeof (traceSource as AuditEventDto).outcome === "string",
   );
 
   const payloadSource = !isAuditEvent ? (traceSource as BackendTracePayload) : null;
   const auditEvent = isAuditEvent
     ? (traceSource as AuditEventDto)
-    : payloadSource?.auditEvent ?? null;
+    : (payloadSource?.auditEvent ?? null);
 
   const action = (payloadSource?.action ?? null) as Record<string, unknown> | null;
   const agent = payloadSource?.agent ?? null;
@@ -50,14 +60,12 @@ export function mapBackendTraceToView(
     typeof action?.amountMinor === "number"
       ? (action.amountMinor as number)
       : typeof op?.amountMinor === "number"
-      ? op.amountMinor
-      : typeof eventPayload.amountMinor === "number"
-      ? (eventPayload.amountMinor as number)
-      : 0;
+        ? op.amountMinor
+        : typeof eventPayload.amountMinor === "number"
+          ? (eventPayload.amountMinor as number)
+          : 0;
 
-  const currency = String(
-    action?.currency ?? op?.currency ?? eventPayload.currency ?? "USD",
-  );
+  const currency = String(action?.currency ?? op?.currency ?? eventPayload.currency ?? "USD");
 
   let status: TraceStatus = "completed";
   const actionAuthState = action?.authorizationState;
@@ -84,8 +92,7 @@ export function mapBackendTraceToView(
   const rail: TraceRail = op ? "PayPal" : "Simulation";
 
   const recipient =
-    (eventPayload.recipient as string) ||
-    (op ? "PayPal Merchant" : "Authorized Gateway Recipient");
+    (eventPayload.recipient as string) || (op ? "PayPal Merchant" : "Authorized Gateway Recipient");
 
   const merchantCategory =
     (eventPayload.merchantCategory as string) ||
@@ -98,10 +105,10 @@ export function mapBackendTraceToView(
   const completedAt = op?.lastEventAt
     ? String(op.lastEventAt)
     : action?.updatedAt
-    ? String(action.updatedAt)
-    : auditEvent?.createdAt
-    ? String(auditEvent.createdAt)
-    : undefined;
+      ? String(action.updatedAt)
+      : auditEvent?.createdAt
+        ? String(auditEvent.createdAt)
+        : undefined;
 
   // Build authentic vertical authorization chain from mandateChain
   const authChain: TraceAuthNode[] =
@@ -111,7 +118,8 @@ export function mapBackendTraceToView(
           const spentMinor = m.spentMinor ?? 0;
           const reservedMinor = m.reservedMinor ?? 0;
           const availableMinor = Math.max(0, allocatedMinor - spentMinor - reservedMinor);
-          const isRevoked = m.state === "revoked" || (m as { status?: string }).status === "revoked";
+          const isRevoked =
+            m.state === "revoked" || (m as { status?: string }).status === "revoked";
           return {
             id: m.holderAgentId || m.id,
             name:
@@ -146,7 +154,8 @@ export function mapBackendTraceToView(
         ];
 
   const requestingAgent = {
-    id: agent?.id ?? (action?.agentId ? String(action.agentId) : auditEvent?.actorId || "agent-root"),
+    id:
+      agent?.id ?? (action?.agentId ? String(action.agentId) : auditEvent?.actorId || "agent-root"),
     name:
       agent?.name ??
       (auditEvent?.actorType === "agent" ? "Procurement Agent" : "Autonomous Subagent"),

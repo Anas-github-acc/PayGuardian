@@ -18,12 +18,12 @@ async function testEmailAuth() {
 
   try {
     await page.goto("https://payguardiana3.vercel.app/login", { waitUntil: "networkidle2" });
-    
+
     // Switch to sign up mode
     console.log("Clicking 'Need an account? Sign up'...");
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll("button"));
-      const signupBtn = btns.find(b => b.textContent?.includes("Need an account? Sign up"));
+      const signupBtn = btns.find((b) => b.textContent?.includes("Need an account? Sign up"));
       signupBtn?.click();
     });
 
@@ -31,7 +31,10 @@ async function testEmailAuth() {
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "signup_mode.png") });
 
     const isSignUpMode = await page.evaluate(() => {
-      return document.body.innerText.includes("Create an account") || document.body.innerText.includes("Sign up");
+      return (
+        document.body.innerText.includes("Create an account") ||
+        document.body.innerText.includes("Sign up")
+      );
     });
     console.log("Switched to Sign Up mode:", isSignUpMode);
 
@@ -53,9 +56,11 @@ async function testEmailAuth() {
 
     await new Promise((r) => setTimeout(r, 4000));
     console.log("Post-signup URL:", page.url());
-    console.log("Post-signup page text (first 300 chars):", (await page.evaluate(() => document.body.innerText)).slice(0, 300));
+    console.log(
+      "Post-signup page text (first 300 chars):",
+      (await page.evaluate(() => document.body.innerText)).slice(0, 300),
+    );
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "signup_result.png") });
-
   } finally {
     await page.close();
     await browser.disconnect();

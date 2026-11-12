@@ -58,11 +58,14 @@ export function useActivityFeed(
 
         if (events.length > 0) {
           // Track the latest ISO timestamp as cursor
-          const latestCreatedAt = events.reduce((latest, ev) => {
-            return new Date(ev.createdAt).getTime() > new Date(latest).getTime()
-              ? ev.createdAt
-              : latest;
-          }, events[events.length - 1].createdAt);
+          const latestCreatedAt = events.reduce(
+            (latest, ev) => {
+              return new Date(ev.createdAt).getTime() > new Date(latest).getTime()
+                ? ev.createdAt
+                : latest;
+            },
+            events[events.length - 1].createdAt,
+          );
           lastCursorRef.current = latestCreatedAt;
 
           const mapped = mapAuditEventsToFeed(events);

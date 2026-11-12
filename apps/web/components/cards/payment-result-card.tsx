@@ -7,11 +7,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 
 export type PaymentLifecycleStage =
-  | "requested"
-  | "authorized"
-  | "sent_to_provider"
-  | "provider_accepted"
-  | "completed";
+  "requested" | "authorized" | "sent_to_provider" | "provider_accepted" | "completed";
 
 export interface PaymentResultCardProps {
   id?: string;
@@ -64,7 +60,11 @@ export function PaymentResultCard({
       {/* Top Banner: Verification Shield & Timestamp */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2">
-          <Badge variant="authorized" showDot className="bg-success/10 text-success border-success/30">
+          <Badge
+            variant="authorized"
+            showDot
+            className="bg-success/10 text-success border-success/30"
+          >
             <ShieldCheck className="h-3 w-3 mr-1" />
             PAYMENT SETTLED
           </Badge>
@@ -72,21 +72,31 @@ export function PaymentResultCard({
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
           <Clock className="h-3 w-3" />
-          <span>{new Date(completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+          <span>
+            {new Date(completedAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
+          </span>
         </div>
       </div>
 
       {/* Recipient & Amount Headline */}
       <div className="mt-3 flex items-start justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Merchant / Recipient</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+            Merchant / Recipient
+          </div>
           <h4 className="text-sm font-semibold tracking-tight text-foreground">{recipient}</h4>
           {merchantCategory && (
             <p className="mt-0.5 text-[11px] text-muted-foreground">{merchantCategory}</p>
           )}
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Amount Paid</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+            Amount Paid
+          </div>
           <div className="text-base font-semibold font-mono text-success tabular-nums">
             {formatMinorUnits(amountMinor, currency)}
           </div>
@@ -139,17 +149,23 @@ export function PaymentResultCard({
       {/* Details Grid: Txn ID, Actor, Hash */}
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs border-t border-border pt-3">
         <div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Transaction ID</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Transaction ID
+          </span>
           <span className="font-mono text-foreground select-all text-[11px] truncate block">
             {transactionId}
           </span>
         </div>
         <div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Initiator</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Initiator
+          </span>
           <span className="text-foreground text-[11px] truncate block">{agentName}</span>
         </div>
         <div className="col-span-2">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">Auth Signature Hash</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono block">
+            Auth Signature Hash
+          </span>
           <span className="font-mono text-muted-foreground text-[11px] select-all truncate block">
             {authHash}
           </span>
@@ -160,8 +176,12 @@ export function PaymentResultCard({
       {approvalUrl && currentStage !== "completed" && (
         <div className="mt-3 rounded-md bg-blue-950/40 border border-blue-500/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="text-xs">
-            <span className="font-semibold text-blue-300 block">PayPal Sandbox Approval Needed</span>
-            <span className="text-[11px] text-zinc-400">Authorize this transaction with your PayPal Sandbox buyer account.</span>
+            <span className="font-semibold text-blue-300 block">
+              PayPal Sandbox Approval Needed
+            </span>
+            <span className="text-[11px] text-zinc-400">
+              Authorize this transaction with your PayPal Sandbox buyer account.
+            </span>
           </div>
           <a
             href={approvalUrl}

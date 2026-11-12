@@ -459,7 +459,9 @@ export class SupabaseChatbotStore implements ChatbotStore {
   }
 
   async appendEvent(input: AppendEventInput): Promise<AgentEvent> {
-    const isUuid = input.taskId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.taskId);
+    const isUuid =
+      input.taskId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.taskId);
     let { data, error } = await this.client
       .from("agent_events")
       .insert({

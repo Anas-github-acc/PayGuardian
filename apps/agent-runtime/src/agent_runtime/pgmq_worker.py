@@ -134,7 +134,9 @@ class PGMQAgentWorker:
         mandate_id = body.get("mandateId") or body.get("mandate_id")
         budget_limit_minor = body.get("budgetLimitMinor") or body.get("budget_limit_minor")
         budget_currency = body.get("budgetCurrency") or body.get("budget_currency")
-        approval_required = bool(body.get("approvalRequired") or body.get("approval_required") or False)
+        approval_required = bool(
+            body.get("approvalRequired") or body.get("approval_required") or False
+        )
 
         logger.info(
             "Claimed PGMQ message %s (run_id=%s, task_id=%s, model=%s, mandate=%s, budget=%s %s)",

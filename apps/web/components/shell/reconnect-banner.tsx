@@ -37,15 +37,12 @@ export function ReconnectBanner() {
         "relative z-50 flex items-center justify-between border-b px-4 py-2 text-xs transition-all duration-200",
         isOffline
           ? "border-destructive/30 bg-destructive/40 text-destructive"
-          : "border-warning/30 bg-warning/40 text-warning"
+          : "border-warning/30 bg-warning/40 text-warning",
       )}
     >
       <div className="flex items-center gap-2.5 overflow-hidden">
         <AlertTriangle
-          className={cn(
-            "h-4 w-4 shrink-0",
-            isOffline ? "text-destructive" : "text-warning"
-          )}
+          className={cn("h-4 w-4 shrink-0", isOffline ? "text-destructive" : "text-warning")}
         />
         <div className="flex flex-wrap items-center gap-1.5 leading-snug">
           <span className="font-semibold tracking-tight text-foreground">
@@ -70,12 +67,10 @@ export function ReconnectBanner() {
           <RefreshCw
             className={cn(
               "mr-1.5 h-3 w-3",
-              (isRetrying || connectionStatus === "reconnecting") && "animate-spin"
+              (isRetrying || connectionStatus === "reconnecting") && "animate-spin",
             )}
           />
-          {isRetrying || connectionStatus === "reconnecting"
-            ? "Reconnecting…"
-            : "Retry Connection"}
+          {isRetrying || connectionStatus === "reconnecting" ? "Reconnecting…" : "Retry Connection"}
         </Button>
 
         <button

@@ -109,8 +109,17 @@ async function setup() {
 
 describe("Key Changes - Mandate Versioning & Top-ups", () => {
   it("initial ₹500 allocation creates V1; additional ₹1,000 creates V2 with ₹1,500 limit and carries forward spend, reservations, and allocations", async () => {
-    const { app, authority, ledger, headers, environmentId, subagentXId, nestedChildId, rootMandateId, rootAccountId } =
-      await setup();
+    const {
+      app,
+      authority,
+      ledger,
+      headers,
+      environmentId,
+      subagentXId,
+      nestedChildId,
+      rootMandateId,
+      rootAccountId,
+    } = await setup();
 
     // 1. Initial ₹500 allocation -> V1 created
     const v1Res = await app.inject({
@@ -551,7 +560,8 @@ describe("Key Changes - Mandate Versioning & Top-ups", () => {
   });
 
   it("previous version authorization cannot authorize new transactions", async () => {
-    const { app, headers, environmentId, subagentXId, rootMandateId, rootAccountId } = await setup();
+    const { app, headers, environmentId, subagentXId, rootMandateId, rootAccountId } =
+      await setup();
 
     // 1. Initial V1
     const v1Res = await app.inject({
@@ -654,7 +664,8 @@ describe("Key Changes - Mandate Versioning & Top-ups", () => {
   });
 
   it("historical transaction lookup resolves the original mandate version", async () => {
-    const { app, headers, environmentId, subagentXId, rootMandateId, rootAccountId } = await setup();
+    const { app, headers, environmentId, subagentXId, rootMandateId, rootAccountId } =
+      await setup();
 
     // 1. Initial V1
     const v1Res = await app.inject({

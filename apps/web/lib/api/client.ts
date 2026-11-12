@@ -169,7 +169,11 @@ export class ApiClient {
 
   private unwrapArray<T>(payload: unknown, key: string): T[] {
     if (Array.isArray(payload)) return payload as T[];
-    if (payload && typeof payload === "object" && Array.isArray((payload as Record<string, unknown>)[key])) {
+    if (
+      payload &&
+      typeof payload === "object" &&
+      Array.isArray((payload as Record<string, unknown>)[key])
+    ) {
       return (payload as Record<string, unknown>)[key] as T[];
     }
     return [];
@@ -182,10 +186,9 @@ export class ApiClient {
     status: (options?: RequestOptions) =>
       this.get<SystemStatusResponse>("/v1/system/status", options),
     models: (options?: RequestOptions) =>
-      this.get<{ models: Array<{ id: string; label: string; provider: string; default?: boolean }> }>(
-        "/v1/models",
-        options,
-      ),
+      this.get<{
+        models: Array<{ id: string; label: string; provider: string; default?: boolean }>;
+      }>("/v1/models", options),
   };
 
   readonly environments = {
@@ -208,7 +211,10 @@ export class ApiClient {
         throw err;
       }
     },
-    create: async (data: CreateEnvironmentRequest, options?: RequestOptions): Promise<EnvironmentDto> => {
+    create: async (
+      data: CreateEnvironmentRequest,
+      options?: RequestOptions,
+    ): Promise<EnvironmentDto> => {
       const res = await this.post<unknown>("/v1/environments", data, options);
       if (res && typeof res === "object" && "environment" in (res as Record<string, unknown>)) {
         return (res as { environment: EnvironmentDto }).environment;
@@ -222,7 +228,10 @@ export class ApiClient {
     revoke: (id: string, options?: RequestOptions) =>
       this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/revoke`, {}, options),
     delete: (id: string, options?: RequestOptions) =>
-      this.delete<{ success: boolean; environmentId: string }>(`/v1/environments/${encodeURIComponent(id)}`, options),
+      this.delete<{ success: boolean; environmentId: string }>(
+        `/v1/environments/${encodeURIComponent(id)}`,
+        options,
+      ),
   };
 
   readonly agents = {
@@ -340,7 +349,10 @@ export class ApiClient {
   };
 
   readonly ledger = {
-    listAccounts: async (environmentId: string, options?: RequestOptions): Promise<LedgerAccountDto[]> => {
+    listAccounts: async (
+      environmentId: string,
+      options?: RequestOptions,
+    ): Promise<LedgerAccountDto[]> => {
       const res = await this.get<unknown>(
         `/v1/environments/${encodeURIComponent(environmentId)}/ledger/accounts`,
         options,
@@ -354,7 +366,12 @@ export class ApiClient {
       ),
     createAccount: (
       environmentId: string,
-      data: { mandateId: string; parentAccountId?: string | null; currency: string; initialDepositMinor?: number },
+      data: {
+        mandateId: string;
+        parentAccountId?: string | null;
+        currency: string;
+        initialDepositMinor?: number;
+      },
       options?: RequestOptions,
     ) =>
       this.post<LedgerAccountDto>(
@@ -397,7 +414,13 @@ export class ApiClient {
       ),
     simulate: (
       environmentId: string,
-      data: { agentId: string; mandateId: string; action: string; amountMinor: number; currency: string },
+      data: {
+        agentId: string;
+        mandateId: string;
+        action: string;
+        amountMinor: number;
+        currency: string;
+      },
       options?: RequestOptions,
     ) =>
       this.post<{ allowed: boolean; reason?: string }>(
@@ -411,7 +434,12 @@ export class ApiClient {
     get: (environmentId: string, actionId: string, options?: RequestOptions) =>
       this.get<{
         action: Record<string, unknown>;
-        reservation: { actionId: string; accountId: string; amountMinor: number; state: string } | null;
+        reservation: {
+          actionId: string;
+          accountId: string;
+          amountMinor: number;
+          state: string;
+        } | null;
       }>(
         `/v1/environments/${encodeURIComponent(environmentId)}/actions/${encodeURIComponent(actionId)}`,
         options,
@@ -457,7 +485,12 @@ export class ApiClient {
         body ?? {},
         options,
       ),
-    reject: (environmentId: string, approvalId: string, reason?: string, options?: RequestOptions) =>
+    reject: (
+      environmentId: string,
+      approvalId: string,
+      reason?: string,
+      options?: RequestOptions,
+    ) =>
       this.post<ApprovalDto>(
         `/v1/environments/${encodeURIComponent(environmentId)}/approvals/${encodeURIComponent(approvalId)}/reject`,
         { reason },
@@ -503,7 +536,11 @@ export class ApiClient {
     update: (
       environmentId: string,
       sessionId: string,
-      data: { name?: string; status?: "active" | "paused" | "completed" | "cancelled"; context?: Record<string, unknown> },
+      data: {
+        name?: string;
+        status?: "active" | "paused" | "completed" | "cancelled";
+        context?: Record<string, unknown>;
+      },
       options?: RequestOptions,
     ) =>
       this.patch<SessionDto>(
@@ -531,7 +568,10 @@ export class ApiClient {
       environmentId: string,
       sessionId: string,
       runId: string,
-      data: { status?: "running" | "paused" | "completed" | "failed"; checkpoint?: Record<string, unknown> },
+      data: {
+        status?: "running" | "paused" | "completed" | "failed";
+        checkpoint?: Record<string, unknown>;
+      },
       options?: RequestOptions,
     ) =>
       this.patch<SessionRunDto>(

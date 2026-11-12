@@ -39,7 +39,7 @@ function renderHighlighted(code: string): React.ReactNode[] {
             </span>
           ) : (
             <span key={j}>{part}</span>
-          )
+          ),
         )}
       </div>
     );

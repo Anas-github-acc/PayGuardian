@@ -25,8 +25,8 @@ export function LandingFooter() {
               PayGuardian
             </Link>
             <p className="mt-[16px] text-[13.6px] leading-[21px] text-muted-foreground">
-              Delegation Gateway for bounded, auditable authority across Personal
-              Agents and specialist multi-agent trees.
+              Delegation Gateway for bounded, auditable authority across Personal Agents and
+              specialist multi-agent trees.
             </p>
             {/* Social Icons */}
             <div className="mt-[24px] flex gap-[8px]">
@@ -173,9 +173,7 @@ export function LandingFooter() {
 
         {/* Bottom copyright line */}
         <div className="mt-[56px] flex flex-col gap-[12px] border-t border-border py-[24px] text-[12.5px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © 2026 PayGuardian. All rights reserved. Crafted for Autonomous Finance.
-          </p>
+          <p>© 2026 PayGuardian. All rights reserved. Crafted for Autonomous Finance.</p>
           <div className="flex gap-[20px]">
             <a className="transition-colors hover:text-foreground" href="#privacy">
               Privacy

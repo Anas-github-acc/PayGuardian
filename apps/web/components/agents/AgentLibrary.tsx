@@ -29,7 +29,10 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
   // Modal / Drawer states
   const [inspectingAgent, setInspectingAgent] = React.useState<SpecialistAgent | null>(null);
   const [attachingAgent, setAttachingAgent] = React.useState<SpecialistAgent | null>(null);
-  const [notification, setNotification] = React.useState<{ message: string; type: "success" | "info" } | null>(null);
+  const [notification, setNotification] = React.useState<{
+    message: string;
+    type: "success" | "info";
+  } | null>(null);
 
   // Attached agent ids + node status based on current workspace graph nodes
   const nodeStatusById = React.useMemo(() => {
@@ -71,7 +74,7 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
       const isAttached = agents.some(
         (a) =>
           a.name.toLowerCase() === agent.name.toLowerCase() ||
-          (agent.specialty !== "custom" && a.specialty === agent.specialty)
+          (agent.specialty !== "custom" && a.specialty === agent.specialty),
       );
       if (showAttachedOnly && !isAttached) {
         return false;
@@ -172,14 +175,14 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
     const isAttached = agents.some(
       (a) =>
         a.name.toLowerCase() === agent.name.toLowerCase() ||
-        (agent.specialty !== "custom" && a.specialty === agent.specialty)
+        (agent.specialty !== "custom" && a.specialty === agent.specialty),
     );
     const attachedAgent = agents.find(
       (a) =>
         a.name.toLowerCase() === agent.name.toLowerCase() ||
-        (agent.specialty !== "custom" && a.specialty === agent.specialty)
+        (agent.specialty !== "custom" && a.specialty === agent.specialty),
     );
-    const status = attachedAgent ? nodeStatusById.get(attachedAgent.id) ?? "active" : undefined;
+    const status = attachedAgent ? (nodeStatusById.get(attachedAgent.id) ?? "active") : undefined;
 
     return (
       <AgentCard
@@ -194,22 +197,29 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
   };
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col overflow-y-auto bg-background text-foreground ${className}`}>
+    <div
+      className={`flex min-h-0 flex-1 flex-col overflow-y-auto bg-background text-foreground ${className}`}
+    >
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
         {/* Section header: title + description + Actions */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Agent library</h1>
             <p className="mt-1 max-w-xl text-xs text-muted-foreground">
-              Pre-audited specialist agents ready for delegated spending authority. Attaching creates a
-              structural connection with zero default spend.
+              Pre-audited specialist agents ready for delegated spending authority. Attaching
+              creates a structural connection with zero default spend.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={resetFilters} className="h-8 text-xs">
               Browse all
             </Button>
-            <Button variant="primary" size="sm" onClick={handleCreateChildAgent} className="h-8 text-xs">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleCreateChildAgent}
+              className="h-8 text-xs"
+            >
               <Plus className="h-3.5 w-3.5 mr-1" />
               Attach Agent
             </Button>
@@ -333,11 +343,21 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
                     : "No agents registered in this environment yet. Click 'Attach Agent' to register a child agent."}
                 </p>
                 {searchQuery ? (
-                  <Button variant="outline" size="sm" onClick={resetFilters} className="mt-4 h-7 text-xs">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="mt-4 h-7 text-xs"
+                  >
                     Reset Filters
                   </Button>
                 ) : (
-                  <Button variant="primary" size="sm" onClick={handleCreateChildAgent} className="mt-4 h-8 text-xs">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleCreateChildAgent}
+                    className="mt-4 h-8 text-xs"
+                  >
                     <Plus className="h-3.5 w-3.5 mr-1" />
                     Attach Agent
                   </Button>
@@ -362,7 +382,9 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
             <section className="mt-10 border-t border-border pt-8">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-foreground">Available in library (Catalog)</h2>
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Available in library (Catalog)
+                  </h2>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     Certified specialist agent templates ready to be attached to your environment.
                   </p>
@@ -391,7 +413,11 @@ export function AgentLibrary({ className = "" }: AgentLibraryProps) {
         isOpen={Boolean(inspectingAgent)}
         onClose={() => setInspectingAgent(null)}
         onAttach={handleAttach}
-        isAttached={inspectingAgent ? nodeStatusById.has(inspectingAgent.id) || inspectingAgent.isAttached : false}
+        isAttached={
+          inspectingAgent
+            ? nodeStatusById.has(inspectingAgent.id) || inspectingAgent.isAttached
+            : false
+        }
       />
 
       {/* Attach Agent Dialog */}

@@ -22,4 +22,3 @@ export {
   type OAuthConsentCardProps as OAuthConsentReactCardProps,
 } from "./oauth-consent-react";
 export * from "./payment-approval-overlay";
-

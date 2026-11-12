@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ExternalLink,
-  Search,
-  Clock,
-} from "lucide-react";
+import { ExternalLink, Search, Clock } from "lucide-react";
 import { workspaceStore } from "../../app/lib/workspace-store";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -17,10 +13,7 @@ export interface SecurityEventLogProps {
   className?: string;
 }
 
-export function SecurityEventLog({
-  onViewTrace,
-  className = "",
-}: SecurityEventLogProps) {
+export function SecurityEventLog({ onViewTrace, className = "" }: SecurityEventLogProps) {
   const [events] = React.useState<SecurityEventItem[]>(DEFAULT_SECURITY_EVENTS);
   const [severityFilter, setSeverityFilter] = React.useState<string>("ALL");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
@@ -62,7 +55,8 @@ export function SecurityEventLog({
             Security Incident & Violation Monitor
           </h4>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Audit stream of denied overspends, forged signatures, category violations, and simulation vector triggers.
+            Audit stream of denied overspends, forged signatures, category violations, and
+            simulation vector triggers.
           </p>
         </div>
 
@@ -116,8 +110,8 @@ export function SecurityEventLog({
                   isCritical
                     ? "border-destructive/30 bg-destructive/5 hover:border-destructive/50"
                     : isWarning
-                    ? "border-warning/30 bg-warning/5 hover:border-warning/50"
-                    : "border-border bg-card hover:border-border"
+                      ? "border-warning/30 bg-warning/5 hover:border-warning/50"
+                      : "border-border bg-card hover:border-border"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
@@ -150,7 +144,8 @@ export function SecurityEventLog({
                       <span className="text-muted-foreground">({event.agentId})</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      Attempted Action: <span className="font-mono text-foreground">{event.actionAttempted}</span>
+                      Attempted Action:{" "}
+                      <span className="font-mono text-foreground">{event.actionAttempted}</span>
                     </div>
                     {event.details && (
                       <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
@@ -174,7 +169,9 @@ export function SecurityEventLog({
 
                 {event.requestHash && (
                   <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                    <span>SHA-256: {event.requestHash.slice(0, 16)}...{event.requestHash.slice(-8)}</span>
+                    <span>
+                      SHA-256: {event.requestHash.slice(0, 16)}...{event.requestHash.slice(-8)}
+                    </span>
                     <span className="text-muted-foreground">Gateway Intercept</span>
                   </div>
                 )}

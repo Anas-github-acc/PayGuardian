@@ -16,7 +16,8 @@ import re
 from typing import Any, Literal
 
 from agent_runtime.gateway_client import GatewayClient
-from agent_runtime.subagent_registry import SubagentRegistry, registry as default_subagent_registry
+from agent_runtime.subagent_registry import SubagentRegistry
+from agent_runtime.subagent_registry import registry as default_subagent_registry
 
 logger = logging.getLogger("agent_runtime.context_compiler")
 
@@ -795,97 +796,204 @@ class ContextCompiler:
         is_action_request = any(
             w in msg_lower
             for w in (
-                "buy ", "buy the", "buy a", "buy me", "search products", "like biscuit", "order ",
-                "book a ", "reserve a ", "pay for", "payment for", "make payment", "make the payment",
+                "buy ",
+                "buy the",
+                "buy a",
+                "buy me",
+                "search products",
+                "like biscuit",
+                "order ",
+                "book a ",
+                "reserve a ",
+                "pay for",
+                "payment for",
+                "make payment",
+                "make the payment",
             )
-        ) or any(w in words for w in ("hotel", "flight", "room", "food", "travel", "ticket", "tickets"))
+        ) or any(
+            w in words for w in ("hotel", "flight", "room", "food", "travel", "ticket", "tickets")
+        )
         has_pending = bool(
-            (active_tasks and any(
-                t.get("status") in ("authorization_pending", "quote_received", "budget_planning")
-                or t.get("phase") in ("authorization_pending", "budget_planning")
-                for t in active_tasks
-            ))
-            or (messages and any(
-                isinstance(m, dict) and m.get("role") in ("assistant", "agent")
-                and any(w in str(m.get("content") or "").lower() for w in (
-                    "budget allocation proposal",
-                    "proposed budget allocation",
-                    "proposed specialist delegations",
-                    "human authorization required",
-                    "please approve or reject",
-                    "pending human sign-off",
-                    "pending human authorization",
-                    "coordinated plan",
-                    "quoted",
-                    "cryptographic child mandates",
-                    "available mandate reserve",
-                ))
-                for m in messages[-2:]
-            ))
+            (
+                active_tasks
+                and any(
+                    t.get("status")
+                    in ("authorization_pending", "quote_received", "budget_planning")
+                    or t.get("phase") in ("authorization_pending", "budget_planning")
+                    for t in active_tasks
+                )
+            )
+            or (
+                messages
+                and any(
+                    isinstance(m, dict)
+                    and m.get("role") in ("assistant", "agent")
+                    and any(
+                        w in str(m.get("content") or "").lower()
+                        for w in (
+                            "budget allocation proposal",
+                            "proposed budget allocation",
+                            "proposed specialist delegations",
+                            "human authorization required",
+                            "please approve or reject",
+                            "pending human sign-off",
+                            "pending human authorization",
+                            "coordinated plan",
+                            "quoted",
+                            "cryptographic child mandates",
+                            "available mandate reserve",
+                        )
+                    )
+                    for m in messages[-2:]
+                )
+            )
         )
         if not is_action_request and any(re.search(pat, msg_lower) for pat in approval_patterns):
             if has_pending:
-                return "APPROVAL", "User explicitly approved a pending budget allocation / child delegation proposal."
+                return (
+                    "APPROVAL",
+                    "User explicitly approved a pending budget allocation / child delegation proposal.",
+                )
             return "CONTINUATION", "User confirmed continuation of existing plan."
 
         # 3. PROPOSAL & INFORMATION QUERY (Check before continuation so questions about proposals are not swallowed)
         proposal_query_patterns = (
-            "how you come up", "how did you come up", "how do you come up",
-            "tell me more about", "tell me about that", "based on your proposal",
-            "explain the proposal", "why is the proposed", "how was this calculated",
-            "why did you allocate", "why is it", "rationale", "breakdown of proposal",
-            "explain this amount", "how did you estimate", "how was it estimated",
-            "can you tell me more", "how did you calculate", "how do you calculate",
-            "tell me more", "how you calculated", "where did this number come from",
+            "how you come up",
+            "how did you come up",
+            "how do you come up",
+            "tell me more about",
+            "tell me about that",
+            "based on your proposal",
+            "explain the proposal",
+            "why is the proposed",
+            "how was this calculated",
+            "why did you allocate",
+            "why is it",
+            "rationale",
+            "breakdown of proposal",
+            "explain this amount",
+            "how did you estimate",
+            "how was it estimated",
+            "can you tell me more",
+            "how did you calculate",
+            "how do you calculate",
+            "tell me more",
+            "how you calculated",
+            "where did this number come from",
         )
         if any(p in msg_lower for p in proposal_query_patterns):
-            return "INFORMATION_QUERY", "User is requesting explanation or rationale regarding the proposed budget allocation."
+            return (
+                "INFORMATION_QUERY",
+                "User is requesting explanation or rationale regarding the proposed budget allocation.",
+            )
 
         # 4. STATUS_QUERY
         status_query_patterns = (
-            "how many amount", "how much amount", "how much have you allocated",
-            "what have you allocated", "what is allocated", "what do we have left",
-            "what we have left", "what is left", "how much is left",
-            "remaining budget", "remaining buffer", "show allocation",
-            "check balance", "budget status", "current budget",
-            "how much budget", "what did you allocate", "how much did you allocate",
-            "task status", "execution progress", "where are we", "status of",
-            "how many agents", "what agents do you have", "list agents",
-            "available agents", "show agents", "tell me your agents",
+            "how many amount",
+            "how much amount",
+            "how much have you allocated",
+            "what have you allocated",
+            "what is allocated",
+            "what do we have left",
+            "what we have left",
+            "what is left",
+            "how much is left",
+            "remaining budget",
+            "remaining buffer",
+            "show allocation",
+            "check balance",
+            "budget status",
+            "current budget",
+            "how much budget",
+            "what did you allocate",
+            "how much did you allocate",
+            "task status",
+            "execution progress",
+            "where are we",
+            "status of",
+            "how many agents",
+            "what agents do you have",
+            "list agents",
+            "available agents",
+            "show agents",
+            "tell me your agents",
         )
         if any(p in msg_lower for p in status_query_patterns):
-            return "STATUS_QUERY", "User is querying existing allocations, balances, tasks, or agents without requesting new work."
+            return (
+                "STATUS_QUERY",
+                "User is querying existing allocations, balances, tasks, or agents without requesting new work.",
+            )
 
         # 5. CONTINUATION (e.g. providing location for clarification or responding to pending question)
-        is_user_asking_question = any(
-            msg_lower.startswith(p) for p in ("how", "why", "what", "can you", "could you", "tell me", "where")
-        ) or "?" in msg_lower
+        is_user_asking_question = (
+            any(
+                msg_lower.startswith(p)
+                for p in ("how", "why", "what", "can you", "could you", "tell me", "where")
+            )
+            or "?" in msg_lower
+        )
 
         has_clarification_task = bool(
-            (active_tasks and any(
-                t.get("phase") == "clarification_required" or t.get("status") == "clarification_required"
-                for t in active_tasks
-            ))
-            or (messages and any(
-                isinstance(m, dict) and m.get("role") in ("assistant", "agent")
-                and any(w in str(m.get("content") or "").lower() for w in ("clarification", "where are you", "which city", "what location", "specify location", "please clarify"))
-                for m in messages[-2:]
-            ))
+            (
+                active_tasks
+                and any(
+                    t.get("phase") == "clarification_required"
+                    or t.get("status") == "clarification_required"
+                    for t in active_tasks
+                )
+            )
+            or (
+                messages
+                and any(
+                    isinstance(m, dict)
+                    and m.get("role") in ("assistant", "agent")
+                    and any(
+                        w in str(m.get("content") or "").lower()
+                        for w in (
+                            "clarification",
+                            "where are you",
+                            "which city",
+                            "what location",
+                            "specify location",
+                            "please clarify",
+                        )
+                    )
+                    for m in messages[-2:]
+                )
+            )
         )
         if has_clarification_task and not is_user_asking_question:
-            return "CONTINUATION", "User is supplying requested information or answers to satisfy a pending clarification."
+            return (
+                "CONTINUATION",
+                "User is supplying requested information or answers to satisfy a pending clarification.",
+            )
 
         # 6. MODIFICATION
         modification_phrases = (
-            "change hotel", "change budget", "modify", "update plan",
-            "increase budget", "decrease budget", "switch to", "make it cheaper",
+            "change hotel",
+            "change budget",
+            "modify",
+            "update plan",
+            "increase budget",
+            "decrease budget",
+            "switch to",
+            "make it cheaper",
         )
         if (active_plan or active_tasks) and any(p in msg_lower for p in modification_phrases):
-            return "MODIFICATION", "User requests an adjustment to the existing plan or task parameters."
+            return (
+                "MODIFICATION",
+                "User requests an adjustment to the existing plan or task parameters.",
+            )
 
         info_patterns = (
-            "explain", "what is", "how do you work", "how does", "tell me about",
-            "can you explain", "what can you do", "help me understand",
+            "explain",
+            "what is",
+            "how do you work",
+            "how does",
+            "tell me about",
+            "can you explain",
+            "what can you do",
+            "help me understand",
         )
         if any(msg_lower.startswith(p) for p in info_patterns) and not any(
             w in msg_lower for w in ("book", "plan", "buy", "reserve", "schedule", "procure")
@@ -893,7 +1001,16 @@ class ContextCompiler:
             return "INFORMATION_QUERY", "User is requesting general information or explanations."
 
         # 7. GENERAL_CONVERSATION
-        chit_chat = ("hi", "hello", "hey", "good morning", "good evening", "thanks", "thank you", "who are you")
+        chit_chat = (
+            "hi",
+            "hello",
+            "hey",
+            "good morning",
+            "good evening",
+            "thanks",
+            "thank you",
+            "who are you",
+        )
         if msg_lower in chit_chat:
             return "GENERAL_CONVERSATION", "Standard greeting or conversational chit-chat."
 
@@ -914,45 +1031,112 @@ class ContextCompiler:
                         registry_terms.add(w)
 
         core_action_words = (
-            "go", "trip", "travel", "book", "buy", "hotel", "flight", "food",
-            "restaurant", "eat", "activity", "activities", "procure", "ticket", "tickets",
-            "room", "rooms", "snack", "snacks", "chai", "tea", "biscuit", "biscuits",
-            "plan", "itinerary", "reserve", "budget", "cost", "estimate",
-            "delegate", "search", "products", "train", "money", "use", "spend",
+            "go",
+            "trip",
+            "travel",
+            "book",
+            "buy",
+            "hotel",
+            "flight",
+            "food",
+            "restaurant",
+            "eat",
+            "activity",
+            "activities",
+            "procure",
+            "ticket",
+            "tickets",
+            "room",
+            "rooms",
+            "snack",
+            "snacks",
+            "chai",
+            "tea",
+            "biscuit",
+            "biscuits",
+            "plan",
+            "itinerary",
+            "reserve",
+            "budget",
+            "cost",
+            "estimate",
+            "delegate",
+            "search",
+            "products",
+            "train",
+            "money",
+            "use",
+            "spend",
         )
-        has_action = any(w in msg_lower for w in registry_terms) or any(w in msg_lower for w in core_action_words)
+        has_action = any(w in msg_lower for w in registry_terms) or any(
+            w in msg_lower for w in core_action_words
+        )
 
         # If user is in multi-turn conversation and asking a question or seeking explanation
-        is_question = "?" in msg_lower or any(
-            msg_lower.startswith(w) for w in ("how", "why", "what", "can you", "could you", "tell me", "explain")
-        ) or any(w in msg_lower for w in ("tell me more", "how did you", "can you tell"))
-        if is_question and not any(w in msg_lower for w in ("buy", "book", "delegate", "proceed", "execute")):
-            return "INFORMATION_QUERY", "User is asking a question or seeking explanation in an ongoing conversation."
+        is_question = (
+            "?" in msg_lower
+            or any(
+                msg_lower.startswith(w)
+                for w in ("how", "why", "what", "can you", "could you", "tell me", "explain")
+            )
+            or any(w in msg_lower for w in ("tell me more", "how did you", "can you tell"))
+        )
+        if is_question and not any(
+            w in msg_lower for w in ("buy", "book", "delegate", "proceed", "execute")
+        ):
+            return (
+                "INFORMATION_QUERY",
+                "User is asking a question or seeking explanation in an ongoing conversation.",
+            )
 
         # Check for explicit payment execution intent in multi-turn conversation or direct purchase order
         payment_order_phrases = (
-            "buy ", "book ", "pay ", "order ", "purchase ", "reserve ", "checkout",
-            "make payment", "make the payment", "spend the money", "spend this money",
+            "buy ",
+            "book ",
+            "pay ",
+            "order ",
+            "purchase ",
+            "reserve ",
+            "checkout",
+            "make payment",
+            "make the payment",
+            "spend the money",
+            "spend this money",
         )
         has_payment_action = any(p in msg_lower for p in payment_order_phrases) or any(
             w in words for w in ("buy", "book", "pay", "purchase", "order", "checkout")
         )
         if has_payment_action and not is_question:
-            return "PAYMENT_EXECUTION_INTENT", "User orders purchase, booking, or payment for an item or service."
+            return (
+                "PAYMENT_EXECUTION_INTENT",
+                "User orders purchase, booking, or payment for an item or service.",
+            )
 
         # If user is in multi-turn conversation and providing details
         if messages and len(messages) > 1:
-            return "CONTINUATION", "User is continuing previous conversational goal with additional parameters."
+            return (
+                "CONTINUATION",
+                "User is continuing previous conversational goal with additional parameters.",
+            )
 
         # If user input is too short or lacks actionable parameters, do NOT assume a new objective
         if len(words) <= 3 and not has_action:
-            return "CLARIFICATION_NEEDED", "User request is ambiguous or underspecified; clarification required before formulating tasks."
+            return (
+                "CLARIFICATION_NEEDED",
+                "User request is ambiguous or underspecified; clarification required before formulating tasks.",
+            )
 
         if not has_action:
-            return "CLARIFICATION_NEEDED", "User request lacks concrete actionable parameters; clarification required."
+            return (
+                "CLARIFICATION_NEEDED",
+                "User request lacks concrete actionable parameters; clarification required.",
+            )
 
         # 9. Concrete NEW_OBJECTIVE
-        return "NEW_OBJECTIVE", "User explicitly requests a concrete new objective or task decomposition."
+        return (
+            "NEW_OBJECTIVE",
+            "User explicitly requests a concrete new objective or task decomposition.",
+        )
 
     def build_conversation_summary(
         self,
@@ -966,15 +1150,25 @@ class ContextCompiler:
         turns: list[str] = []
         # Filter and take the last max_turns relevant turns
         meaningful_turns = [
-            m for m in messages
-            if isinstance(m, dict) and m.get("content") and m.get("role") in ("user", "assistant", "human")
+            m
+            for m in messages
+            if isinstance(m, dict)
+            and m.get("content")
+            and m.get("role") in ("user", "assistant", "human")
         ][-max_turns:]
 
         for i, m in enumerate(meaningful_turns, 1):
             role = "User" if m.get("role") in ("user", "human") else "Assistant"
             content = str(m.get("content", "")).strip()
             # Clean out stale rejection / denial notices if superseded by user approval
-            if any(w in content.lower() for w in ("allocation has been rejected", "no funds or cryptographic child mandates were issued", "denied/rejected, so no pending proposal exists")):
+            if any(
+                w in content.lower()
+                for w in (
+                    "allocation has been rejected",
+                    "no funds or cryptographic child mandates were issued",
+                    "denied/rejected, so no pending proposal exists",
+                )
+            ):
                 content = "[Prior proposal was superseded by user approval]"
             # Clean out XML or large markup
             content = re.sub(r"<[^>]+>", " ", content)
@@ -1010,12 +1204,18 @@ class ContextCompiler:
 
                 # Filter active, non-superseded child mandates and deduplicate by series
                 active_raw = [
-                    m for m in env_mandates
-                    if m.get("parentMandateId") and m.get("state") == "active" and not m.get("supersededAt")
+                    m
+                    for m in env_mandates
+                    if m.get("parentMandateId")
+                    and m.get("state") == "active"
+                    and not m.get("supersededAt")
                 ]
                 series_map: dict[str, dict[str, Any]] = {}
                 for m in active_raw:
-                    s_id = m.get("mandateSeriesId") or f"{m.get('parentMandateId')}_{m.get('holderAgentId')}"
+                    s_id = (
+                        m.get("mandateSeriesId")
+                        or f"{m.get('parentMandateId')}_{m.get('holderAgentId')}"
+                    )
                     existing = series_map.get(s_id)
                     if not existing or m.get("version", 1) > existing.get("version", 1):
                         series_map[s_id] = m
@@ -1025,7 +1225,8 @@ class ContextCompiler:
 
                 # Direct children under root
                 direct_children = [
-                    cm for cm in child_mandates
+                    cm
+                    for cm in child_mandates
                     if not root_id or cm.get("parentMandateId") == root_id
                 ]
 
@@ -1043,14 +1244,16 @@ class ContextCompiler:
                     holder_id = parent_cm.get("holderAgentId", "")
                     name = agent_names.get(holder_id, holder_id)
                     total_delegated_minor += amt
-                    active_child_mandates.append({
-                        "mandate_id": parent_cm.get("id"),
-                        "holder_agent": name,
-                        "amount_minor": amt,
-                        "currency": cur,
-                        "is_nested": False,
-                        "parent_agent": None,
-                    })
+                    active_child_mandates.append(
+                        {
+                            "mandate_id": parent_cm.get("id"),
+                            "holder_agent": name,
+                            "amount_minor": amt,
+                            "currency": cur,
+                            "is_nested": False,
+                            "parent_agent": None,
+                        }
+                    )
 
                     # Nested children under this parent
                     for sub_cm in nested_by_parent.get(parent_cm.get("id"), []):
@@ -1058,14 +1261,16 @@ class ContextCompiler:
                         sub_cur = sub_cm.get("currency", currency)
                         sub_holder_id = sub_cm.get("holderAgentId", "")
                         sub_name = agent_names.get(sub_holder_id, sub_holder_id)
-                        active_child_mandates.append({
-                            "mandate_id": sub_cm.get("id"),
-                            "holder_agent": sub_name,
-                            "amount_minor": sub_amt,
-                            "currency": sub_cur,
-                            "is_nested": True,
-                            "parent_agent": name,
-                        })
+                        active_child_mandates.append(
+                            {
+                                "mandate_id": sub_cm.get("id"),
+                                "holder_agent": sub_name,
+                                "amount_minor": sub_amt,
+                                "currency": sub_cur,
+                                "is_nested": True,
+                                "parent_agent": name,
+                            }
+                        )
             except Exception as exc:
                 logger.debug("Gateway live context fetch fallback: %s", exc)
 
@@ -1075,13 +1280,15 @@ class ContextCompiler:
                     amt = t.get("amount_minor", 0)
                     if not t.get("parent_task_id"):
                         total_delegated_minor += amt
-                    active_child_mandates.append({
-                        "mandate_id": t.get("child_mandate_id") or "pending",
-                        "holder_agent": t.get("agent", "specialist"),
-                        "amount_minor": amt,
-                        "currency": t.get("currency", currency),
-                        "is_nested": bool(t.get("parent_task_id")),
-                    })
+                    active_child_mandates.append(
+                        {
+                            "mandate_id": t.get("child_mandate_id") or "pending",
+                            "holder_agent": t.get("agent", "specialist"),
+                            "amount_minor": amt,
+                            "currency": t.get("currency", currency),
+                            "is_nested": bool(t.get("parent_task_id")),
+                        }
+                    )
 
         remaining_reserve_minor = max(0, budget_limit_minor - total_delegated_minor)
 
@@ -1226,14 +1433,19 @@ class ContextCompiler:
         approved_live = [a for a in live_approvals if a.get("status") == "approved"]
 
         pending_tasks = [
-            t for t in (active_tasks or [])
+            t
+            for t in (active_tasks or [])
             if t.get("status") in ("authorization_pending", "quote_received", "budget_planning")
             or t.get("phase") in ("authorization_pending", "budget_planning")
         ]
 
         if approved_live and not pending_live:
-            total_approved = sum(a.get("amountMinor") or a.get("amount_minor") or 0 for a in approved_live)
-            approval_ids = ", ".join([str(a.get("id") or a.get("approvalId")) for a in approved_live])
+            total_approved = sum(
+                a.get("amountMinor") or a.get("amount_minor") or 0 for a in approved_live
+            )
+            approval_ids = ", ".join(
+                [str(a.get("id") or a.get("approvalId")) for a in approved_live]
+            )
             pending_proposal_state = (
                 f"- Status: PROPOSAL_APPROVED_BY_USER\n"
                 f"- Gateway Approval State: APPROVED / ALLOWED (IDs: {approval_ids})\n"
@@ -1243,8 +1455,12 @@ class ContextCompiler:
                 f"When the user asks to make payment, pay, or execute, immediately delegate and initiate payment to the specialist subagent without claiming the proposal was rejected or demanding re-authorization."
             )
         elif pending_live:
-            total_pending = sum(a.get("amountMinor") or a.get("amount_minor") or 0 for a in pending_live)
-            approval_ids = ", ".join([str(a.get("id") or a.get("approvalId")) for a in pending_live])
+            total_pending = sum(
+                a.get("amountMinor") or a.get("amount_minor") or 0 for a in pending_live
+            )
+            approval_ids = ", ".join(
+                [str(a.get("id") or a.get("approvalId")) for a in pending_live]
+            )
             pending_proposal_state = (
                 f"- Status: PENDING_HUMAN_AUTHORIZATION\n"
                 f"- Active Approvals in Gateway: {len(pending_live)} (IDs: {approval_ids})\n"
@@ -1266,25 +1482,45 @@ class ContextCompiler:
                 f"- Total Proposed: {_format_currency(total_pending, cur)}\n"
                 f"- Authority Guard: Cryptographic child mandates NOT issued yet. Human approval required via UI."
             )
-        elif not live_approvals and messages and any(
-            isinstance(m, dict) and m.get("role") in ("assistant", "agent")
-            and any(w in str(m.get("content") or "").lower() for w in (
-                "budget allocation proposal",
-                "proposed budget allocation",
-                "proposed specialist delegations",
-                "human authorization required",
-                "please approve or reject",
-                "pending human sign-off",
-                "pending human authorization",
-                "cryptographic child mandates",
-            ))
-            for m in messages[-2:]
-        ) and not any(
-            isinstance(m, dict) and m.get("role") in ("user", "human")
-            and any(w in str(m.get("content") or "").lower() for w in ("reject", "deny", "cancel", "decline"))
-            for m in messages[-2:]
+        elif (
+            not live_approvals
+            and messages
+            and any(
+                isinstance(m, dict)
+                and m.get("role") in ("assistant", "agent")
+                and any(
+                    w in str(m.get("content") or "").lower()
+                    for w in (
+                        "budget allocation proposal",
+                        "proposed budget allocation",
+                        "proposed specialist delegations",
+                        "human authorization required",
+                        "please approve or reject",
+                        "pending human sign-off",
+                        "pending human authorization",
+                        "cryptographic child mandates",
+                    )
+                )
+                for m in messages[-2:]
+            )
+            and not any(
+                isinstance(m, dict)
+                and m.get("role") in ("user", "human")
+                and any(
+                    w in str(m.get("content") or "").lower()
+                    for w in ("reject", "deny", "cancel", "decline")
+                )
+                for m in messages[-2:]
+            )
         ):
-            last_asst = next((m for m in reversed(messages) if isinstance(m, dict) and m.get("role") in ("assistant", "agent")), None)
+            last_asst = next(
+                (
+                    m
+                    for m in reversed(messages)
+                    if isinstance(m, dict) and m.get("role") in ("assistant", "agent")
+                ),
+                None,
+            )
             asst_text = str(last_asst.get("content") or "") if last_asst else ""
             pending_proposal_state = (
                 f"- Status: PENDING_HUMAN_AUTHORIZATION\n"

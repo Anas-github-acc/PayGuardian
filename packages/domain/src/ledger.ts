@@ -100,7 +100,11 @@ export function verifyWalletIntegrity(
   transitions: readonly LedgerTransition[],
 ): IntegrityVerificationResult {
   if (transitions.length === 0) {
-    if (account.availableMinor === 0 && account.reservedMinor === 0 && account.capturedMinor === 0) {
+    if (
+      account.availableMinor === 0 &&
+      account.reservedMinor === 0 &&
+      account.capturedMinor === 0
+    ) {
       return { valid: true, transitionsVerified: 0 };
     }
     return {
@@ -647,4 +651,3 @@ export class InMemoryLedger {
     return reservation;
   }
 }
-

@@ -26,14 +26,9 @@ export function BudgetStrip({
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
 
-  const {
-    environment,
-    isLoading,
-    error,
-    refetch,
-  } = useBudgetStrip(
+  const { environment, isLoading, error, refetch } = useBudgetStrip(
     propLimit === undefined ? currentEnv?.id : undefined,
-    { pollingIntervalMs: 8000 }
+    { pollingIntervalMs: 8000 },
   );
 
   const env = environment ?? currentEnv;
@@ -99,9 +94,16 @@ export function BudgetStrip({
   // Strict integer minor unit math — ZERO float arithmetic
   const availableMinor = calculateAvailableMinor(limitMinor, spentMinor, reservedMinor);
 
-  const spentPercent = limitMinor > 0 ? Math.min(100, Math.round((spentMinor / limitMinor) * 1000) / 10) : 0;
-  const reservedPercent = limitMinor > 0 ? Math.min(100 - spentPercent, Math.round((reservedMinor / limitMinor) * 1000) / 10) : 0;
-  const availablePercent = Math.max(0, Math.round((100 - spentPercent - reservedPercent) * 10) / 10);
+  const spentPercent =
+    limitMinor > 0 ? Math.min(100, Math.round((spentMinor / limitMinor) * 1000) / 10) : 0;
+  const reservedPercent =
+    limitMinor > 0
+      ? Math.min(100 - spentPercent, Math.round((reservedMinor / limitMinor) * 1000) / 10)
+      : 0;
+  const availablePercent = Math.max(
+    0,
+    Math.round((100 - spentPercent - reservedPercent) * 10) / 10,
+  );
 
   return (
     <section

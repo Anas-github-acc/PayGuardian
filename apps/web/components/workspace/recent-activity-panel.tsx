@@ -1,12 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ChevronRight,
-  AlertTriangle,
-  RotateCcw,
-  Clock,
-} from "lucide-react";
+import { ChevronRight, AlertTriangle, RotateCcw, Clock } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
@@ -37,10 +32,9 @@ export function RecentActivityPanel({
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
 
-  const hookResult = useActivityFeed(
-    propActivities ? null : currentEnv?.id,
-    { pollingIntervalMs: 3000 },
-  );
+  const hookResult = useActivityFeed(propActivities ? null : currentEnv?.id, {
+    pollingIntervalMs: 3000,
+  });
 
   const activities = propActivities ?? hookResult.activities;
   const isLoading = propIsLoading ?? (propActivities ? false : hookResult.isLoading);
@@ -62,9 +56,7 @@ export function RecentActivityPanel({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-white">
-            Recent activity
-          </h2>
+          <h2 className="text-base font-semibold tracking-tight text-white">Recent activity</h2>
           <p className="mt-0.5 text-xs text-zinc-400">
             Real-time audit log of delegated transactions
           </p>
@@ -145,8 +137,8 @@ export function RecentActivityPanel({
             const badgeClasses = isDenied
               ? "border-red-900/60 bg-red-950/50 text-red-400"
               : isPending
-              ? "border-orange-900/60 bg-orange-950/50 text-orange-400"
-              : "border-blue-900/50 bg-blue-950/40 text-blue-400";
+                ? "border-orange-900/60 bg-orange-950/50 text-orange-400"
+                : "border-blue-900/50 bg-blue-950/40 text-blue-400";
 
             const amountText =
               item.amountMinor !== undefined && item.amountMinor > 0

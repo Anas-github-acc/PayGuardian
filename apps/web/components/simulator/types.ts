@@ -1,9 +1,5 @@
 export type AttackVectorId =
-  | "budget_overflow"
-  | "disallowed_merchant"
-  | "threshold_bypass"
-  | "stolen_token"
-  | "revoked_agent";
+  "budget_overflow" | "disallowed_merchant" | "threshold_bypass" | "stolen_token" | "revoked_agent";
 
 export interface AttackVector {
   id: AttackVectorId;

@@ -204,11 +204,9 @@ export class AdaptiveStreamRenderer {
 export function useAdaptiveStream(
   targetText: string,
   isStreaming: boolean,
-  options?: AdaptiveStreamOptions
+  options?: AdaptiveStreamOptions,
 ): string {
-  const [displayedText, setDisplayedText] = useState<string>(() =>
-    isStreaming ? "" : targetText
-  );
+  const [displayedText, setDisplayedText] = useState<string>(() => (isStreaming ? "" : targetText));
 
   const targetRef = useRef(targetText);
   const isStreamingRef = useRef(isStreaming);
@@ -227,8 +225,7 @@ export function useAdaptiveStream(
     lineInterval: options?.lineInterval ?? DEFAULT_OPTIONS.lineInterval,
     charThreshold: options?.charThreshold ?? DEFAULT_OPTIONS.charThreshold,
     wordThreshold: options?.wordThreshold ?? DEFAULT_OPTIONS.wordThreshold,
-    instantFlushThreshold:
-      options?.instantFlushThreshold ?? DEFAULT_OPTIONS.instantFlushThreshold,
+    instantFlushThreshold: options?.instantFlushThreshold ?? DEFAULT_OPTIONS.instantFlushThreshold,
   };
 
   useEffect(() => {

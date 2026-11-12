@@ -190,7 +190,8 @@ export function registerPhase2Routes(
       if (parentAgent && parentAgent.kind !== "personal" && parentAgent.parentAgentId !== null) {
         return reply.code(403).send({
           code: "DELEGATION_TARGET_INVALID",
-          message: "Root mandate cannot directly delegate to nested child agents; delegate through the parent coordinator.",
+          message:
+            "Root mandate cannot directly delegate to nested child agents; delegate through the parent coordinator.",
         });
       }
     }
@@ -247,7 +248,9 @@ export function registerPhase2Routes(
         }
       }
 
-      const envIntegrity = await dependencies.ledger.verifyEnvironmentIntegrity(parent.environmentId);
+      const envIntegrity = await dependencies.ledger.verifyEnvironmentIntegrity(
+        parent.environmentId,
+      );
       if (!envIntegrity.valid) {
         const decision = {
           allowed: false,
@@ -283,7 +286,11 @@ export function registerPhase2Routes(
     });
 
     if (result.mandate && dependencies.ledger) {
-      if (result.mandate.version && result.mandate.version > 1 && result.mandate.previousMandateId) {
+      if (
+        result.mandate.version &&
+        result.mandate.version > 1 &&
+        result.mandate.previousMandateId
+      ) {
         if (dependencies.ledger.linkMandateVersion) {
           dependencies.ledger.linkMandateVersion(
             parent.environmentId,
@@ -522,7 +529,10 @@ export function registerPhase2Routes(
     if (!owner) return;
 
     if (dependencies.ledger) {
-      const targetMandate = await dependencies.authority.get(request.params.mandateId, owner.userId);
+      const targetMandate = await dependencies.authority.get(
+        request.params.mandateId,
+        owner.userId,
+      );
       if (targetMandate) {
         const targetAccount = await dependencies.ledger.getAccountByMandate(
           targetMandate.environmentId,

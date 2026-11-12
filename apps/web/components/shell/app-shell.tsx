@@ -26,7 +26,9 @@ export function AppShell({ children, className, activeTabOverride }: AppShellPro
   }, []);
 
   return (
-    <div className={cn("flex h-dvh w-full overflow-hidden bg-background text-foreground", className)}>
+    <div
+      className={cn("flex h-dvh w-full overflow-hidden bg-background text-foreground", className)}
+    >
       {/* Navigation Sidebar */}
       <Sidebar
         open={sidebarOpen}

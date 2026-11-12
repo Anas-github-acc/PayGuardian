@@ -47,13 +47,20 @@ export function Sidebar({ open, onClose, className, activeTabOverride }: Sidebar
   const currentTab = activeTabOverride ?? activeTab;
 
   const livePendingCount = approvals.filter((a) => a.status === "pending").length;
-  const pendingApprovalsCount = livePendingCount > 0 ? livePendingCount : (currentEnvironment?.pendingApprovalsCount ?? 0);
+  const pendingApprovalsCount =
+    livePendingCount > 0 ? livePendingCount : (currentEnvironment?.pendingApprovalsCount ?? 0);
   const isSandbox = currentEnvironment?.type === "sandbox";
 
   const items: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, group: "Product", tab: "overview" },
     { id: "workspace", label: "Workspace", icon: Waypoints, group: "Product", tab: "workspace" },
-    { id: "assistant", label: "Assistant", icon: MessageSquare, group: "Product", tab: "assistant" },
+    {
+      id: "assistant",
+      label: "Assistant",
+      icon: MessageSquare,
+      group: "Product",
+      tab: "assistant",
+    },
     {
       id: "approvals",
       label: "Approvals",
@@ -121,7 +128,7 @@ export function Sidebar({ open, onClose, className, activeTabOverride }: Sidebar
           "sticky top-0 flex h-dvh shrink-0 flex-col overflow-hidden border-r border-border bg-background select-none",
           "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:shadow-2xl",
           !open && "pointer-events-none",
-          className
+          className,
         )}
         aria-label="Dashboard navigation"
         aria-hidden={!open}
@@ -147,7 +154,9 @@ export function Sidebar({ open, onClose, className, activeTabOverride }: Sidebar
         <nav className="flex-1 overflow-y-auto p-2">
           {groups.map((group) => (
             <div key={group} className="mb-4 last:mb-0">
-              <div className="px-2 pb-1.5 text-[11px] font-medium text-muted-foreground">{group}</div>
+              <div className="px-2 pb-1.5 text-[11px] font-medium text-muted-foreground">
+                {group}
+              </div>
               <div className="space-y-0.5">
                 {items
                   .filter((item) => item.group === group)
@@ -164,10 +173,15 @@ export function Sidebar({ open, onClose, className, activeTabOverride }: Sidebar
                           "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                           active
                             ? "bg-secondary text-link"
-                            : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                            : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                         )}
                       >
-                        <Icon className={cn("h-3.5 w-3.5 shrink-0", active ? "text-link" : "text-muted-foreground")} />
+                        <Icon
+                          className={cn(
+                            "h-3.5 w-3.5 shrink-0",
+                            active ? "text-link" : "text-muted-foreground",
+                          )}
+                        />
                         <span className="flex-1 text-left">{item.label}</span>
                         {item.badge !== undefined && (
                           <span className="flex h-4 min-w-4 items-center justify-center rounded-full border border-warning/30 bg-warning/10 px-1 font-mono text-[9px] font-bold text-warning">

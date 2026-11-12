@@ -170,7 +170,9 @@ class GatewayClient:
             res = client.post(url, json=payload, headers=self._headers())
             return res.json()  # type: ignore[no-any-return]
 
-    def list_approvals(self, environment_id: str, status: str | None = None) -> list[dict[str, Any]]:
+    def list_approvals(
+        self, environment_id: str, status: str | None = None
+    ) -> list[dict[str, Any]]:
         query = f"?status={status}" if status else ""
         url = f"{self.base_url}/v1/environments/{environment_id}/approvals{query}"
         with httpx.Client(timeout=self.timeout) as client:
@@ -416,7 +418,9 @@ class GatewayClient:
 
     def capture_paypal_order(self, environment_id: str, action_id: str) -> dict[str, Any]:
         """Capture an approved PayPal order on the Gateway."""
-        url = f"{self.base_url}/v1/environments/{environment_id}/payments/paypal/{action_id}/capture"
+        url = (
+            f"{self.base_url}/v1/environments/{environment_id}/payments/paypal/{action_id}/capture"
+        )
         with httpx.Client(timeout=self.timeout) as client:
             res = client.post(url, headers=self._headers())
             return res.json()  # type: ignore[no-any-return]

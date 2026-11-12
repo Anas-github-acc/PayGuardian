@@ -35,23 +35,24 @@ export function mapApprovalDtoToItem(
 
   const parentMandateLimitMinor = mandate?.budgetLimitMinor ?? dto.amountMinor;
   const spentMinor = mandate?.spentMinor ?? 0;
-  const remainingBudgetAfterPaymentMinor = Math.max(0, parentMandateLimitMinor - spentMinor - dto.amountMinor);
+  const remainingBudgetAfterPaymentMinor = Math.max(
+    0,
+    parentMandateLimitMinor - spentMinor - dto.amountMinor,
+  );
   const isHardLimitExceeded = dto.amountMinor > parentMandateLimitMinor;
 
   const status: ApprovalStatus =
-    dto.status === "approved"
-      ? "approved"
-      : dto.status === "rejected"
-      ? "rejected"
-      : "pending";
+    dto.status === "approved" ? "approved" : dto.status === "rejected" ? "rejected" : "pending";
 
   const rawDto = dto as unknown as { allowed_actions?: string[]; allowedActions?: string[] };
   const backendAllowed = rawDto.allowed_actions ?? rawDto.allowedActions;
   const allowedActions: ("approve" | "reject" | string)[] = Array.isArray(backendAllowed)
     ? backendAllowed
-    : (status === "pending"
-        ? (isHardLimitExceeded ? ["reject"] : ["approve", "reject"])
-        : []);
+    : status === "pending"
+      ? isHardLimitExceeded
+        ? ["reject"]
+        : ["approve", "reject"]
+      : [];
 
   return {
     id: dto.id,

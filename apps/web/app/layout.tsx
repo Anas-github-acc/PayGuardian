@@ -22,9 +22,7 @@ export const metadata: Metadata = {
   title: "PayGuardian",
   description: "Bounded, auditable authority for delegated agents.",
   icons: {
-    icon: [
-      { url: "/payguardian.svg", type: "image/svg+xml" },
-    ],
+    icon: [{ url: "/payguardian.svg", type: "image/svg+xml" }],
     shortcut: "/payguardian.svg",
     apple: "/payguardian.svg",
   },

@@ -96,9 +96,7 @@ export function FAQ() {
               <div
                 key={idx}
                 className={`rounded-[14px] px-[18px] py-[16px] transition-colors duration-200 ${
-                  isOpen
-                    ? "bg-white/[0.03]"
-                    : "hover:bg-white/[0.015]"
+                  isOpen ? "bg-white/[0.03]" : "hover:bg-white/[0.015]"
                 }`}
               >
                 <button

@@ -111,15 +111,12 @@ export function Pricing() {
   const [features, setFeatures] = useState<FeatureToggle[]>(defaultFeatures);
 
   const totalPrice =
-    basePrice +
-    features.filter((f) => f.enabled).reduce((sum, f) => sum + f.price, 0);
+    basePrice + features.filter((f) => f.enabled).reduce((sum, f) => sum + f.price, 0);
 
   const priceChars = totalPrice.toString().split("");
 
   const toggleFeature = (id: string) => {
-    setFeatures((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f)),
-    );
+    setFeatures((prev) => prev.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f)));
   };
 
   return (
@@ -137,8 +134,8 @@ export function Pricing() {
             Only pay for what you need
           </h2>
           <p className="max-w-2xl text-lg text-muted-foreground">
-            PayGuardian is currently free during public beta. All modules, delegation
-            limits, and cryptographic mandate tools are completely unlocked.
+            PayGuardian is currently free during public beta. All modules, delegation limits, and
+            cryptographic mandate tools are completely unlocked.
           </p>
         </div>
 
@@ -146,9 +143,7 @@ export function Pricing() {
           {/* Add-on modules toggle card */}
           <div className="flex flex-col gap-6 rounded-3xl bg-card p-8 shadow-sm">
             <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-medium text-foreground">
-                Add-on modules
-              </h3>
+              <h3 className="text-lg font-medium text-foreground">Add-on modules</h3>
               <p className="text-sm text-muted-foreground">
                 Toggle the features you need. All modules are free during beta.
               </p>
@@ -177,9 +172,7 @@ export function Pricing() {
                         {feature.icon}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
-                          {feature.label}
-                        </span>
+                        <span className="text-sm font-medium text-foreground">{feature.label}</span>
                         <span className="text-start text-xs text-muted-foreground">
                           +$0/mo (Free in Beta)
                         </span>
@@ -200,16 +193,13 @@ export function Pricing() {
             <div className="flex flex-col gap-2">
               <h3 className="text-xl font-medium text-foreground">Your plan</h3>
               <p className="text-sm text-muted-foreground">
-                Base plan + {features.filter((f) => f.enabled).length} add-ons
-                selected
+                Base plan + {features.filter((f) => f.enabled).length} add-ons selected
               </p>
             </div>
 
             <div className="flex flex-col gap-1">
               <div className="flex items-baseline gap-1">
-                <span className="text-7xl font-semibold tracking-tight text-foreground">
-                  $
-                </span>
+                <span className="text-7xl font-semibold tracking-tight text-foreground">$</span>
                 <AnimatePresence mode="popLayout">
                   {priceChars.map((char, idx) => (
                     <motion.span
@@ -242,18 +232,14 @@ export function Pricing() {
             </Link>
 
             <div className="flex flex-col gap-3 pt-2 border-t border-border/40">
-              <p className="text-sm font-medium text-foreground">
-                Always included
-              </p>
+              <p className="text-sm font-medium text-foreground">Always included</p>
               <ul className="flex flex-col gap-3">
                 {includedFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
                     <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary">
                       <CheckIcon className="size-3 text-primary-foreground" />
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {feature}
-                    </span>
+                    <span className="text-sm text-muted-foreground">{feature}</span>
                   </li>
                 ))}
               </ul>

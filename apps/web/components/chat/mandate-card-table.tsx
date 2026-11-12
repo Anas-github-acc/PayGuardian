@@ -58,7 +58,7 @@ export function MandateCardTable({
 
       // Filter out superseded versions and deduplicate by series
       const activeMandates = mandatesList.filter(
-        (m) => m.state !== "superseded" && !m.supersededAt
+        (m) => m.state !== "superseded" && !m.supersededAt,
       );
 
       const latestSeriesMandates = new Map<string, (typeof mandatesList)[0]>();
@@ -76,9 +76,20 @@ export function MandateCardTable({
 
         const budgetLimitMinor = typeof m.budgetLimitMinor === "number" ? m.budgetLimitMinor : 0;
         const allocatedMinor = typeof m.allocatedMinor === "number" ? m.allocatedMinor : 0;
-        const spentMinor = account ? account.capturedMinor : typeof m.spentMinor === "number" ? m.spentMinor : 0;
-        const reservedMinor = account ? account.reservedMinor : typeof m.reservedMinor === "number" ? m.reservedMinor : 0;
-        const availableMinor = Math.max(0, budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor);
+        const spentMinor = account
+          ? account.capturedMinor
+          : typeof m.spentMinor === "number"
+            ? m.spentMinor
+            : 0;
+        const reservedMinor = account
+          ? account.reservedMinor
+          : typeof m.reservedMinor === "number"
+            ? m.reservedMinor
+            : 0;
+        const availableMinor = Math.max(
+          0,
+          budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor,
+        );
 
         const isRoot = !m.parentMandateId || !agent?.parentAgentId || agent?.kind === "root";
         const agentName =
@@ -139,15 +150,18 @@ export function MandateCardTable({
   }, [environmentId, fetchMandates]);
 
   return (
-    <Card className={cn("w-full p-0 border border-border bg-card text-card-foreground shadow-sm rounded-lg overflow-hidden", className)}>
+    <Card
+      className={cn(
+        "w-full p-0 border border-border bg-card text-card-foreground shadow-sm rounded-lg overflow-hidden",
+        className,
+      )}
+    >
       <CardContent className="p-0">
         {/* Header - follows Card pattern: border-b px-4 py-3 */}
         <div className="border-b border-border px-4 py-3 flex items-center justify-between shrink-0 bg-card">
           <div className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4">
             <Shield aria-hidden="true" className="size-4 shrink-0" />
-            <span className="font-medium text-foreground text-sm">
-              Active Spending Mandates
-            </span>
+            <span className="font-medium text-foreground text-sm">Active Spending Mandates</span>
             <span className="text-xs text-muted-foreground font-mono">/</span>
             <span className="text-xs text-muted-foreground font-mono">
               {environmentName} ({currency})
@@ -162,7 +176,10 @@ export function MandateCardTable({
           >
             <RefreshCw
               aria-hidden="true"
-              className={cn("size-3 shrink-0 text-muted-foreground", isRefreshing && "animate-spin")}
+              className={cn(
+                "size-3 shrink-0 text-muted-foreground",
+                isRefreshing && "animate-spin",
+              )}
             />
             <span>Sync</span>
           </button>
@@ -171,7 +188,8 @@ export function MandateCardTable({
         {/* Content Body - follows same rule: space-y-3 p-4 */}
         <div className="space-y-3 p-4">
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Cryptographic spending envelopes for this environment. Only authorized agents can reserve and execute payments within their designated ceilings.
+            Cryptographic spending envelopes for this environment. Only authorized agents can
+            reserve and execute payments within their designated ceilings.
           </p>
 
           {/* Current Available Budget (Root Agent) */}
@@ -185,7 +203,9 @@ export function MandateCardTable({
             return (
               <div className="rounded-lg border border-border bg-card p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                 <div>
-                  <div className="text-xs text-muted-foreground font-medium">Current Available Budget</div>
+                  <div className="text-xs text-muted-foreground font-medium">
+                    Current Available Budget
+                  </div>
                   <div className="text-lg font-bold font-mono text-foreground mt-0.5">
                     {formatMinorUnits(rootAvailableMinor, currency)}
                   </div>
@@ -196,15 +216,21 @@ export function MandateCardTable({
                 <div className="flex items-center gap-3 text-xs font-mono border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0 sm:pl-3">
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Limit</span>
-                    <span className="text-foreground font-medium">{formatMinorUnits(rootLimitMinor, currency)}</span>
+                    <span className="text-foreground font-medium">
+                      {formatMinorUnits(rootLimitMinor, currency)}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Spent</span>
-                    <span className="text-muted-foreground">{formatMinorUnits(rootSpentMinor, currency)}</span>
+                    <span className="text-muted-foreground">
+                      {formatMinorUnits(rootSpentMinor, currency)}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Reserved</span>
-                    <span className="text-muted-foreground">{formatMinorUnits(rootReservedMinor, currency)}</span>
+                    <span className="text-muted-foreground">
+                      {formatMinorUnits(rootReservedMinor, currency)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -268,7 +294,8 @@ export function MandateCardTable({
           {/* Footer - follows Pattern link style */}
           <div className="flex items-center justify-between pt-1">
             <span className="text-xs text-muted-foreground font-mono">
-              {isFromCache ? "Cached · " : ""}{mandates.length} agent mandate{mandates.length === 1 ? "" : "s"} tracked
+              {isFromCache ? "Cached · " : ""}
+              {mandates.length} agent mandate{mandates.length === 1 ? "" : "s"} tracked
             </span>
             <button
               type="button"
@@ -278,7 +305,10 @@ export function MandateCardTable({
             >
               <RefreshCw
                 aria-hidden="true"
-                className={cn("size-3 shrink-0 text-muted-foreground", isRefreshing && "animate-spin")}
+                className={cn(
+                  "size-3 shrink-0 text-muted-foreground",
+                  isRefreshing && "animate-spin",
+                )}
               />
               <span>Sync latest ledger</span>
             </button>

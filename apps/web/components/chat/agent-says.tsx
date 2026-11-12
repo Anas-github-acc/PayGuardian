@@ -22,9 +22,7 @@ export function AgentSays({ message, className = "" }: AgentSaysProps) {
 
   return (
     <div
-      className={`flex flex-col gap-1 text-xs ${
-        isUser ? "items-end" : "items-start"
-      } ${className}`}
+      className={`flex flex-col gap-1 text-xs ${isUser ? "items-end" : "items-start"} ${className}`}
     >
       {/* Sender & Timestamp Header */}
       <div className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">

@@ -20,7 +20,11 @@ export interface UseSessionsResult {
   }) => Promise<SessionDto>;
   updateSession: (
     sessionId: string,
-    data: { name?: string; status?: "active" | "paused" | "completed" | "cancelled"; context?: Record<string, unknown> },
+    data: {
+      name?: string;
+      status?: "active" | "paused" | "completed" | "cancelled";
+      context?: Record<string, unknown>;
+    },
   ) => Promise<SessionDto>;
   refetch: () => Promise<void>;
 }
@@ -72,7 +76,11 @@ export function useSessions(environmentId?: string | null): UseSessionsResult {
 
   const updateSession = async (
     sessionId: string,
-    data: { name?: string; status?: "active" | "paused" | "completed" | "cancelled"; context?: Record<string, unknown> },
+    data: {
+      name?: string;
+      status?: "active" | "paused" | "completed" | "cancelled";
+      context?: Record<string, unknown>;
+    },
   ): Promise<SessionDto> => {
     if (!environmentId) throw new Error("No active environment.");
     const updated = await apiClient.sessions.update(environmentId, sessionId, data);

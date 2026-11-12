@@ -39,7 +39,8 @@ export const DEFAULT_SECURITY_EVENTS: SecurityEventItem[] = [
     currency: "USD",
     requestHash: "0x55a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f7a8b9c0d1e2f3a4b5c",
     traceId: "trace-rej-7712",
-    details: "Subagent attempted to spend $5,000.00 with only $1,800.00 available in delegated pool.",
+    details:
+      "Subagent attempted to spend $5,000.00 with only $1,800.00 available in delegated pool.",
   },
   {
     id: "sec-evt-02",
@@ -54,7 +55,8 @@ export const DEFAULT_SECURITY_EVENTS: SecurityEventItem[] = [
     requestHash: "0x44c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
     traceId: "trace-sim-6011",
     isSimulation: true,
-    details: "Forged parent delegation signature rejected by gateway. Injected by Sandbox Attack Simulator.",
+    details:
+      "Forged parent delegation signature rejected by gateway. Injected by Sandbox Attack Simulator.",
   },
   {
     id: "sec-evt-03",
@@ -68,7 +70,8 @@ export const DEFAULT_SECURITY_EVENTS: SecurityEventItem[] = [
     currency: "USD",
     requestHash: "0x99a8b7c6d5e4f302192837465019283746501928374650192837465019283746",
     traceId: "trace-rej-7712",
-    details: "Agent requested purchase outside permitted categories ('Airlines', 'Railways', 'Ground Transport').",
+    details:
+      "Agent requested purchase outside permitted categories ('Airlines', 'Railways', 'Ground Transport').",
   },
   {
     id: "sec-evt-04",
@@ -83,7 +86,8 @@ export const DEFAULT_SECURITY_EVENTS: SecurityEventItem[] = [
     requestHash: "0x8877665544332211009988776655443322110099887766554433221100998877",
     traceId: "trace-pay-9018",
     isSimulation: true,
-    details: "Replay attack simulation blocked. Duplicate transaction key detected within active reservation window.",
+    details:
+      "Replay attack simulation blocked. Duplicate transaction key detected within active reservation window.",
   },
   {
     id: "sec-evt-05",
@@ -97,6 +101,7 @@ export const DEFAULT_SECURITY_EVENTS: SecurityEventItem[] = [
     currency: "USD",
     requestHash: "0x89f41b2a7e93c07d391ef41908bc210081234567890abcdef1234567890abcd",
     traceId: "trace-pay-9018",
-    details: "Spend <= $500.00 human approval threshold; autonomous execution permitted without human sign-off.",
+    details:
+      "Spend <= $500.00 human approval threshold; autonomous execution permitted without human sign-off.",
   },
 ];

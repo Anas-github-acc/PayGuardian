@@ -63,19 +63,13 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "models"
-                  ],
+                  "required": ["models"],
                   "properties": {
                     "models": {
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "id",
-                          "label",
-                          "provider"
-                        ],
+                        "required": ["id", "label", "provider"],
                         "properties": {
                           "id": {
                             "type": "string"
@@ -621,11 +615,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "action",
-                  "amountMinor",
-                  "currency"
-                ],
+                "required": ["action", "amountMinor", "currency"],
                 "properties": {
                   "action": {
                     "type": "string"
@@ -704,19 +694,13 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "mandateId",
-                  "currency"
-                ],
+                "required": ["mandateId", "currency"],
                 "properties": {
                   "mandateId": {
                     "type": "string"
                   },
                   "parentAccountId": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
+                    "type": ["string", "null"]
                   },
                   "currency": {
                     "type": "string"
@@ -799,11 +783,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "fromAccountId",
-                  "toAccountId",
-                  "amountMinor"
-                ],
+                "required": ["fromAccountId", "toAccountId", "amountMinor"],
                 "properties": {
                   "fromAccountId": {
                     "type": "string"
@@ -826,10 +806,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "success",
-                    "allocationId"
-                  ],
+                  "required": ["success", "allocationId"],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -927,10 +904,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "success",
-                    "capturedMinor"
-                  ],
+                  "required": ["success", "capturedMinor"],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -975,10 +949,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "success",
-                    "releasedMinor"
-                  ],
+                  "required": ["success", "releasedMinor"],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -1014,13 +985,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "agentId",
-                  "mandateId",
-                  "action",
-                  "amountMinor",
-                  "currency"
-                ],
+                "required": ["agentId", "mandateId", "action", "amountMinor", "currency"],
                 "properties": {
                   "agentId": {
                     "type": "string"
@@ -1049,9 +1014,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "allowed"
-                  ],
+                  "required": ["allowed"],
                   "properties": {
                     "allowed": {
                       "type": "boolean"
@@ -1086,11 +1049,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "pending",
-                "approved",
-                "rejected"
-              ]
+              "enum": ["pending", "approved", "rejected"]
             }
           }
         ],
@@ -1347,18 +1306,13 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "properties": {
                   "name": {
                     "type": "string"
                   },
                   "agentId": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
+                    "type": ["string", "null"]
                   },
                   "context": {
                     "type": "object",
@@ -1451,12 +1405,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "active",
-                      "paused",
-                      "completed",
-                      "cancelled"
-                    ]
+                    "enum": ["active", "paused", "completed", "cancelled"]
                   },
                   "context": {
                     "type": "object",
@@ -1546,9 +1495,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "agentId"
-                ],
+                "required": ["agentId"],
                 "properties": {
                   "agentId": {
                     "type": "string"
@@ -1611,12 +1558,7 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "running",
-                      "paused",
-                      "completed",
-                      "failed"
-                    ]
+                    "enum": ["running", "paused", "completed", "failed"]
                   },
                   "checkpoint": {
                     "type": "object",
@@ -1672,10 +1614,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "actionId",
-                    "orderId"
-                  ],
+                  "required": ["actionId", "orderId"],
                   "properties": {
                     "actionId": {
                       "type": "string"
@@ -1835,9 +1774,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "received"
-                  ],
+                  "required": ["received"],
                   "properties": {
                     "received": {
                       "type": "boolean"
@@ -1969,17 +1906,11 @@
     "schemas": {
       "HealthResponse": {
         "type": "object",
-        "required": [
-          "status",
-          "service",
-          "phase"
-        ],
+        "required": ["status", "service", "phase"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok"
-            ]
+            "enum": ["ok"]
           },
           "service": {
             "type": "string"
@@ -1991,11 +1922,7 @@
       },
       "SystemStatusResponse": {
         "type": "object",
-        "required": [
-          "service",
-          "authorityEnforcement",
-          "message"
-        ],
+        "required": ["service", "authorityEnforcement", "message"],
         "properties": {
           "service": {
             "type": "string"
@@ -2037,11 +1964,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "paused",
-              "revoked"
-            ]
+            "enum": ["active", "paused", "revoked"]
           },
           "createdAt": {
             "type": "string"
@@ -2050,12 +1973,7 @@
       },
       "CreateEnvironmentRequest": {
         "type": "object",
-        "required": [
-          "name",
-          "purpose",
-          "currency",
-          "budgetLimitMinor"
-        ],
+        "required": ["name", "purpose", "currency", "budgetLimitMinor"],
         "properties": {
           "name": {
             "type": "string"
@@ -2073,14 +1991,7 @@
       },
       "AgentDto": {
         "type": "object",
-        "required": [
-          "id",
-          "environmentId",
-          "name",
-          "kind",
-          "status",
-          "createdAt"
-        ],
+        "required": ["id", "environmentId", "name", "kind", "status", "createdAt"],
         "properties": {
           "id": {
             "type": "string"
@@ -2095,18 +2006,11 @@
             "type": "string"
           },
           "parentAgentId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "disabled",
-              "revoked"
-            ]
+            "enum": ["active", "disabled", "revoked"]
           },
           "createdAt": {
             "type": "string"
@@ -2115,9 +2019,7 @@
       },
       "CreateRootAgentRequest": {
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "properties": {
           "name": {
             "type": "string"
@@ -2132,11 +2034,7 @@
       },
       "RegisterChildAgentRequest": {
         "type": "object",
-        "required": [
-          "parentAgentId",
-          "name",
-          "kind"
-        ],
+        "required": ["parentAgentId", "name", "kind"],
         "properties": {
           "parentAgentId": {
             "type": "string"
@@ -2189,10 +2087,7 @@
             "type": "string"
           },
           "parentMandateId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "budgetLimitMinor": {
             "type": "integer"
@@ -2229,17 +2124,10 @@
           },
           "state": {
             "type": "string",
-            "enum": [
-              "active",
-              "expired",
-              "revoked"
-            ]
+            "enum": ["active", "expired", "revoked"]
           },
           "revokedAt": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string"
@@ -2332,11 +2220,7 @@
       },
       "PolicyDecisionDto": {
         "type": "object",
-        "required": [
-          "allowed",
-          "code",
-          "reason"
-        ],
+        "required": ["allowed", "code", "reason"],
         "properties": {
           "allowed": {
             "type": "boolean"
@@ -2383,10 +2267,7 @@
             "type": "string"
           },
           "parentAccountId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "currency": {
             "type": "string"
@@ -2446,10 +2327,7 @@
       },
       "ActionReserveResponse": {
         "type": "object",
-        "required": [
-          "action",
-          "reservation"
-        ],
+        "required": ["action", "reservation"],
         "properties": {
           "action": {
             "type": "object",
@@ -2508,12 +2386,7 @@
           },
           "reservation": {
             "type": "object",
-            "required": [
-              "actionId",
-              "accountId",
-              "amountMinor",
-              "state"
-            ],
+            "required": ["actionId", "accountId", "amountMinor", "state"],
             "properties": {
               "actionId": {
                 "type": "string"
@@ -2526,11 +2399,7 @@
               },
               "state": {
                 "type": "string",
-                "enum": [
-                  "held",
-                  "captured",
-                  "released"
-                ]
+                "enum": ["held", "captured", "released"]
               }
             }
           }
@@ -2578,29 +2447,16 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "pending",
-              "approved",
-              "rejected"
-            ]
+            "enum": ["pending", "approved", "rejected"]
           },
           "approvedBy": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "approvedAt": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "rejectionReason": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string"
@@ -2612,15 +2468,7 @@
       },
       "SessionDto": {
         "type": "object",
-        "required": [
-          "id",
-          "environmentId",
-          "name",
-          "status",
-          "context",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "environmentId", "name", "status", "context", "createdAt", "updatedAt"],
         "properties": {
           "id": {
             "type": "string"
@@ -2629,22 +2477,14 @@
             "type": "string"
           },
           "agentId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "name": {
             "type": "string"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "paused",
-              "completed",
-              "cancelled"
-            ]
+            "enum": ["active", "paused", "completed", "cancelled"]
           },
           "context": {
             "type": "object",
@@ -2681,12 +2521,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "running",
-              "paused",
-              "completed",
-              "failed"
-            ]
+            "enum": ["running", "paused", "completed", "failed"]
           },
           "checkpoint": {
             "type": "object",
@@ -2736,9 +2571,7 @@
           },
           "currency": {
             "type": "string",
-            "enum": [
-              "USD"
-            ]
+            "enum": ["USD"]
           },
           "approvalId": {
             "type": "string"
@@ -2767,80 +2600,44 @@
           },
           "provider": {
             "type": "string",
-            "enum": [
-              "paypal"
-            ]
+            "enum": ["paypal"]
           },
           "providerOrderId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "status": {
             "type": "string"
           },
           "observedProviderStatus": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "captureId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "reconciliationState": {
             "type": "string",
-            "enum": [
-              "pending",
-              "resolved",
-              "uncertain"
-            ]
+            "enum": ["pending", "resolved", "uncertain"]
           },
           "amountMinor": {
-            "type": [
-              "integer",
-              "null"
-            ]
+            "type": ["integer", "null"]
           },
           "currency": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "authorizationState": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "executionState": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "lastCheckedAt": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "lastEventAt": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "lastErrorCode": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string"
@@ -2871,63 +2668,36 @@
           },
           "actorType": {
             "type": "string",
-            "enum": [
-              "user",
-              "agent",
-              "service",
-              "system"
-            ]
+            "enum": ["user", "agent", "service", "system"]
           },
           "actorId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "sessionId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "mandateId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "actionId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "eventType": {
             "type": "string"
           },
           "outcome": {
             "type": "string",
-            "enum": [
-              "success",
-              "denied",
-              "failure"
-            ]
+            "enum": ["success", "denied", "failure"]
           },
           "reasonCode": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "payload": {
             "type": "object",
             "additionalProperties": true
           },
           "previousHash": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "eventHash": {
             "type": "string"
@@ -2939,9 +2709,7 @@
       },
       "RunRequest": {
         "type": "object",
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "properties": {
           "agent": {
             "type": "string",
@@ -2955,38 +2723,23 @@
             "default": true
           },
           "environment_id": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "mandate_id": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "action": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "amount_minor": {
-            "type": [
-              "integer",
-              "null"
-            ]
+            "type": ["integer", "null"]
           },
           "currency": {
             "type": "string",
             "default": "USD"
           },
           "parameters": {
-            "type": [
-              "object",
-              "null"
-            ],
+            "type": ["object", "null"],
             "additionalProperties": true
           }
         }

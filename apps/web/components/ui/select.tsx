@@ -15,7 +15,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
           ref={ref}
           className={cn(
             "flex h-9 w-full appearance-none rounded-md border border-border bg-card px-3 py-1 pr-8 text-xs text-foreground transition-colors focus-visible:outline-none focus-visible:border-border focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40",
-            className
+            className,
           )}
           {...props}
         >
@@ -24,7 +24,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
         <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
       </div>
     );
-  }
+  },
 );
 NativeSelect.displayName = "NativeSelect";
 
@@ -76,7 +76,7 @@ export function Select({
       onValueChange?.(newVal);
       setOpen(false);
     },
-    [isControlled, onValueChange]
+    [isControlled, onValueChange],
   );
 
   return (
@@ -108,7 +108,7 @@ export const SelectTrigger = React.forwardRef<
       onClick={() => setOpen(!open)}
       className={cn(
         "flex h-9 w-full items-center justify-between rounded-md border border-border bg-card px-3 py-1 text-xs text-foreground transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring select-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -116,7 +116,7 @@ export const SelectTrigger = React.forwardRef<
       <ChevronDown
         className={cn(
           "h-3.5 w-3.5 text-muted-foreground transition-transform duration-150",
-          open && "rotate-180"
+          open && "rotate-180",
         )}
       />
     </button>
@@ -161,7 +161,7 @@ export function SelectContent({
       ref={contentRef}
       className={cn(
         "absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border bg-secondary p-1 text-foreground shadow-xl top-shade animate-in fade-in-0 zoom-in-95 duration-100",
-        className
+        className,
       )}
     >
       {children}
@@ -198,7 +198,7 @@ export function SelectItem({
       className={cn(
         "flex cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground select-none",
         isSelected && "bg-white/[0.08] text-foreground font-medium",
-        className
+        className,
       )}
     >
       <span>{children}</span>

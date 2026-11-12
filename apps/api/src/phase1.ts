@@ -434,7 +434,10 @@ export class SupabaseRegistry implements Registry {
     }
 
     // Remove ledger accounts & transitions & transfers
-    await this.client.from("ledger_balance_transitions").delete().eq("environment_id", environmentId);
+    await this.client
+      .from("ledger_balance_transitions")
+      .delete()
+      .eq("environment_id", environmentId);
     await this.client.from("ledger_transfers").delete().eq("environment_id", environmentId);
     await this.client
       .from("ledger_accounts")

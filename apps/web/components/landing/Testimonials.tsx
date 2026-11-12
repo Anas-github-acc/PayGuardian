@@ -110,7 +110,8 @@ export function Testimonials() {
         </h2>
         <p className="mt-[16px] text-[13.6px] leading-[24px] text-muted-foreground">
           Engineering, FinOps, and product teams use PayGuardian to bound spending,
-          <br className="max-md:hidden" /> enforce cryptographic mandates, and govern agent commerce.
+          <br className="max-md:hidden" /> enforce cryptographic mandates, and govern agent
+          commerce.
         </p>
       </motion.div>
 

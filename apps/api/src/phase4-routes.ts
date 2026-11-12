@@ -247,7 +247,10 @@ export function registerPhase4Routes(
       parentMandate = await dependencies.authority.get(targetMandateId, scoped.owner.userId);
     }
     if (!parentMandate) {
-      const mandates = await dependencies.authority.list(scoped.environment.id, scoped.owner.userId);
+      const mandates = await dependencies.authority.list(
+        scoped.environment.id,
+        scoped.owner.userId,
+      );
       parentMandate =
         mandates.find((m) => !m.parentMandateId && m.state === "active") ||
         mandates.find((m) => !m.parentMandateId) ||
@@ -274,7 +277,10 @@ export function registerPhase4Routes(
     }
 
     // 1. Resolve or register agents in the environment
-    const envAgents = await dependencies.registry.listAgents(scoped.owner.userId, scoped.environment.id);
+    const envAgents = await dependencies.registry.listAgents(
+      scoped.owner.userId,
+      scoped.environment.id,
+    );
     let rootAgent = envAgents.find((a) => a.kind === "personal" || a.parentAgentId === null);
     if (!rootAgent) {
       const createdRoot = await dependencies.registry.createAgent({
@@ -408,7 +414,7 @@ export function registerPhase4Routes(
         const childCaps =
           child.capabilities && child.capabilities.length > 0
             ? child.capabilities
-            : (SPECIALIST_SPECS[child.agent]?.capabilities || []);
+            : SPECIALIST_SPECS[child.agent]?.capabilities || [];
         for (const cap of childCaps) {
           if (!actionsToPermit.includes(cap)) {
             actionsToPermit.push(cap);
@@ -420,7 +426,9 @@ export function registerPhase4Routes(
         const filtered = actionsToPermit.filter(
           (act: string) =>
             parentMandate.permittedActions.includes(act) ||
-            parentMandate.permittedActions.some((p: string) => p.endsWith(".*") && act.startsWith(p.slice(0, -2))),
+            parentMandate.permittedActions.some(
+              (p: string) => p.endsWith(".*") && act.startsWith(p.slice(0, -2)),
+            ),
         );
         actionsToPermit = filtered.length > 0 ? filtered : parentMandate.permittedActions;
       }
@@ -461,7 +469,8 @@ export function registerPhase4Routes(
 
     // Phase B: Parent Specialist -> Nested Child Delegations (e.g. Travel -> Hotel)
     for (const alloc of childAllocs) {
-      const parentAlias = alloc.parentAgent || SPECIALIST_SPECS[alloc.agent]?.parentAlias || "travel";
+      const parentAlias =
+        alloc.parentAgent || SPECIALIST_SPECS[alloc.agent]?.parentAlias || "travel";
       const parentCoordMandate = delegatedMandates.get(parentAlias);
       const parentCoordAgent = agentMap.get(parentAlias);
       const childAgent = agentMap.get(alloc.agent) || envAgents.find((a) => a.id === alloc.agent);
@@ -484,7 +493,9 @@ export function registerPhase4Routes(
         const filtered = childActions.filter(
           (act: string) =>
             parentCoordMandate.permittedActions.includes(act) ||
-            parentCoordMandate.permittedActions.some((p: string) => p.endsWith(".*") && act.startsWith(p.slice(0, -2))),
+            parentCoordMandate.permittedActions.some(
+              (p: string) => p.endsWith(".*") && act.startsWith(p.slice(0, -2)),
+            ),
         );
         childActions = filtered.length > 0 ? filtered : parentCoordMandate.permittedActions;
       }
@@ -603,7 +614,10 @@ export function registerPhase4Routes(
       totalDelegatedMinor,
       remainingReserveMinor,
       code: finalStatus === "FAILED" ? "DELEGATION_FAILED" : undefined,
-      message: finalStatus === "FAILED" ? (failures[0]?.reason || "Authority rejected delegation.") : undefined,
+      message:
+        finalStatus === "FAILED"
+          ? failures[0]?.reason || "Authority rejected delegation."
+          : undefined,
     });
   }
 
@@ -677,7 +691,10 @@ export function registerPhase4Routes(
 
       // If approval is for a delegation request, create/bind a delegation grant
       if (existing.action.startsWith("mandate.delegate") || existing.action.startsWith("delegat")) {
-        const parentMandate = await dependencies.authority.get(existing.mandateId, scoped.owner.userId);
+        const parentMandate = await dependencies.authority.get(
+          existing.mandateId,
+          scoped.owner.userId,
+        );
         if (!parentMandate) {
           return reply
             .code(404)

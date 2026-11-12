@@ -40,7 +40,9 @@ export function VerifiedBlock({
             id={(payload.id as string) ?? message.id}
             title={(payload.title as string) ?? undefined}
             parentMandateId={(payload.parentMandateId as string) ?? undefined}
-            totalRequestedMinor={(payload.totalRequestedMinor as number) ?? (payload.amountMinor as number) ?? 1000000}
+            totalRequestedMinor={
+              (payload.totalRequestedMinor as number) ?? (payload.amountMinor as number) ?? 1000000
+            }
             currency={(payload.currency as string) ?? "USD"}
             status={(payload.status as "pending" | "approved" | "rejected") ?? "pending"}
             subAllocations={(payload.subAllocations as BudgetSubAllocation[]) ?? undefined}
@@ -54,10 +56,17 @@ export function VerifiedBlock({
         {cardType === "payment_result" && (
           <PaymentResultCard
             id={(payload.id as string) ?? message.id}
-            transactionId={(payload.transactionId as string) ?? (payload.providerOrderId as string) ?? (payload.provider_order_id as string) ?? undefined}
+            transactionId={
+              (payload.transactionId as string) ??
+              (payload.providerOrderId as string) ??
+              (payload.provider_order_id as string) ??
+              undefined
+            }
             recipient={(payload.recipient as string) ?? "PayPal Merchant"}
             merchantCategory={(payload.merchantCategory as string) ?? undefined}
-            amountMinor={(payload.amountMinor as number) ?? (payload.amount_minor as number) ?? 24500}
+            amountMinor={
+              (payload.amountMinor as number) ?? (payload.amount_minor as number) ?? 24500
+            }
             currency={(payload.currency as string) ?? "USD"}
             rail={(payload.rail as string) ?? "PayPal"}
             authHash={(payload.authHash as string) ?? gatewaySignature ?? undefined}
@@ -67,7 +76,9 @@ export function VerifiedBlock({
             }
             completedAt={verifiedAt}
             agentName={(payload.agentName as string) ?? message.sender ?? undefined}
-            approvalUrl={(payload.approvalUrl as string) ?? (payload.approval_url as string) ?? undefined}
+            approvalUrl={
+              (payload.approvalUrl as string) ?? (payload.approval_url as string) ?? undefined
+            }
             onViewTrace={onViewTrace}
           />
         )}
@@ -77,7 +88,9 @@ export function VerifiedBlock({
             id={(payload.id as string) ?? message.id}
             reasonCode={(payload.reasonCode as RejectionReasonCode) ?? "BUDGET_EXCEEDED"}
             agentName={(payload.agentName as string) ?? message.sender ?? "Subagent"}
-            attemptedAmountMinor={(payload.attemptedAmountMinor as number) ?? (payload.amountMinor as number) ?? 500000}
+            attemptedAmountMinor={
+              (payload.attemptedAmountMinor as number) ?? (payload.amountMinor as number) ?? 500000
+            }
             currency={(payload.currency as string) ?? "USD"}
             attemptedMerchant={(payload.attemptedMerchant as string) ?? undefined}
             ruleReference={(payload.ruleReference as string) ?? undefined}

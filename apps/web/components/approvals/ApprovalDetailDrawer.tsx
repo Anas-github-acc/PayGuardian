@@ -1,17 +1,16 @@
 "use client";
 
 import * as React from "react";
-import {
-  Check,
-  X,
-  ExternalLink,
-  Copy,
-  FileCode,
-  AlertTriangle,
-  Info,
-} from "lucide-react";
+import { Check, X, ExternalLink, Copy, FileCode, AlertTriangle, Info } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "../ui/sheet";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import type { ApprovalItem } from "./types";
@@ -73,7 +72,10 @@ export function ApprovalDetailDrawer({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl bg-zinc-950 border-l border-zinc-800 p-6 text-white overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-xl bg-zinc-950 border-l border-zinc-800 p-6 text-white overflow-y-auto"
+      >
         <SheetHeader className="mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -82,8 +84,8 @@ export function ApprovalDetailDrawer({
                   approval.status === "pending"
                     ? "pending"
                     : approval.status === "approved"
-                    ? "active"
-                    : "rejected"
+                      ? "active"
+                      : "rejected"
                 }
                 showDot
               >
@@ -133,14 +135,12 @@ export function ApprovalDetailDrawer({
                 </span>
                 <div
                   className={`text-base font-bold font-mono tabular-nums mt-0.5 ${
-                    approval.remainingBudgetAfterPaymentMinor < 0
-                      ? "text-red-400"
-                      : "text-blue-400"
+                    approval.remainingBudgetAfterPaymentMinor < 0 ? "text-red-400" : "text-blue-400"
                   }`}
                 >
                   {formatMinorUnits(
                     Math.max(0, approval.remainingBudgetAfterPaymentMinor),
-                    approval.currency
+                    approval.currency,
                   )}
                 </div>
               </div>
@@ -164,9 +164,7 @@ export function ApprovalDetailDrawer({
               <Info className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <div className="font-semibold text-amber-400">Why Sign-Off is Required:</div>
-                <p className="mt-1 text-zinc-300 leading-relaxed">
-                  {approval.reasonForSignOff}
-                </p>
+                <p className="mt-1 text-zinc-300 leading-relaxed">{approval.reasonForSignOff}</p>
               </div>
             </div>
           </div>

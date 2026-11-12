@@ -68,11 +68,19 @@ export function AgentInspector({
   const isUnfunded = node?.status === "unfunded" || (node?.allocatedMinor === 0 && !node?.isFunded);
 
   const allocatedMinor =
-    node?.allocatedMinor ?? mandate?.budgetLimitMinor ?? (isRoot ? env?.budgetLimitMinor ?? 0 : 0);
+    node?.allocatedMinor ??
+    mandate?.budgetLimitMinor ??
+    (isRoot ? (env?.budgetLimitMinor ?? 0) : 0);
   const spentMinor =
-    account?.capturedMinor ?? node?.spentMinor ?? mandate?.spentMinor ?? (isRoot ? env?.spentMinor ?? 0 : 0);
+    account?.capturedMinor ??
+    node?.spentMinor ??
+    mandate?.spentMinor ??
+    (isRoot ? (env?.spentMinor ?? 0) : 0);
   const reservedMinor =
-    account?.reservedMinor ?? node?.reservedMinor ?? mandate?.reservedMinor ?? (isRoot ? env?.reservedMinor ?? 0 : 0);
+    account?.reservedMinor ??
+    node?.reservedMinor ??
+    mandate?.reservedMinor ??
+    (isRoot ? (env?.reservedMinor ?? 0) : 0);
   const subDelegatedMinor = node?.subDelegatedMinor ?? mandate?.allocatedMinor ?? 0;
 
   const availableMinor =
@@ -121,9 +129,7 @@ export function AgentInspector({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-white">
-            Agent inspector
-          </h2>
+          <h2 className="text-base font-semibold tracking-tight text-white">Agent inspector</h2>
           <p className="mt-0.5 text-xs text-zinc-400">
             Inspecting: <span className="font-medium text-zinc-300">{nodeName}</span>
           </p>
@@ -173,7 +179,9 @@ export function AgentInspector({
             <div className="flex items-center justify-between">
               <span>Cryptographic sign-off:</span>
               <span className="text-blue-400">
-                {mandate ? `Mandate v${mandate.version ?? 1} signed (${mandate.state})` : "Verified Mandate"}
+                {mandate
+                  ? `Mandate v${mandate.version ?? 1} signed (${mandate.state})`
+                  : "Verified Mandate"}
               </span>
             </div>
             <div className="pt-1.5 border-t border-zinc-800/60">

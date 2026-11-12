@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
-import {
-  AlertTriangle,
-  ShieldAlert,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, ShieldAlert, Trash2 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
@@ -70,7 +73,8 @@ export function RevocationDialog({
                 Truth-in-Accounting Invariant:
               </strong>
               <p className="leading-relaxed text-foreground/90">
-                Revoking stops future actions immediately, but cannot undo completed external transactions.
+                Revoking stops future actions immediately, but cannot undo completed external
+                transactions.
               </p>
             </div>
           </div>
@@ -84,19 +88,25 @@ export function RevocationDialog({
 
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md border border-border bg-card p-2.5">
-              <span className="text-[10px] uppercase text-muted-foreground block">Target Mandate</span>
+              <span className="text-[10px] uppercase text-muted-foreground block">
+                Target Mandate
+              </span>
               <span className="font-mono text-xs text-foreground truncate block mt-0.5">
                 {impact.targetMandateId}
               </span>
             </div>
             <div className="rounded-md border border-border bg-card p-2.5">
-              <span className="text-[10px] uppercase text-muted-foreground block">Affected Agents</span>
+              <span className="text-[10px] uppercase text-muted-foreground block">
+                Affected Agents
+              </span>
               <span className="font-mono text-base font-bold text-destructive block mt-0.5">
                 {impact.cascadeAgentsCount}
               </span>
             </div>
             <div className="rounded-md border border-border bg-card p-2.5">
-              <span className="text-[10px] uppercase text-muted-foreground block">Held Reservations</span>
+              <span className="text-[10px] uppercase text-muted-foreground block">
+                Held Reservations
+              </span>
               <span className="font-mono text-xs text-warning block mt-0.5 tabular-nums">
                 {formatMinorUnits(impact.heldReservationsMinor, impact.currency)}
               </span>
@@ -121,7 +131,8 @@ export function RevocationDialog({
           {requiresInputMatch && (
             <div>
               <label className="block text-muted-foreground mb-1 font-medium">
-                Type <strong className="text-destructive">REVOKE</strong> to confirm subtree invalidation:
+                Type <strong className="text-destructive">REVOKE</strong> to confirm subtree
+                invalidation:
               </label>
               <Input
                 type="text"
@@ -135,12 +146,7 @@ export function RevocationDialog({
         </div>
 
         <DialogFooter className="mt-4 gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-xs"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
             Cancel
           </Button>
           <Button

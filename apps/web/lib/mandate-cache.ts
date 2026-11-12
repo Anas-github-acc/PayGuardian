@@ -33,16 +33,10 @@ export function getCachedMandates(environmentId?: string | null): CachedMandateR
   return [];
 }
 
-export function saveCachedMandates(
-  environmentId: string,
-  mandates: CachedMandateRow[]
-): void {
+export function saveCachedMandates(environmentId: string, mandates: CachedMandateRow[]): void {
   if (typeof window === "undefined" || !environmentId) return;
   try {
-    localStorage.setItem(
-      `${STORAGE_PREFIX}${environmentId}`,
-      JSON.stringify(mandates)
-    );
+    localStorage.setItem(`${STORAGE_PREFIX}${environmentId}`, JSON.stringify(mandates));
   } catch (err) {
     console.warn("Failed to persist mandates cache:", err);
   }

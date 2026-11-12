@@ -15,7 +15,8 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { isConfigured, isLoading, isLocalDevelopment, user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { isConfigured, isLoading, isLocalDevelopment, user, signIn, signUp, signInWithGoogle } =
+    useAuth();
 
   async function routePostAuth() {
     try {
@@ -329,7 +330,15 @@ export default function LoginPage() {
   );
 
   const Footer = (
-    <div style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#666", lineHeight: 1.5, textAlign: "center" }}>
+    <div
+      style={{
+        marginTop: "1rem",
+        fontSize: "0.75rem",
+        color: "#666",
+        lineHeight: 1.5,
+        textAlign: "center",
+      }}
+    >
       By proceeding, you agree to PayGuardian's{" "}
       <Link href="/terms" style={{ color: "#888", textDecoration: "underline" }}>
         Terms of Service
@@ -371,7 +380,8 @@ export default function LoginPage() {
           position: "absolute",
           inset: 0,
           zIndex: 1,
-          background: "radial-gradient(circle at center, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.92) 100%)",
+          background:
+            "radial-gradient(circle at center, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.92) 100%)",
           pointerEvents: "none",
         }}
       />
@@ -415,7 +425,14 @@ export default function LoginPage() {
             >
               Sign in to PayGuardian
             </h1>
-            <p style={{ fontSize: "0.85rem", color: "#888", marginBottom: "0.85rem", lineHeight: 1.5 }}>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#888",
+                marginBottom: "0.85rem",
+                lineHeight: 1.5,
+              }}
+            >
               Manage autonomous environments, agent authority, and payment activity.
             </p>
 
@@ -481,7 +498,14 @@ export default function LoginPage() {
             >
               {GitHubIcon}
               <span>Continue with GitHub</span>
-              <span style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#555" }}>
+              <span
+                style={{
+                  fontSize: "0.65rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#555",
+                }}
+              >
                 Disabled
               </span>
             </button>
@@ -496,13 +520,23 @@ export default function LoginPage() {
             >
               {AppleIcon}
               <span>Continue with Apple</span>
-              <span style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#555" }}>
+              <span
+                style={{
+                  fontSize: "0.65rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#555",
+                }}
+              >
                 Disabled
               </span>
             </button>
 
             {message && (
-              <p style={{ marginTop: "0.75rem", fontSize: "0.78rem", color: "#f87171" }} role="status">
+              <p
+                style={{ marginTop: "0.75rem", fontSize: "0.78rem", color: "#f87171" }}
+                role="status"
+              >
                 {message}
               </p>
             )}
@@ -553,7 +587,14 @@ export default function LoginPage() {
             >
               Sign up for PayGuardian
             </h1>
-            <p style={{ fontSize: "0.85rem", color: "#888", marginBottom: "0.85rem", lineHeight: 1.5 }}>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#888",
+                marginBottom: "0.85rem",
+                lineHeight: 1.5,
+              }}
+            >
               Create a new account to govern autonomous multi-agent payments.
             </p>
 
@@ -627,7 +668,14 @@ export default function LoginPage() {
             >
               {GitHubIcon}
               <span>Sign up with GitHub</span>
-              <span style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#555" }}>
+              <span
+                style={{
+                  fontSize: "0.65rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#555",
+                }}
+              >
                 Disabled
               </span>
             </button>
@@ -642,7 +690,14 @@ export default function LoginPage() {
             >
               {AppleIcon}
               <span>Sign up with Apple</span>
-              <span style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#555" }}>
+              <span
+                style={{
+                  fontSize: "0.65rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#555",
+                }}
+              >
                 Disabled
               </span>
             </button>

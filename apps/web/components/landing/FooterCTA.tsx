@@ -150,7 +150,8 @@ export function FooterCTA() {
           Make sure their spending is bounded.
         </h2>
         <p className="mt-[14px] text-[14px] leading-[25px] text-muted-foreground">
-          Start enforcing cryptographic mandates across Personal, Travel, and Specialist agents today,
+          Start enforcing cryptographic mandates across Personal, Travel, and Specialist agents
+          today,
           <br className="max-md:hidden" />
           and see your first real-time ledger report in minutes.
         </p>
@@ -168,7 +169,9 @@ export function FooterCTA() {
             href="#ask-agent"
             onClick={(e) => {
               e.preventDefault();
-              document.getElementById("ask-agent")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              document
+                .getElementById("ask-agent")
+                ?.scrollIntoView({ behavior: "smooth", block: "center" });
             }}
           >
             <MessageSquare className="size-4 text-primary" />

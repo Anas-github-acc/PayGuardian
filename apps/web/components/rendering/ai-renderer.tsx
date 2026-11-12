@@ -21,11 +21,7 @@ export interface AIRendererProps {
   options?: AIRendererOptions;
 }
 
-export function AIRenderer({
-  content,
-  className = "",
-  options = {},
-}: AIRendererProps) {
+export function AIRenderer({ content, className = "", options = {} }: AIRendererProps) {
   const {
     enableMath = true,
     enableGfm = true,
@@ -121,9 +117,7 @@ export function AIRenderer({
           table({ children }) {
             return (
               <div className="my-4 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/70 shadow-sm">
-                <table className="w-full text-left text-xs border-collapse">
-                  {children}
-                </table>
+                <table className="w-full text-left text-xs border-collapse">{children}</table>
               </div>
             );
           },
@@ -145,11 +139,7 @@ export function AIRenderer({
           },
 
           tr({ children }) {
-            return (
-              <tr className="hover:bg-zinc-800/30 transition-colors">
-                {children}
-              </tr>
-            );
+            return <tr className="hover:bg-zinc-800/30 transition-colors">{children}</tr>;
           },
 
           th({ children }) {
@@ -182,19 +172,11 @@ export function AIRenderer({
           },
 
           ul({ children }) {
-            return (
-              <ul className="my-2 ml-5 list-disc space-y-1 text-zinc-300">
-                {children}
-              </ul>
-            );
+            return <ul className="my-2 ml-5 list-disc space-y-1 text-zinc-300">{children}</ul>;
           },
 
           ol({ children }) {
-            return (
-              <ol className="my-2 ml-5 list-decimal space-y-1 text-zinc-300">
-                {children}
-              </ol>
-            );
+            return <ol className="my-2 ml-5 list-decimal space-y-1 text-zinc-300">{children}</ol>;
           },
 
           li({ children }) {
@@ -218,11 +200,7 @@ export function AIRenderer({
           },
 
           h3({ children }) {
-            return (
-              <h3 className="mt-3 mb-1.5 text-sm font-semibold text-zinc-200">
-                {children}
-              </h3>
-            );
+            return <h3 className="mt-3 mb-1.5 text-sm font-semibold text-zinc-200">{children}</h3>;
           },
 
           p({ children }) {

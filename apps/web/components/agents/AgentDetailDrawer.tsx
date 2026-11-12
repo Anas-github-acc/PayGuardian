@@ -16,10 +16,7 @@ import {
   Lock,
 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
-import {
-  Sheet,
-  SheetContent,
-} from "../ui/sheet";
+import { Sheet, SheetContent } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import type { SpecialistAgent } from "./types";
@@ -98,7 +95,8 @@ export function AgentDetailDrawer({
                     {agent.name}
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    {agent.specialty} · <span className="text-muted-foreground">{agent.publisher}</span>
+                    {agent.specialty} ·{" "}
+                    <span className="text-muted-foreground">{agent.publisher}</span>
                   </p>
                 </div>
               </div>
@@ -124,9 +122,7 @@ export function AgentDetailDrawer({
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
                 Overview
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-foreground">
-                {agent.description}
-              </p>
+              <p className="mt-2 text-xs leading-relaxed text-foreground">{agent.description}</p>
             </div>
 
             {/* Zero-Authority Invariant Banner */}
@@ -137,8 +133,8 @@ export function AgentDetailDrawer({
               </div>
               <p className="mt-1 text-[11px] text-warning/80">
                 Attaching this specialist agent to an environment connects it as a structural node.
-                It holds <strong>$0.00</strong> authority until an explicit delegated mandate is signed by
-                the parent orchestrator.
+                It holds <strong>$0.00</strong> authority until an explicit delegated mandate is
+                signed by the parent orchestrator.
               </p>
             </div>
 

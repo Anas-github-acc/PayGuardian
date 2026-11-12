@@ -34,7 +34,8 @@ export function CodeMirrorEditor({
   const getLanguageExtension = (lang: string) => {
     const l = lang.toLowerCase();
     if (l === "javascript" || l === "js") return javascript({ jsx: true });
-    if (l === "typescript" || l === "ts" || l === "tsx") return javascript({ typescript: true, jsx: true });
+    if (l === "typescript" || l === "ts" || l === "tsx")
+      return javascript({ typescript: true, jsx: true });
     if (l === "python" || l === "py") return python();
     if (l === "json") return json();
     if (l === "html") return html();
@@ -55,14 +56,14 @@ export function CodeMirrorEditor({
   };
 
   return (
-    <div className={`overflow-hidden rounded-xl border border-zinc-800 bg-[#1e1e1e] shadow-lg ${className}`}>
+    <div
+      className={`overflow-hidden rounded-xl border border-zinc-800 bg-[#1e1e1e] shadow-lg ${className}`}
+    >
       {/* Editor Header */}
       <div className="flex h-10 items-center justify-between border-b border-zinc-800/80 bg-zinc-900/90 px-3.5 text-xs text-zinc-400">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500/80" />
-          <span className="font-mono uppercase tracking-wider text-zinc-300">
-            {language}
-          </span>
+          <span className="font-mono uppercase tracking-wider text-zinc-300">{language}</span>
           <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
             CodeMirror 6
           </span>

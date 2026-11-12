@@ -352,7 +352,11 @@ export function topupMandate(
   if (parent.state === "superseded")
     return {
       mandate: null,
-      decision: { allowed: false, code: "MANDATE_NOT_FOUND", reason: "Parent mandate is superseded." },
+      decision: {
+        allowed: false,
+        code: "MANDATE_NOT_FOUND",
+        reason: "Parent mandate is superseded.",
+      },
     };
   if (isExpired(parent, at))
     return {

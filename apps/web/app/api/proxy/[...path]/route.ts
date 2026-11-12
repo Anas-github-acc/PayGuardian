@@ -143,8 +143,13 @@ async function handleProxy(
   }
 }
 
-export const GET = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) => handleProxy(req, ctx);
-export const POST = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) => handleProxy(req, ctx);
-export const PUT = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) => handleProxy(req, ctx);
-export const PATCH = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) => handleProxy(req, ctx);
-export const DELETE = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) => handleProxy(req, ctx);
+export const GET = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) =>
+  handleProxy(req, ctx);
+export const POST = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) =>
+  handleProxy(req, ctx);
+export const PUT = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) =>
+  handleProxy(req, ctx);
+export const PATCH = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) =>
+  handleProxy(req, ctx);
+export const DELETE = (req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) =>
+  handleProxy(req, ctx);

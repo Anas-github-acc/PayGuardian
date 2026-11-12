@@ -97,7 +97,9 @@ export async function saveConversation(conversation: CachedConversation): Promis
   }
 }
 
-export async function getCachedConversations(environmentId?: string): Promise<CachedConversation[]> {
+export async function getCachedConversations(
+  environmentId?: string,
+): Promise<CachedConversation[]> {
   if (!hasIndexedDB()) {
     const arr = Array.from(memoryConversations.values());
     return environmentId ? arr.filter((c) => c.environmentId === environmentId) : arr;
@@ -149,7 +151,10 @@ export async function deleteCachedConversation(conversationId: string): Promise<
   }
 }
 
-export async function saveMessages(conversationId: string, messages: CachedMessage[]): Promise<void> {
+export async function saveMessages(
+  conversationId: string,
+  messages: CachedMessage[],
+): Promise<void> {
   memoryMessages.set(conversationId, messages);
 
   if (!hasIndexedDB()) return;
@@ -192,7 +197,9 @@ export async function getCachedMessages(conversationId: string): Promise<CachedM
 
 export async function isConversationCached(conversationId: string): Promise<boolean> {
   if (!hasIndexedDB()) {
-    return memoryMessages.has(conversationId) && (memoryMessages.get(conversationId)?.length ?? 0) > 0;
+    return (
+      memoryMessages.has(conversationId) && (memoryMessages.get(conversationId)?.length ?? 0) > 0
+    );
   }
 
   try {

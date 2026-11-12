@@ -47,15 +47,18 @@ export function Integrations({
   className,
 }: IntegrationsProps = {}) {
   return (
-    <div className={cn("mx-auto grid max-w-5xl grid-cols-1 gap-12 p-4 md:grid-cols-2 md:items-center", className)}>
+    <div
+      className={cn(
+        "mx-auto grid max-w-5xl grid-cols-1 gap-12 p-4 md:grid-cols-2 md:items-center",
+        className,
+      )}
+    >
       {/* Left Content */}
       <div className="max-w-xl space-y-5">
         <h2 className="font-medium text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
           {title}
         </h2>
-        <p className="text-lg text-muted-foreground leading-8">
-          {subtitle}
-        </p>
+        <p className="text-lg text-muted-foreground leading-8">{subtitle}</p>
         {(ctaPrimary || ctaSecondary) && (
           <div className="flex flex-wrap items-center gap-3.5 pt-2">
             {ctaPrimary}
@@ -98,7 +101,7 @@ function AgentTile({ row, col, agent }: TileData) {
             !agent.isOrchestrator &&
             "bg-card shadow-[0_3px_0_0_var(--border)] dark:bg-card/60",
           agent?.isOrchestrator &&
-            "border-indigo-500/50 bg-indigo-500/15 shadow-[0_3px_0_0] shadow-indigo-700/60"
+            "border-indigo-500/50 bg-indigo-500/15 shadow-[0_3px_0_0] shadow-indigo-700/60",
         )}
         role={agent ? "img" : undefined}
         style={position}
@@ -107,9 +110,7 @@ function AgentTile({ row, col, agent }: TileData) {
           <AgentIcon
             className={cn(
               "pointer-events-none size-9 select-none",
-              agent.isOrchestrator
-                ? "text-indigo-600 dark:text-indigo-200"
-                : "text-foreground"
+              agent.isOrchestrator ? "text-indigo-600 dark:text-indigo-200" : "text-foreground",
             )}
           />
         )}

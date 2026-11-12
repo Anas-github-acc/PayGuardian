@@ -17,11 +17,11 @@ async function testStandardEmailAuth() {
 
   try {
     await page.goto("https://payguardiana3.vercel.app/login", { waitUntil: "networkidle2" });
-    
+
     // Switch to sign up mode
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll("button"));
-      const signupBtn = btns.find(b => b.textContent?.includes("Need an account? Sign up"));
+      const signupBtn = btns.find((b) => b.textContent?.includes("Need an account? Sign up"));
       signupBtn?.click();
     });
 
@@ -40,9 +40,11 @@ async function testStandardEmailAuth() {
 
     await new Promise((r) => setTimeout(r, 4000));
     console.log("Post-signup URL:", page.url());
-    console.log("Post-signup page text (first 300 chars):", (await page.evaluate(() => document.body.innerText)).slice(0, 300));
+    console.log(
+      "Post-signup page text (first 300 chars):",
+      (await page.evaluate(() => document.body.innerText)).slice(0, 300),
+    );
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "signup_standard_result.png") });
-
   } finally {
     await page.close();
     await browser.disconnect();

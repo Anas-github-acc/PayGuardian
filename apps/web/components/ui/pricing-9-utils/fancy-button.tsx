@@ -3,8 +3,7 @@
 import * as React from "react";
 import { cn } from "../../../lib/utils";
 
-export interface FancyButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface FancyButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "default" | "sm" | "lg";
 }
 
@@ -18,13 +17,13 @@ export const FancyButton = React.forwardRef<HTMLButtonElement, FancyButtonProps>
           size === "sm" && "h-9 px-3 text-xs",
           size === "default" && "h-11 px-5 text-sm",
           size === "lg" && "h-12 px-6 text-base font-semibold",
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </button>
     );
-  }
+  },
 );
 FancyButton.displayName = "FancyButton";

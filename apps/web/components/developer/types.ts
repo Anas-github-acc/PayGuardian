@@ -67,8 +67,14 @@ export const DEFAULT_MCP_TOOLS = [
   },
   {
     name: "payguardian_execute_payment",
-    description: "Disburses an authorized payment via PayPal with cryptographic mandate co-signature.",
-    parameters: ["recipient: string", "amountMinor: integer", "merchantCategory: string", "idempotencyKey: string"],
+    description:
+      "Disburses an authorized payment via PayPal with cryptographic mandate co-signature.",
+    parameters: [
+      "recipient: string",
+      "amountMinor: integer",
+      "merchantCategory: string",
+      "idempotencyKey: string",
+    ],
   },
   {
     name: "payguardian_delegate_mandate",
@@ -77,12 +83,14 @@ export const DEFAULT_MCP_TOOLS = [
   },
   {
     name: "payguardian_query_balance",
-    description: "Reads the exact integer minor-unit balance, reserved hold, and remaining ceiling.",
+    description:
+      "Reads the exact integer minor-unit balance, reserved hold, and remaining ceiling.",
     parameters: ["mandateId: string"],
   },
   {
     name: "payguardian_check_policy",
-    description: "Evaluates whether an intended transaction complies with merchant allowlists and approval thresholds.",
+    description:
+      "Evaluates whether an intended transaction complies with merchant allowlists and approval thresholds.",
     parameters: ["amountMinor: integer", "merchantName: string", "merchantCategory: string"],
   },
 ];

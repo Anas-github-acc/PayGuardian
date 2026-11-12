@@ -324,7 +324,9 @@ export function registerPayPalRoutes(
             a.id === resolvedAgentId ||
             a.kind.toLowerCase() === clean ||
             a.name.toLowerCase().includes(clean),
-        ) ?? envAgents[0] ?? null;
+        ) ??
+        envAgents[0] ??
+        null;
     }
 
     let mandate: Mandate | null = null;
@@ -341,8 +343,7 @@ export function registerPayPalRoutes(
         allMandates.find(
           (m) =>
             m.state === "active" &&
-            (m.id === request.body.mandateId ||
-              (agent && m.holderAgentId === agent.id)),
+            (m.id === request.body.mandateId || (agent && m.holderAgentId === agent.id)),
         ) ??
         allMandates.find((m) => m.state === "active" && !m.parentMandateId) ??
         allMandates.find((m) => m.state === "active") ??
@@ -390,10 +391,7 @@ export function registerPayPalRoutes(
     if (request.body.approvalId && dependencies.approvals && isValidUuid(request.body.approvalId)) {
       try {
         const approval = await dependencies.approvals.get(environment.id, request.body.approvalId);
-        if (
-          approval &&
-          approval.status === "approved"
-        ) {
+        if (approval && approval.status === "approved") {
           approvalGranted = true;
         }
       } catch {
@@ -626,9 +624,14 @@ export function registerPayPalRoutes(
         approvalUrl: order.approvalUrl,
         status: order.status,
       });
-      return reply
-        .code(201)
-        .send({ action: reserved.action, reservation: reserved.reservation, order, orderId: order.id, operation, approveUrl: order.approvalUrl });
+      return reply.code(201).send({
+        action: reserved.action,
+        reservation: reserved.reservation,
+        order,
+        orderId: order.id,
+        operation,
+        approveUrl: order.approvalUrl,
+      });
     } catch (error) {
       if (reserved && error instanceof PayPalError && !error.retryable) {
         try {
@@ -791,9 +794,10 @@ export function registerPayPalRoutes(
         }
       }
 
-      let action = operation && isValidUuid(operation.actionId)
-        ? await dependencies.ledger.getAction(environment.id, operation.actionId)
-        : null;
+      let action =
+        operation && isValidUuid(operation.actionId)
+          ? await dependencies.ledger.getAction(environment.id, operation.actionId)
+          : null;
       if (!action && request.body.actionId && isValidUuid(request.body.actionId)) {
         try {
           action = await dependencies.ledger.getAction(environment.id, request.body.actionId);
@@ -819,7 +823,11 @@ export function registerPayPalRoutes(
       }
 
       // Sync approval state if approvalId provided
-      if (request.body.approvalId && dependencies.approvals && isValidUuid(request.body.approvalId)) {
+      if (
+        request.body.approvalId &&
+        dependencies.approvals &&
+        isValidUuid(request.body.approvalId)
+      ) {
         try {
           await dependencies.approvals.approve(
             environment.id,

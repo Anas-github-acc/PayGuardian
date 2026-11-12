@@ -86,10 +86,10 @@ export function LandingHero() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-[16px] max-w-[740px] text-[15px] leading-[25px] text-foreground/80 md:text-[16.5px] md:leading-[27px]"
         >
-          Agents are starting to hire other agents, and money moves down the chain
-          with no one watching. PayGuardian is the trust layer that fixes this. You approve
-          a budget once. PayGuardian splits it across your agents, enforces every limit at
-          every level, and pays only what you authorized.
+          Agents are starting to hire other agents, and money moves down the chain with no one
+          watching. PayGuardian is the trust layer that fixes this. You approve a budget once.
+          PayGuardian splits it across your agents, enforces every limit at every level, and pays
+          only what you authorized.
         </motion.p>
 
         {/* Action Buttons */}
@@ -223,252 +223,241 @@ export function LandingHero() {
               } as React.CSSProperties
             }
           >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none relative h-[535px] w-[1200px] select-none"
-          >
-            <div className="drop-shadow-[0_-10px_50px_rgba(0,0,0,0.09)]">
-              <div className="relative h-[520px] overflow-hidden rounded-[18px] border border-border bg-background [mask-image:linear-gradient(#000_240px,transparent_385px)]">
-                {/* Browser window top bar */}
-                <div className="relative flex h-[38px] items-center border-b border-border text-muted-foreground">
-                  <div className="ml-[15px] flex gap-[7px]">
-                    <span
-                      className="size-[10px] rounded-full"
-                      style={{ background: "#ec6a5f" }}
-                    />
-                    <span
-                      className="size-[10px] rounded-full"
-                      style={{ background: "#f4bf4f" }}
-                    />
-                    <span
-                      className="size-[10px] rounded-full"
-                      style={{ background: "#61c554" }}
-                    />
-                  </div>
-                  <PanelLeft className="ml-[37px] size-[16px]" />
-                  <ChevronLeft className="ml-[16px] size-[16px]" />
-                  <ChevronRight className="ml-[10px] size-[16px] text-muted-foreground/70" />
-                  <ShieldCheck className="ml-[166px] size-[14px] text-muted-foreground" />
-                  <div className="relative ml-[10px] flex h-[24px] w-[485px] items-center justify-center gap-[4px] rounded-[6px] bg-secondary text-[10.5px] text-muted-foreground">
-                    <Lock className="size-[9px]" />
-                    gateway.payguardian.ai
-                    <RotateCw className="absolute right-[6px] size-[12px] text-muted-foreground" />
-                  </div>
-                  <div className="ml-auto mr-[16px] flex gap-[11px]">
-                    <CircleArrowDown className="size-[15px]" />
-                    <Plus className="size-[15px]" />
-                    <Copy className="size-[15px]" />
-                  </div>
-                </div>
-
-                {/* Dashboard body */}
-                <div className="flex h-full">
-                  {/* Left Sidebar */}
-                  <aside className="w-[216px] shrink-0 bg-card px-[20px]">
-                    <div className="mt-[20px] flex h-[22px] items-center gap-[8px] text-[19px] font-semibold tracking-[-0.02em] text-foreground">
-                      <Image
-                        src="/payguardian.svg"
-                        alt="PayGuardian Logo"
-                        width={22}
-                        height={20}
-                        className="size-[20px] object-contain shrink-0"
+            <div
+              aria-hidden="true"
+              className="pointer-events-none relative h-[535px] w-[1200px] select-none"
+            >
+              <div className="drop-shadow-[0_-10px_50px_rgba(0,0,0,0.09)]">
+                <div className="relative h-[520px] overflow-hidden rounded-[18px] border border-border bg-background [mask-image:linear-gradient(#000_240px,transparent_385px)]">
+                  {/* Browser window top bar */}
+                  <div className="relative flex h-[38px] items-center border-b border-border text-muted-foreground">
+                    <div className="ml-[15px] flex gap-[7px]">
+                      <span
+                        className="size-[10px] rounded-full"
+                        style={{ background: "#ec6a5f" }}
                       />
-                      PayGuardian
+                      <span
+                        className="size-[10px] rounded-full"
+                        style={{ background: "#f4bf4f" }}
+                      />
+                      <span
+                        className="size-[10px] rounded-full"
+                        style={{ background: "#61c554" }}
+                      />
                     </div>
-                    <ul className="mt-[38px] pl-[11px]">
-                      <li className="flex h-[53.2px] items-center text-[13.5px] text-foreground font-medium">
-                        <LayoutGrid className="-ml-[2px] size-[20px] text-foreground" />
-                        <span className="ml-[11px]">Dashboard</span>
-                      </li>
-                      <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
-                        <Bot className="-ml-[2px] size-[20px]" />
-                        <span className="ml-[11px]">Agent Registry</span>
-                        <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
-                      </li>
-                      <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
-                        <FileCheck2 className="-ml-[2px] size-[20px]" />
-                        <span className="ml-[11px]">Mandates</span>
-                        <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
-                      </li>
-                      <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
-                        <Receipt className="-ml-[2px] size-[20px]" />
-                        <span className="ml-[11px]">Ledger Accounts</span>
-                        <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
-                      </li>
-                      <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
-                        <Scale className="-ml-[2px] size-[20px]" />
-                        <span className="ml-[11px]">Policies & Rules</span>
-                        <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
-                      </li>
-                    </ul>
-                  </aside>
+                    <PanelLeft className="ml-[37px] size-[16px]" />
+                    <ChevronLeft className="ml-[16px] size-[16px]" />
+                    <ChevronRight className="ml-[10px] size-[16px] text-muted-foreground/70" />
+                    <ShieldCheck className="ml-[166px] size-[14px] text-muted-foreground" />
+                    <div className="relative ml-[10px] flex h-[24px] w-[485px] items-center justify-center gap-[4px] rounded-[6px] bg-secondary text-[10.5px] text-muted-foreground">
+                      <Lock className="size-[9px]" />
+                      gateway.payguardian.ai
+                      <RotateCw className="absolute right-[6px] size-[12px] text-muted-foreground" />
+                    </div>
+                    <div className="ml-auto mr-[16px] flex gap-[11px]">
+                      <CircleArrowDown className="size-[15px]" />
+                      <Plus className="size-[15px]" />
+                      <Copy className="size-[15px]" />
+                    </div>
+                  </div>
 
-                  {/* Main content pane */}
-                  <div className="flex-1 pr-[18.5px] pl-[22px]">
-                    {/* Top bar inside dashboard */}
-                    <div className="mt-[13px] flex h-[38px] items-center">
-                      <h2 className="text-[19.5px] font-semibold tracking-[-0.01em] text-foreground">
-                        Dashboard
-                      </h2>
-                      <div className="ml-[248px] flex h-[38px] w-[266px] items-center rounded-[9px] bg-background pr-[10px] pl-[9px] text-[12.5px] text-muted-foreground/70 shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-border">
-                        <Search className="size-[15px] text-muted-foreground/70" />
-                        <span className="ml-[7px]">Search agents, mandates...</span>
-                        <Command className="ml-auto size-[12px] text-foreground/80" />
-                        <span className="ml-[10px] text-[13px] font-medium text-foreground/80">
-                          K
+                  {/* Dashboard body */}
+                  <div className="flex h-full">
+                    {/* Left Sidebar */}
+                    <aside className="w-[216px] shrink-0 bg-card px-[20px]">
+                      <div className="mt-[20px] flex h-[22px] items-center gap-[8px] text-[19px] font-semibold tracking-[-0.02em] text-foreground">
+                        <Image
+                          src="/payguardian.svg"
+                          alt="PayGuardian Logo"
+                          width={22}
+                          height={20}
+                          className="size-[20px] object-contain shrink-0"
+                        />
+                        PayGuardian
+                      </div>
+                      <ul className="mt-[38px] pl-[11px]">
+                        <li className="flex h-[53.2px] items-center text-[13.5px] text-foreground font-medium">
+                          <LayoutGrid className="-ml-[2px] size-[20px] text-foreground" />
+                          <span className="ml-[11px]">Dashboard</span>
+                        </li>
+                        <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
+                          <Bot className="-ml-[2px] size-[20px]" />
+                          <span className="ml-[11px]">Agent Registry</span>
+                          <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
+                        </li>
+                        <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
+                          <FileCheck2 className="-ml-[2px] size-[20px]" />
+                          <span className="ml-[11px]">Mandates</span>
+                          <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
+                        </li>
+                        <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
+                          <Receipt className="-ml-[2px] size-[20px]" />
+                          <span className="ml-[11px]">Ledger Accounts</span>
+                          <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
+                        </li>
+                        <li className="flex h-[53.2px] items-center text-[13.5px] text-muted-foreground/70">
+                          <Scale className="-ml-[2px] size-[20px]" />
+                          <span className="ml-[11px]">Policies & Rules</span>
+                          <ChevronDown className="ml-auto mr-[2px] size-[14px]" />
+                        </li>
+                      </ul>
+                    </aside>
+
+                    {/* Main content pane */}
+                    <div className="flex-1 pr-[18.5px] pl-[22px]">
+                      {/* Top bar inside dashboard */}
+                      <div className="mt-[13px] flex h-[38px] items-center">
+                        <h2 className="text-[19.5px] font-semibold tracking-[-0.01em] text-foreground">
+                          Dashboard
+                        </h2>
+                        <div className="ml-[248px] flex h-[38px] w-[266px] items-center rounded-[9px] bg-background pr-[10px] pl-[9px] text-[12.5px] text-muted-foreground/70 shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-border">
+                          <Search className="size-[15px] text-muted-foreground/70" />
+                          <span className="ml-[7px]">Search agents, mandates...</span>
+                          <Command className="ml-auto size-[12px] text-foreground/80" />
+                          <span className="ml-[10px] text-[13px] font-medium text-foreground/80">
+                            K
+                          </span>
+                        </div>
+                        <span className="ml-auto grid size-[36px] place-items-center rounded-[9px] bg-background shadow-[0_1px_4px_rgba(0,0,0,0.05)] border border-border">
+                          <ShieldCheck className="size-[17px] text-foreground/80" />
+                        </span>
+                        <span className="ml-[12px] grid size-[36px] place-items-center rounded-[9px] bg-background shadow-[0_1px_4px_rgba(0,0,0,0.05)] border border-border">
+                          <Bell className="size-[17px] text-foreground/80" />
                         </span>
                       </div>
-                      <span className="ml-auto grid size-[36px] place-items-center rounded-[9px] bg-background shadow-[0_1px_4px_rgba(0,0,0,0.05)] border border-border">
-                        <ShieldCheck className="size-[17px] text-foreground/80" />
-                      </span>
-                      <span className="ml-[12px] grid size-[36px] place-items-center rounded-[9px] bg-background shadow-[0_1px_4px_rgba(0,0,0,0.05)] border border-border">
-                        <Bell className="size-[17px] text-foreground/80" />
-                      </span>
-                    </div>
 
-                    {/* Greeting & Action banner */}
-                    <div className="mt-[20px] mr-[2.8px] flex h-[68px] items-center rounded-[12px] bg-muted pr-[15px] pl-[16px] border border-border">
-                      <div className="text-left">
-                        <div className="text-[16px] leading-[20px] font-semibold text-foreground">
-                          Authority Gateway Live
+                      {/* Greeting & Action banner */}
+                      <div className="mt-[20px] mr-[2.8px] flex h-[68px] items-center rounded-[12px] bg-muted pr-[15px] pl-[16px] border border-border">
+                        <div className="text-left">
+                          <div className="text-[16px] leading-[20px] font-semibold text-foreground">
+                            Authority Gateway Live
+                          </div>
+                          <div className="mt-[1px] text-[11.5px] text-muted-foreground">
+                            All 6 specialist subagents bounded under Personal root mandate
+                          </div>
                         </div>
-                        <div className="mt-[1px] text-[11.5px] text-muted-foreground">
-                          All 6 specialist subagents bounded under Personal root mandate
-                        </div>
+                        <span className="ml-auto flex h-[32px] w-[76px] items-center justify-center gap-[6px] rounded-[8px] bg-background text-[12px] text-muted-foreground shadow-[0_1px_4px_rgba(0,0,0,0.05)] border border-border">
+                          <Filter className="size-[14px] text-foreground/80" />
+                          Filter
+                        </span>
+                        <span className="ml-[14px] flex h-[32px] w-[148px] items-center justify-center gap-[5px] rounded-[8px] bg-primary text-[12px] font-medium text-primary-foreground">
+                          <Plus className="size-[13px]" />
+                          Issue Mandate
+                        </span>
                       </div>
-                      <span className="ml-auto flex h-[32px] w-[76px] items-center justify-center gap-[6px] rounded-[8px] bg-background text-[12px] text-muted-foreground shadow-[0_1px_4px_rgba(0,0,0,0.05)] border border-border">
-                        <Filter className="size-[14px] text-foreground/80" />
-                        Filter
-                      </span>
-                      <span className="ml-[14px] flex h-[32px] w-[148px] items-center justify-center gap-[5px] rounded-[8px] bg-primary text-[12px] font-medium text-primary-foreground">
-                        <Plus className="size-[13px]" />
-                        Issue Mandate
-                      </span>
-                    </div>
 
-                    {/* Table of active delegations */}
-                    <div className="mt-[31px] pl-[13.5px] text-left text-[12px] font-medium">
-                      <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[20px] text-muted-foreground">
-                        <span className="size-[14px] rounded-[4px] border border-border" />
-                        <span>Agent Entity</span>
-                        <span>Delegation Scope</span>
-                        <span>Mandate File</span>
-                        <span>Authorized</span>
-                        <span>Status</span>
-                      </div>
-                      <div className="mt-[13px]">
-                        {/* Row 1 */}
-                        <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[50px] border-b border-border">
+                      {/* Table of active delegations */}
+                      <div className="mt-[31px] pl-[13.5px] text-left text-[12px] font-medium">
+                        <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[20px] text-muted-foreground">
                           <span className="size-[14px] rounded-[4px] border border-border" />
-                          <span className="flex items-center">
-                            <Image
-                              alt="Agent Personal"
-                              className="size-[23px] rounded-full object-cover"
-                              height={256}
-                              width={256}
-                              src="/landing/avatar-1.3c9mk9c-13we-.jpg"
-                            />
-                            <span className="ml-[10px]">
-                              <span className="block text-[11.75px] leading-[15px] text-foreground/80 font-medium">
-                                Personal Root Agent
-                              </span>
-                              <span className="block text-[10.5px] leading-[13px] text-muted-foreground">
-                                root_user_01
-                              </span>
-                            </span>
-                          </span>
-                          <span className="text-[11.5px] text-foreground/80">
-                            Travel & Living ₹10,000
-                          </span>
-                          <span className="flex items-center gap-[6px] text-[11.5px] text-foreground/80">
-                            <Paperclip className="size-[13px] text-muted-foreground/70" />
-                            mandate_root.sig
-                          </span>
-                          <span className="text-[11.5px] text-foreground/80">
-                            12 Nov 2026
-                          </span>
-                          <span className="flex items-center text-[11.5px] text-emerald-500 font-semibold">
-                            <span className="w-[62px] whitespace-nowrap">
-                              Enforced
-                            </span>
-                            <ChevronRight className="size-[13px] text-muted-foreground/70" />
-                          </span>
+                          <span>Agent Entity</span>
+                          <span>Delegation Scope</span>
+                          <span>Mandate File</span>
+                          <span>Authorized</span>
+                          <span>Status</span>
                         </div>
+                        <div className="mt-[13px]">
+                          {/* Row 1 */}
+                          <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[50px] border-b border-border">
+                            <span className="size-[14px] rounded-[4px] border border-border" />
+                            <span className="flex items-center">
+                              <Image
+                                alt="Agent Personal"
+                                className="size-[23px] rounded-full object-cover"
+                                height={256}
+                                width={256}
+                                src="/landing/avatar-1.3c9mk9c-13we-.jpg"
+                              />
+                              <span className="ml-[10px]">
+                                <span className="block text-[11.75px] leading-[15px] text-foreground/80 font-medium">
+                                  Personal Root Agent
+                                </span>
+                                <span className="block text-[10.5px] leading-[13px] text-muted-foreground">
+                                  root_user_01
+                                </span>
+                              </span>
+                            </span>
+                            <span className="text-[11.5px] text-foreground/80">
+                              Travel & Living ₹10,000
+                            </span>
+                            <span className="flex items-center gap-[6px] text-[11.5px] text-foreground/80">
+                              <Paperclip className="size-[13px] text-muted-foreground/70" />
+                              mandate_root.sig
+                            </span>
+                            <span className="text-[11.5px] text-foreground/80">12 Nov 2026</span>
+                            <span className="flex items-center text-[11.5px] text-emerald-500 font-semibold">
+                              <span className="w-[62px] whitespace-nowrap">Enforced</span>
+                              <ChevronRight className="size-[13px] text-muted-foreground/70" />
+                            </span>
+                          </div>
 
-                        {/* Row 2 */}
-                        <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[50px] border-b border-border">
-                          <span className="size-[14px] rounded-[4px] border border-border" />
-                          <span className="flex items-center">
-                            <Image
-                              alt="Travel Agent"
-                              className="size-[23px] rounded-full object-cover"
-                              height={256}
-                              width={256}
-                              src="/landing/avatar-2.0787u8pfq-vwp.jpg"
-                            />
-                            <span className="ml-[10px]">
-                              <span className="block text-[11.75px] leading-[15px] text-foreground/80 font-medium">
-                                Travel Specialist Child
-                              </span>
-                              <span className="block text-[10.5px] leading-[13px] text-muted-foreground">
-                                sub_travel_09
+                          {/* Row 2 */}
+                          <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[50px] border-b border-border">
+                            <span className="size-[14px] rounded-[4px] border border-border" />
+                            <span className="flex items-center">
+                              <Image
+                                alt="Travel Agent"
+                                className="size-[23px] rounded-full object-cover"
+                                height={256}
+                                width={256}
+                                src="/landing/avatar-2.0787u8pfq-vwp.jpg"
+                              />
+                              <span className="ml-[10px]">
+                                <span className="block text-[11.75px] leading-[15px] text-foreground/80 font-medium">
+                                  Travel Specialist Child
+                                </span>
+                                <span className="block text-[10.5px] leading-[13px] text-muted-foreground">
+                                  sub_travel_09
+                                </span>
                               </span>
                             </span>
-                          </span>
-                          <span className="text-[11.5px] text-foreground/80">
-                            Hotel & Flights ₹6,000
-                          </span>
-                          <span className="flex items-center gap-[6px] text-[11.5px] text-foreground/80">
-                            <Paperclip className="size-[13px] text-muted-foreground/70" />
-                            mandate_sub.sig
-                          </span>
-                          <span className="text-[11.5px] text-foreground/80">
-                            12 Nov 2026
-                          </span>
-                          <span className="flex items-center text-[11.5px] text-emerald-500 font-semibold">
-                            <span className="w-[62px] whitespace-nowrap">
-                              Enforced
+                            <span className="text-[11.5px] text-foreground/80">
+                              Hotel & Flights ₹6,000
                             </span>
-                            <ChevronRight className="size-[13px] text-muted-foreground/70" />
-                          </span>
-                        </div>
+                            <span className="flex items-center gap-[6px] text-[11.5px] text-foreground/80">
+                              <Paperclip className="size-[13px] text-muted-foreground/70" />
+                              mandate_sub.sig
+                            </span>
+                            <span className="text-[11.5px] text-foreground/80">12 Nov 2026</span>
+                            <span className="flex items-center text-[11.5px] text-emerald-500 font-semibold">
+                              <span className="w-[62px] whitespace-nowrap">Enforced</span>
+                              <ChevronRight className="size-[13px] text-muted-foreground/70" />
+                            </span>
+                          </div>
 
-                        {/* Row 3 */}
-                        <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[50px]">
-                          <span className="size-[14px] rounded-[4px] border border-border" />
-                          <span className="flex items-center">
-                            <Image
-                              alt="Flight Booking Subagent"
-                              className="size-[23px] rounded-full object-cover"
-                              height={256}
-                              width={256}
-                              src="/landing/avatar-3.17c_x21xbh076.jpg"
-                            />
-                            <span className="ml-[10px]">
-                              <span className="block text-[11.75px] leading-[15px] text-foreground/80 font-medium">
-                                Flight Booking Leaf
-                              </span>
-                              <span className="block text-[10.5px] leading-[13px] text-muted-foreground">
-                                leaf_flight_44
+                          {/* Row 3 */}
+                          <div className="grid grid-cols-[24.5px_209px_176px_178px_176px_1fr] items-center h-[50px]">
+                            <span className="size-[14px] rounded-[4px] border border-border" />
+                            <span className="flex items-center">
+                              <Image
+                                alt="Flight Booking Subagent"
+                                className="size-[23px] rounded-full object-cover"
+                                height={256}
+                                width={256}
+                                src="/landing/avatar-3.17c_x21xbh076.jpg"
+                              />
+                              <span className="ml-[10px]">
+                                <span className="block text-[11.75px] leading-[15px] text-foreground/80 font-medium">
+                                  Flight Booking Leaf
+                                </span>
+                                <span className="block text-[10.5px] leading-[13px] text-muted-foreground">
+                                  leaf_flight_44
+                                </span>
                               </span>
                             </span>
-                          </span>
-                          <span className="text-[11.5px] text-foreground/80">
-                            SFO to JFK ₹3,200
-                          </span>
-                          <span className="flex items-center gap-[6px] text-[11.5px] text-foreground/80">
-                            <Paperclip className="size-[13px] text-muted-foreground/70" />
-                            receipt_paypal.pdf
-                          </span>
-                          <span className="text-[11.5px] text-foreground/80">
-                            12 Nov 2026
-                          </span>
-                          <span className="flex items-center text-[11.5px] text-blue-400 font-semibold">
-                            <span className="w-[62px] whitespace-nowrap">
-                              Settled
+                            <span className="text-[11.5px] text-foreground/80">
+                              SFO to JFK ₹3,200
                             </span>
-                            <ChevronRight className="size-[13px] text-muted-foreground/70" />
-                          </span>
+                            <span className="flex items-center gap-[6px] text-[11.5px] text-foreground/80">
+                              <Paperclip className="size-[13px] text-muted-foreground/70" />
+                              receipt_paypal.pdf
+                            </span>
+                            <span className="text-[11.5px] text-foreground/80">12 Nov 2026</span>
+                            <span className="flex items-center text-[11.5px] text-blue-400 font-semibold">
+                              <span className="w-[62px] whitespace-nowrap">Settled</span>
+                              <ChevronRight className="size-[13px] text-muted-foreground/70" />
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -478,7 +467,6 @@ export function LandingHero() {
             </div>
           </div>
         </div>
-      </div>
 
         {/* Centered Floating Prompt Input Box with Typewriter Animation */}
         <div

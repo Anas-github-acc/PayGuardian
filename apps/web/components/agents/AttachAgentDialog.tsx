@@ -26,12 +26,7 @@ export interface AttachAgentDialogProps {
   onSuccess?: (agent: SpecialistAgent) => void;
 }
 
-export function AttachAgentDialog({
-  agent,
-  isOpen,
-  onClose,
-  onSuccess,
-}: AttachAgentDialogProps) {
+export function AttachAgentDialog({ agent, isOpen, onClose, onSuccess }: AttachAgentDialogProps) {
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
   const currency = currentEnv?.currency ?? "USD";
@@ -39,7 +34,7 @@ export function AttachAgentDialog({
   // Form State
   const [budgetDollars, setBudgetDollars] = React.useState<string>("500");
   const [selectedParentId, setSelectedParentId] = React.useState<string>(
-    () => store.graphNodes[0]?.id ?? "orchestrator-root"
+    () => store.graphNodes[0]?.id ?? "orchestrator-root",
   );
   const [allowedRails, setAllowedRails] = React.useState<string[]>(["PayPal"]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -50,7 +45,9 @@ export function AttachAgentDialog({
     if (agent) {
       const defaultDollars = (agent.recommendedBudgetMinor / 100).toFixed(0);
       setBudgetDollars(defaultDollars);
-      setAllowedRails(agent.supportedRails.includes("PayPal") ? ["PayPal"] : agent.supportedRails.slice(0, 1));
+      setAllowedRails(
+        agent.supportedRails.includes("PayPal") ? ["PayPal"] : agent.supportedRails.slice(0, 1),
+      );
       setErrorMessage(null);
     }
   }, [agent]);
@@ -71,11 +68,12 @@ export function AttachAgentDialog({
 
   // Calculate budget minor units from input dollars (strict integer math)
   const parsedDollars = parseFloat(budgetDollars);
-  const budgetMinor = isNaN(parsedDollars) || parsedDollars < 0 ? 0 : Math.round(parsedDollars * 100);
+  const budgetMinor =
+    isNaN(parsedDollars) || parsedDollars < 0 ? 0 : Math.round(parsedDollars * 100);
 
   const toggleRail = (rail: string) => {
     setAllowedRails((prev) =>
-      prev.includes(rail) ? prev.filter((r) => r !== rail) : [...prev, rail]
+      prev.includes(rail) ? prev.filter((r) => r !== rail) : [...prev, rail],
     );
   };
 
@@ -95,8 +93,18 @@ export function AttachAgentDialog({
 
     try {
       // 1. Sequential Backend Command: Register child agent on gateway
-      const validKinds = ["personal", "travel", "hotel", "transport", "food", "activities", "custom"];
-      const resolvedKind = validKinds.includes(agent.specialty) ? (agent.specialty as any) : "custom";
+      const validKinds = [
+        "personal",
+        "travel",
+        "hotel",
+        "transport",
+        "food",
+        "activities",
+        "custom",
+      ];
+      const resolvedKind = validKinds.includes(agent.specialty)
+        ? (agent.specialty as any)
+        : "custom";
 
       const childAgent = await apiClient.agents.registerChild(currentEnv.id, {
         parentAgentId: selectedParentId,
@@ -194,7 +202,7 @@ export function AttachAgentDialog({
       setErrorMessage(
         err instanceof Error
           ? err.message
-          : "Failed to register child agent and delegate spending authority on gateway."
+          : "Failed to register child agent and delegate spending authority on gateway.",
       );
     } finally {
       setIsSubmitting(false);
@@ -257,7 +265,9 @@ export function AttachAgentDialog({
               </span>
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-2 font-mono text-xs text-muted-foreground">$</span>
+              <span className="absolute left-3 top-2 font-mono text-xs text-muted-foreground">
+                $
+              </span>
               <Input
                 type="number"
                 min="0"
@@ -292,7 +302,9 @@ export function AttachAgentDialog({
                         : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-foreground" : "bg-muted-foreground"}`} />
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-foreground" : "bg-muted-foreground"}`}
+                    />
                     {rail}
                   </button>
                 );
@@ -303,8 +315,8 @@ export function AttachAgentDialog({
           {/* Security Notice */}
           <div className="rounded-md border border-border bg-card p-3 text-[11px] text-muted-foreground leading-relaxed">
             <span className="font-semibold text-foreground block mb-0.5">Policy Notice</span>
-            Authority grants can be revoked at any time by the parent orchestrator. The child agent cannot
-            delegate further without explicit sub-delegation permissions.
+            Authority grants can be revoked at any time by the parent orchestrator. The child agent
+            cannot delegate further without explicit sub-delegation permissions.
           </div>
         </div>
 

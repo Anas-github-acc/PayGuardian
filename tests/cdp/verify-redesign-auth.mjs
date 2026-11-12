@@ -18,7 +18,9 @@ async function main() {
   try {
     // 1. Visit Login (Sign In mode)
     console.log("Navigating to https://payguardiana3.vercel.app/login?preview=true ...");
-    await page.goto("https://payguardiana3.vercel.app/login?preview=true", { waitUntil: "domcontentloaded" });
+    await page.goto("https://payguardiana3.vercel.app/login?preview=true", {
+      waitUntil: "domcontentloaded",
+    });
     await new Promise((r) => setTimeout(r, 3000));
 
     // Verify disabled buttons
@@ -35,7 +37,10 @@ async function main() {
     });
     console.log("Button disabled states:", disabledButtons);
 
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "redesign_signin_live.png"), fullPage: true });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "redesign_signin_live.png"),
+      fullPage: true,
+    });
 
     // 2. Switch to Sign Up mode
     console.log("Toggling to Sign Up mode...");
@@ -46,7 +51,10 @@ async function main() {
     });
     await new Promise((r) => setTimeout(r, 1500));
 
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "redesign_signup_live.png"), fullPage: true });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "redesign_signup_live.png"),
+      fullPage: true,
+    });
 
     console.log("Captured screenshots cleanly!");
   } finally {

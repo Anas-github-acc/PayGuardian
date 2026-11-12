@@ -37,15 +37,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { AIComposer, type AIComposerSubmission } from "./ai-composer";
 import { SessionHistoryPanel } from "./session-history";
 import { useChat } from "./chat-context";
-import {
-  ReasoningThread,
-  type ThreadMessage,
-  type ThreadStep,
-} from "../ui/reasoning-thread";
-import {
-  BackgroundInbox,
-  type BackgroundInboxItem,
-} from "../ui/background-inbox";
+import { ReasoningThread, type ThreadMessage, type ThreadStep } from "../ui/reasoning-thread";
+import { BackgroundInbox, type BackgroundInboxItem } from "../ui/background-inbox";
 import { OAuthConsentCard } from "../ui/oauth-consent-card";
 import { PaymentApprovalOverlay } from "../ui/payment-approval-overlay";
 import { PaymentResultCard } from "../cards/payment-result-card";
@@ -123,7 +116,10 @@ export function AssistantView({
 
   // Helper to validate standard UUID format
   const isValidUuid = React.useCallback((id: unknown): id is string => {
-    return typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    return (
+      typeof id === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    );
   }, []);
 
   const loadedConvIdRef = React.useRef<string | null>(null);
@@ -146,17 +142,19 @@ export function AssistantView({
   // Pending user approval state
   const [pendingApproval, setPendingApproval] = React.useState<PendingApprovalData | null>(null);
   const [isProposalMinimized, setIsProposalMinimized] = React.useState(false);
-  const [completedPayments, setCompletedPayments] = React.useState<Array<{
-    id: string;
-    transactionId: string;
-    recipient: string;
-    merchantCategory: string;
-    amountMinor: number;
-    currency: string;
-    rail: string;
-    agentName?: string;
-    completedAt?: string;
-  }>>([]);
+  const [completedPayments, setCompletedPayments] = React.useState<
+    Array<{
+      id: string;
+      transactionId: string;
+      recipient: string;
+      merchantCategory: string;
+      amountMinor: number;
+      currency: string;
+      rail: string;
+      agentName?: string;
+      completedAt?: string;
+    }>
+  >([]);
 
   // Context window modal
   const [contextWindowOpen, setContextWindowOpen] = React.useState(false);
@@ -227,7 +225,10 @@ export function AssistantView({
 
       // Restore persisted pending proposal for this conversation if any
       try {
-        const stored = typeof window !== "undefined" ? localStorage.getItem(`pg_pending_approval_${convId}`) : null;
+        const stored =
+          typeof window !== "undefined"
+            ? localStorage.getItem(`pg_pending_approval_${convId}`)
+            : null;
         if (stored) {
           const parsed = JSON.parse(stored);
           if (parsed && (parsed.type === "budget_proposal" || parsed.proposedAllocations)) {
@@ -267,7 +268,9 @@ export function AssistantView({
       // 2. Fetch fresh messages from API
       const matchedConv = conversationsRef.current.find((c) => c.id === convId);
       let targetEnvId =
-        (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
+        (matchedConv && isValidUuid(matchedConv.environmentId)
+          ? matchedConv.environmentId
+          : null) ||
         (isValidUuid(currentEnvId) ? currentEnvId : null) ||
         store.environmentsList.find((e) => isValidUuid(e.id))?.id;
 
@@ -320,7 +323,10 @@ export function AssistantView({
               const toCache: CachedMessage[] = rawMsgs.map((m: any) => ({
                 id: m.id,
                 conversationId: convId,
-                senderType: m.role === "user" || m.sender_type === "user" || m.senderType === "user" ? "user" : "assistant",
+                senderType:
+                  m.role === "user" || m.sender_type === "user" || m.senderType === "user"
+                    ? "user"
+                    : "assistant",
                 content: m.content,
                 createdAt: m.created_at || m.createdAt || new Date().toISOString(),
               }));
@@ -361,7 +367,6 @@ export function AssistantView({
         setIsProposalMinimized(false);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // In-place navigation when activeConversationId changes without page reloads
@@ -516,7 +521,9 @@ export function AssistantView({
       case "task.created": {
         const agentKey = payload.agentId || payload.agent;
         if (agentKey && agentKey !== "personal") {
-          setCurrentProgressLabel(`Thinking… Formulated task for ${agentKey.charAt(0).toUpperCase() + agentKey.slice(1)} specialist`);
+          setCurrentProgressLabel(
+            `Thinking… Formulated task for ${agentKey.charAt(0).toUpperCase() + agentKey.slice(1)} specialist`,
+          );
           setSubagents((prev) => {
             if (prev.some((s) => s.id === agentKey)) return prev;
             const isMerchant = agentKey.toLowerCase().includes("merchant");
@@ -542,7 +549,9 @@ export function AssistantView({
       case "agent.started": {
         const agentKey = payload.agentId || payload.agent;
         if (agentKey && agentKey !== "personal") {
-          setCurrentProgressLabel(`Thinking… ${agentKey.charAt(0).toUpperCase() + agentKey.slice(1)} specialist researching quotes`);
+          setCurrentProgressLabel(
+            `Thinking… ${agentKey.charAt(0).toUpperCase() + agentKey.slice(1)} specialist researching quotes`,
+          );
           setSubagents((prev) =>
             prev.map((s) =>
               s.id === agentKey
@@ -578,7 +587,10 @@ export function AssistantView({
                         id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                         label: payload.message,
                         status: "running",
-                        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                        time: new Date().toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }),
                       },
                     ],
                   }
@@ -590,7 +602,9 @@ export function AssistantView({
       }
 
       case "tool.started": {
-        setCurrentProgressLabel(`Thinking… Verifying authority (${payload.tool || "gateway check"})`);
+        setCurrentProgressLabel(
+          `Thinking… Verifying authority (${payload.tool || "gateway check"})`,
+        );
         const agentKey = payload.agentId || payload.agent;
         if (agentKey && agentKey !== "personal") {
           setSubagents((prev) =>
@@ -626,7 +640,11 @@ export function AssistantView({
                     ...s,
                     actions: (s.actions || []).map((a) =>
                       a.label.includes(payload.tool || "")
-                        ? { ...a, status: "done", detail: JSON.stringify(payload.result || "Success") }
+                        ? {
+                            ...a,
+                            status: "done",
+                            detail: JSON.stringify(payload.result || "Success"),
+                          }
                         : a,
                     ),
                   }
@@ -647,14 +665,16 @@ export function AssistantView({
           amountMinor: payload.amountMinor ?? payload.amount_minor ?? 0,
           currency: payload.currency || "USD",
           mandateId: payload.mandateId || payload.mandate_id || "",
-          type: payload.type || (payload.proposedAllocations ? "budget_proposal" : "action_approval"),
+          type:
+            payload.type || (payload.proposedAllocations ? "budget_proposal" : "action_approval"),
           proposedAllocations: payload.proposedAllocations,
           rootBudgetMinor: payload.rootBudgetMinor || currentEnv?.budgetLimitMinor,
           approvalUrl: payload.approvalUrl || payload.approval_url,
           recipient: payload.recipient,
         };
         setPendingApproval(apprData);
-        const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+        const targetId =
+          activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
         if (typeof window !== "undefined" && targetId) {
           try {
             localStorage.setItem(`pg_pending_approval_${targetId}`, JSON.stringify(apprData));
@@ -668,7 +688,11 @@ export function AssistantView({
       case "payment.order_created": {
         setIsProposalMinimized(false);
         const payData: PendingApprovalData = {
-          id: payload.actionId || payload.providerOrderId || payload.approvalId || `appr-${Date.now()}`,
+          id:
+            payload.actionId ||
+            payload.providerOrderId ||
+            payload.approvalId ||
+            `appr-${Date.now()}`,
           clientName: payload.agentId ? `${payload.agentId} Specialist` : "Hotel Specialist",
           productName: "PayGuardian Gateway (PayPal Sandbox)",
           action: payload.action || "book_hotel",
@@ -680,7 +704,8 @@ export function AssistantView({
           recipient: payload.recipient,
         };
         setPendingApproval(payData);
-        const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+        const targetId =
+          activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
         if (typeof window !== "undefined" && targetId) {
           try {
             localStorage.setItem(`pg_pending_approval_${targetId}`, JSON.stringify(payData));
@@ -693,7 +718,8 @@ export function AssistantView({
 
       case "agent.output": {
         setCurrentProgressLabel("Thinking… Synthesizing coordinated response");
-        const textChunk = payload.text ?? payload.output ?? payload.finalResponse ?? payload.content ?? "";
+        const textChunk =
+          payload.text ?? payload.output ?? payload.finalResponse ?? payload.content ?? "";
         const agentKey = payload.agentId || payload.agent;
         if (agentKey && agentKey !== "personal") {
           // Accumulate subagent streaming output for split-screen inspection
@@ -719,23 +745,14 @@ export function AssistantView({
               }
               // If textChunk is a full replacement that starts with or is longer than last.text
               if (textChunk.startsWith(last.text) || !last.text) {
-                return [
-                  ...prev.slice(0, -1),
-                  { ...last, text: textChunk },
-                ];
+                return [...prev.slice(0, -1), { ...last, text: textChunk }];
               }
               // If payload is a streaming delta chunk
               if (payload.isDelta) {
-                return [
-                  ...prev.slice(0, -1),
-                  { ...last, text: last.text + textChunk },
-                ];
+                return [...prev.slice(0, -1), { ...last, text: last.text + textChunk }];
               }
               // Full text replacement
-              return [
-                ...prev.slice(0, -1),
-                { ...last, text: textChunk },
-              ];
+              return [...prev.slice(0, -1), { ...last, text: textChunk }];
             }
             return [
               ...prev,
@@ -755,9 +772,7 @@ export function AssistantView({
         const agentKey = payload.agentId || payload.agent;
         if (agentKey && agentKey !== "personal") {
           setSubagents((prev) =>
-            prev.map((s) =>
-              s.id === agentKey ? { ...s, status: "ready", time: "Completed" } : s,
-            ),
+            prev.map((s) => (s.id === agentKey ? { ...s, status: "ready", time: "Completed" } : s)),
           );
         }
         break;
@@ -818,7 +833,9 @@ export function AssistantView({
     }
 
     // Determine target environment ID
-    const matchedConv = activeConversationId ? conversations.find((c) => c.id === activeConversationId) : null;
+    const matchedConv = activeConversationId
+      ? conversations.find((c) => c.id === activeConversationId)
+      : null;
     let effectiveEnvId =
       (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
       (isValidUuid(currentEnvId) ? currentEnvId : null) ||
@@ -882,16 +899,19 @@ export function AssistantView({
       // Create conversation if none active
       let convId = activeConversationId;
       if (!convId) {
-        const createConvRes = await fetch(`${API_BASE}/v1/environments/${effectiveEnvId}/conversations`, {
-          method: "POST",
-          headers: getAuthHeaders({
-            "Content-Type": "application/json",
-          }),
-          body: JSON.stringify({
-            title: text.slice(0, 36) + (text.length > 36 ? "..." : ""),
-            metadata: { model: submission.modelId, mode: submission.mode },
-          }),
-        });
+        const createConvRes = await fetch(
+          `${API_BASE}/v1/environments/${effectiveEnvId}/conversations`,
+          {
+            method: "POST",
+            headers: getAuthHeaders({
+              "Content-Type": "application/json",
+            }),
+            body: JSON.stringify({
+              title: text.slice(0, 36) + (text.length > 36 ? "..." : ""),
+              metadata: { model: submission.modelId, mode: submission.mode },
+            }),
+          },
+        );
 
         if (createConvRes.ok) {
           const convData = await createConvRes.json();
@@ -903,7 +923,10 @@ export function AssistantView({
             window.history.replaceState(null, "", `/chat/${convId}`);
             if (pendingApproval) {
               try {
-                localStorage.setItem(`pg_pending_approval_${convId}`, JSON.stringify(pendingApproval));
+                localStorage.setItem(
+                  `pg_pending_approval_${convId}`,
+                  JSON.stringify(pendingApproval),
+                );
               } catch {
                 // ignore
               }
@@ -966,7 +989,9 @@ export function AssistantView({
     if (!pendingApproval) {
       return { ok: false, message: "No active approval proposal." };
     }
-    const matchedConv = activeConversationId ? conversations.find((c) => c.id === activeConversationId) : null;
+    const matchedConv = activeConversationId
+      ? conversations.find((c) => c.id === activeConversationId)
+      : null;
     const targetEnvId =
       (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
       (isValidUuid(currentEnvId) ? currentEnvId : null) ||
@@ -1004,14 +1029,16 @@ export function AssistantView({
 
       const data = await res.json();
       if (data.status === "FAILED") {
-        const reason = data.failures?.[0]?.reason || "Authority rejected delegation for requested agents.";
+        const reason =
+          data.failures?.[0]?.reason || "Authority rejected delegation for requested agents.";
         return { ok: false, message: `Delegation rejected: ${reason}` };
       }
 
       // Success confirmed by Gateway
       setPendingApproval(null);
       setIsProposalMinimized(false);
-      const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+      const targetId =
+        activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
       if (typeof window !== "undefined" && targetId) {
         try {
           localStorage.removeItem(`pg_pending_approval_${targetId}`);
@@ -1055,12 +1082,22 @@ export function AssistantView({
     } catch (err: any) {
       return { ok: false, message: err?.message || "Network error while connecting to Gateway." };
     }
-  }, [activeConversationId, conversationIdFromUrl, conversations, currentEnvId, isValidUuid, pendingApproval, store]);
+  }, [
+    activeConversationId,
+    conversationIdFromUrl,
+    conversations,
+    currentEnvId,
+    isValidUuid,
+    pendingApproval,
+    store,
+  ]);
 
   const handleDenyProposal = React.useCallback(async () => {
     if (!pendingApproval) return;
     const approvalId = pendingApproval.id;
-    const matchedConv = activeConversationId ? conversations.find((c) => c.id === activeConversationId) : null;
+    const matchedConv = activeConversationId
+      ? conversations.find((c) => c.id === activeConversationId)
+      : null;
     const targetEnvId =
       (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
       (isValidUuid(currentEnvId) ? currentEnvId : null) ||
@@ -1068,25 +1105,23 @@ export function AssistantView({
 
     if (targetEnvId && approvalId) {
       try {
-        await fetch(
-          `${API_BASE}/v1/environments/${targetEnvId}/approvals/${approvalId}/reject`,
-          {
-            method: "POST",
-            headers: getAuthHeaders({
-              "Content-Type": "application/json",
-            }),
-            body: JSON.stringify({
-              reason: "User rejected proposed budget allocation in UI.",
-            }),
-          },
-        );
+        await fetch(`${API_BASE}/v1/environments/${targetEnvId}/approvals/${approvalId}/reject`, {
+          method: "POST",
+          headers: getAuthHeaders({
+            "Content-Type": "application/json",
+          }),
+          body: JSON.stringify({
+            reason: "User rejected proposed budget allocation in UI.",
+          }),
+        });
       } catch {
         // Best effort backend audit record
       }
     }
     setPendingApproval(null);
     setIsProposalMinimized(false);
-    const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+    const targetId =
+      activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
     if (typeof window !== "undefined" && targetId) {
       try {
         localStorage.removeItem(`pg_pending_approval_${targetId}`);
@@ -1098,73 +1133,90 @@ export function AssistantView({
       text: "Understood. The proposed budget allocation has been rejected. No funds or cryptographic child mandates were issued.",
     };
     setThreadMessages((prev) => [...prev, deniedMsg]);
-  }, [activeConversationId, conversationIdFromUrl, conversations, currentEnvId, isValidUuid, pendingApproval, store]);
+  }, [
+    activeConversationId,
+    conversationIdFromUrl,
+    conversations,
+    currentEnvId,
+    isValidUuid,
+    pendingApproval,
+    store,
+  ]);
 
   const selectedSubagent = subagents.find((s) => s.id === selectedSubagentId);
 
   return (
-    <div className={`relative flex min-w-0 flex-1 flex-col h-full overflow-hidden bg-zinc-950 ${className}`}>
+    <div
+      className={`relative flex min-w-0 flex-1 flex-col h-full overflow-hidden bg-zinc-950 ${className}`}
+    >
       {/* Top action bar: standard flex header, never covering messages */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-900 bg-zinc-950/90 backdrop-blur-md px-4 sm:px-6 z-10">
-          <div className="flex items-center gap-2.5">
-            {!sidebarOpen && (
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                title="Open sidebar"
-                className="flex h-8 w-8 items-center justify-center text-zinc-400 hover:text-white transition-colors"
-              >
-                <PanelLeft className="h-4 w-4" />
-              </button>
-            )}
-
+        <div className="flex items-center gap-2.5">
+          {!sidebarOpen && (
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
-              className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-1 py-1"
-              title="Return to Dashboard"
+              onClick={() => setSidebarOpen(true)}
+              title="Open sidebar"
+              className="flex h-8 w-8 items-center justify-center text-zinc-400 hover:text-white transition-colors"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Dashboard</span>
+              <PanelLeft className="h-4 w-4" />
             </button>
+          )}
 
-            <div className="h-4 w-px bg-zinc-800 mx-1" />
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-1 py-1"
+            title="Return to Dashboard"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Dashboard</span>
+          </button>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-tight text-white">Main Agent Chat</span>
-              <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-medium text-zinc-400 border border-zinc-800">
-                LangGraph Personal
-              </span>
-            </div>
-          </div>
+          <div className="h-4 w-px bg-zinc-800 mx-1" />
 
-          {/* Context Window button */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setContextWindowOpen(true)}
-              title="View Chat Context Window"
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              <span>Context Window</span>
-            </button>
+            <span className="text-xs font-semibold tracking-tight text-white">Main Agent Chat</span>
+            <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-medium text-zinc-400 border border-zinc-800">
+              LangGraph Personal
+            </span>
           </div>
         </div>
 
-        {/* Main chat layout with optional split-screen for subagent inspection */}
-        <div className="relative flex flex-1 min-h-0 divide-x divide-zinc-900 overflow-hidden">
-          {/* Left Side: Main Agent Chat Thread */}
-          <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-            {/* Minimized Proposal Floating Pill in Top Right of Chat Thread */}
-            <AnimatePresence>
-              {pendingApproval && isProposalMinimized && pendingApproval.type === "budget_proposal" && (
-                <div key="minimized-proposal-pill" className="absolute top-3 right-4 z-30 pointer-events-auto">
+        {/* Context Window button */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setContextWindowOpen(true)}
+            title="View Chat Context Window"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md border border-border bg-background shadow-sm"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Context Window</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main chat layout with optional split-screen for subagent inspection */}
+      <div className="relative flex flex-1 min-h-0 divide-x divide-zinc-900 overflow-hidden">
+        {/* Left Side: Main Agent Chat Thread */}
+        <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Minimized Proposal Floating Pill in Top Right of Chat Thread */}
+          <AnimatePresence>
+            {pendingApproval &&
+              isProposalMinimized &&
+              pendingApproval.type === "budget_proposal" && (
+                <div
+                  key="minimized-proposal-pill"
+                  className="absolute top-3 right-4 z-30 pointer-events-auto"
+                >
                   <ProposedBudgetCard
                     id={pendingApproval.id}
                     mandateId={pendingApproval.mandateId}
                     currency={pendingApproval.currency}
-                    rootBudgetMinor={pendingApproval.rootBudgetMinor ?? currentEnv?.budgetLimitMinor ?? 1000000}
+                    rootBudgetMinor={
+                      pendingApproval.rootBudgetMinor ?? currentEnv?.budgetLimitMinor ?? 1000000
+                    }
                     totalProposedMinor={pendingApproval.amountMinor}
                     allocations={pendingApproval.proposedAllocations || []}
                     isMinimized={true}
@@ -1174,22 +1226,22 @@ export function AssistantView({
                   />
                 </div>
               )}
-            </AnimatePresence>
+          </AnimatePresence>
 
-            {/* Only messages should scroll */}
+          {/* Only messages should scroll */}
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleContainerScroll}
+            className="flex-1 min-h-0 overflow-y-auto"
+          >
             <div
-              ref={messagesContainerRef}
-              onScroll={handleContainerScroll}
-              className="flex-1 min-h-0 overflow-y-auto"
+              className={cn(
+                "mx-auto flex w-full max-w-3xl flex-col px-4 pt-6 pb-6 sm:px-6",
+                threadMessages.length === 0
+                  ? "flex-1 min-h-[calc(100vh-230px)] items-center justify-center"
+                  : "space-y-6",
+              )}
             >
-              <div
-                className={cn(
-                  "mx-auto flex w-full max-w-3xl flex-col px-4 pt-6 pb-6 sm:px-6",
-                  threadMessages.length === 0
-                    ? "flex-1 min-h-[calc(100vh-230px)] items-center justify-center"
-                    : "space-y-6"
-                )}
-              >
               {threadMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center max-w-md my-auto py-8">
                   <div className="mb-5 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900 shadow-xl shadow-black/50 ring-1 ring-[#D0785A]/20">
@@ -1206,7 +1258,8 @@ export function AssistantView({
                     Delegate with total control
                   </h2>
                   <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-zinc-400">
-                    Plan tasks, consult models, and safely delegate spending to autonomous subagents under cryptographic budget mandates.
+                    Plan tasks, consult models, and safely delegate spending to autonomous subagents
+                    under cryptographic budget mandates.
                   </p>
                 </div>
               ) : (
@@ -1218,243 +1271,266 @@ export function AssistantView({
                 />
               )}
 
-            {/* Settled Completed Payments */}
-            {completedPayments.map((p) => (
-              <div key={p.id} className="pt-2">
-                <PaymentResultCard
-                  id={p.id}
-                  transactionId={p.transactionId}
-                  recipient={p.recipient}
-                  merchantCategory={p.merchantCategory}
-                  amountMinor={p.amountMinor}
-                  currency={p.currency}
-                  rail={p.rail}
-                  currentStage="completed"
-                  agentName={p.agentName}
-                  completedAt={p.completedAt}
-                  onViewTrace={onViewTrace}
-                  className="mb-4"
-                />
-              </div>
-            ))}
-
-            {/* Pending Approval / Proposed Budget Allocation Component */}
-            {pendingApproval && (
-              <div className="pt-2">
-                {pendingApproval.type === "budget_proposal" && pendingApproval.proposedAllocations && pendingApproval.proposedAllocations.length > 0 ? (
-                  !isProposalMinimized && (
-                    <ProposedBudgetCard
-                      id={pendingApproval.id}
-                      mandateId={pendingApproval.mandateId}
-                      currency={pendingApproval.currency}
-                      rootBudgetMinor={pendingApproval.rootBudgetMinor ?? currentEnv?.budgetLimitMinor ?? 1000000}
-                      totalProposedMinor={pendingApproval.amountMinor}
-                      allocations={pendingApproval.proposedAllocations}
-                      isMinimized={false}
-                      onToggleMinimize={() => setIsProposalMinimized(true)}
-                      onApprove={handleApproveProposal}
-                      onDeny={handleDenyProposal}
-                    />
-                  )
-                ) : (
-                  <>
-                    <PaymentResultCard
-                      id={pendingApproval.id}
-                      transactionId={pendingApproval.id}
-                      recipient={pendingApproval.recipient || "Hotel Merchant / Vendor"}
-                      merchantCategory="Lodging & Accommodations"
-                      amountMinor={pendingApproval.amountMinor}
-                      currency={pendingApproval.currency}
-                      rail="PayPal Sandbox"
-                      currentStage="sent_to_provider"
-                      agentName={pendingApproval.clientName}
-                      approvalUrl={pendingApproval.approvalUrl}
-                      onViewTrace={onViewTrace}
-                      className="mb-4"
-                    />
-                    <PaymentApprovalOverlay
-                      isOpen={!isProposalMinimized}
-                      environmentId={
-                        (isValidUuid(currentEnv?.id) ? currentEnv?.id : null) ||
-                        store.environmentsList.find((e) => isValidUuid(e.id))?.id
-                      }
-                      approvalId={pendingApproval.id}
-                      actionId={pendingApproval.id}
-                      clientName={pendingApproval.clientName}
-                      productName={pendingApproval.productName || "PayGuardian Gateway"}
-                      action={pendingApproval.action}
-                      amountMinor={pendingApproval.amountMinor}
-                      currency={pendingApproval.currency}
-                      recipient={pendingApproval.recipient || "Hotel Merchant / Vendor"}
-                      mandateId={pendingApproval.mandateId}
-                      approvalUrl={pendingApproval.approvalUrl}
-                      redirectUri="PayGuardian Gateway (PayPal Sandbox)"
-                      email="operator@payguardian.local"
-                      onClose={() => setIsProposalMinimized(true)}
-                      onApprove={async (captureResult?: any) => {
-                        const envId =
-                          (isValidUuid(currentEnv?.id) ? currentEnv?.id : null) ||
-                          store.environmentsList.find((e) => isValidUuid(e.id))?.id;
-
-                        if (captureResult) {
-                          const orderId = captureResult.orderId || captureResult.order?.id || "N/A";
-                          const captureId = captureResult.captureId || captureResult.transactionId || "N/A";
-                          const amt = ((pendingApproval.amountMinor || 15000) / 100).toFixed(2);
-                          const curr = pendingApproval.currency || "USD";
-
-                          setCompletedPayments((prev) => [
-                            ...prev,
-                            {
-                              id: pendingApproval.id,
-                              transactionId: captureId !== "N/A" ? captureId : orderId,
-                              recipient: pendingApproval.recipient || "Hotel Merchant / Vendor",
-                              merchantCategory: "Lodging & Accommodations",
-                              amountMinor: pendingApproval.amountMinor || 15000,
-                              currency: curr,
-                              rail: "PayPal Sandbox",
-                              agentName: pendingApproval.clientName,
-                              completedAt: new Date().toISOString(),
-                            },
-                          ]);
-
-                          const successMsg: ThreadMessage = {
-                            id: `asst-pp-capture-${Date.now()}`,
-                            role: "assistant",
-                            text:
-                              `### 🛡️ Payment Authorized & Settled via PayPal Sandbox\n\n` +
-                              `The delegated payment has been authorized and captured directly through PayPal Sandbox.\n\n` +
-                              `- **Order ID**: \`${orderId}\`\n` +
-                              `- **Capture ID**: \`${captureId}\`\n` +
-                              `- **Amount**: \`$${amt} ${curr}\`\n` +
-                              `- **Recipient**: ${pendingApproval.recipient || "Hotel Merchant / Vendor"}\n` +
-                              `- **Status**: **COMPLETED & Settled in Ledger**\n\n` +
-                              `The cryptographic child mandate ledger entry is settled and policy invariants are verified.`,
-                            steps: [],
-                          };
-                          setThreadMessages((prev) => [...prev, successMsg]);
-                          setPendingApproval(null);
-                          return;
-                        }
-
-                        let appUrl =
-                          pendingApproval.approvalUrl &&
-                          !pendingApproval.approvalUrl.includes("ORDER-") &&
-                          !pendingApproval.approvalUrl.includes("simulated") &&
-                          (pendingApproval.approvalUrl.startsWith("https://www.sandbox.paypal.com") ||
-                            pendingApproval.approvalUrl.startsWith("https://www.paypal.com"))
-                            ? pendingApproval.approvalUrl
-                            : null;
-
-                        // If not already present, create a live PayPal Sandbox checkout order on the Gateway
-                        if (!appUrl && envId) {
-                          try {
-                            const res = await apiClient.payments.createPayPalOrder(envId, {
-                              agentId: pendingApproval.clientName?.toLowerCase().includes("hotel") ? "hotel" : "travel",
-                              mandateId: pendingApproval.mandateId,
-                              ledgerAccountId: `acc_${pendingApproval.mandateId}`,
-                              idempotencyKey: `pp_ord_${Date.now()}`,
-                              requestHash: `req_${Date.now()}`,
-                              action: pendingApproval.action || "book_hotel",
-                              amountMinor: pendingApproval.amountMinor || 15000,
-                              currency: "USD",
-                              approvalId: pendingApproval.id,
-                              returnUrl: typeof window !== "undefined" ? `${window.location.origin}/paypal/return` : undefined,
-                              cancelUrl: typeof window !== "undefined" ? `${window.location.origin}/paypal/cancel` : undefined,
-                            });
-                            const liveUrl = (res as any)?.order?.approvalUrl || (res as any)?.approveUrl;
-                            if (liveUrl && !liveUrl.includes("ORDER-")) {
-                              appUrl = liveUrl;
-                            }
-                          } catch (orderErr) {
-                            console.warn("Failed creating live PayPal order on approve:", orderErr);
-                          }
-                        }
-
-                        // Sync approval confirmation to Gateway approval store
-                        if (envId && pendingApproval.id) {
-                          try {
-                            await apiClient.approvals.approve(envId, pendingApproval.id);
-                          } catch (apprErr) {
-                            console.warn("Failed syncing approval to Gateway:", apprErr);
-                          }
-                        }
-
-                        setPendingApproval(null);
-
-                        // If a live PayPal URL is available, navigate directly to PayPal checkout
-                        if (appUrl && typeof window !== "undefined") {
-                          const popup = window.open(appUrl, "_blank", "noopener,noreferrer");
-                          if (!popup || popup.closed || typeof popup.closed === "undefined") {
-                            window.location.href = appUrl;
-                          }
-                          return;
-                        }
-
-                        // Fallback if PayPal API is unreachable: navigate to PayGuardian's return status page
-                        if (envId && typeof window !== "undefined") {
-                          window.location.href = `/paypal/return?environment_id=${encodeURIComponent(envId)}&action_id=${encodeURIComponent(pendingApproval.id)}`;
-                        }
-                      }}
-                      onDeny={async () => {
-                        setPendingApproval(null);
-                        await handleSendMessage({
-                          prompt: "I deny the payment request.",
-                          mode: "Ask",
-                          modelId: activeModelId,
-                          modelName: "Default Model",
-                          effort: "Medium",
-                          autoMode: true,
-                          attachedFiles: [],
-                          files: [],
-                        });
-                      }}
-                    />
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Subagents Progress Box beneath Main Agent */}
-            {subagents.length > 0 && (
-              <div className="pt-2">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-400">Delegated Subagents</span>
-                  <span className="text-[11px] text-zinc-500 font-mono">
-                    {subagents.filter((s) => s.status === "ready").length}/{subagents.length} done
-                  </span>
+              {/* Settled Completed Payments */}
+              {completedPayments.map((p) => (
+                <div key={p.id} className="pt-2">
+                  <PaymentResultCard
+                    id={p.id}
+                    transactionId={p.transactionId}
+                    recipient={p.recipient}
+                    merchantCategory={p.merchantCategory}
+                    amountMinor={p.amountMinor}
+                    currency={p.currency}
+                    rail={p.rail}
+                    currentStage="completed"
+                    agentName={p.agentName}
+                    completedAt={p.completedAt}
+                    onViewTrace={onViewTrace}
+                    className="mb-4"
+                  />
                 </div>
-                <BackgroundInbox
-                  items={subagents}
-                  onOpenSplitView={(item) => setSelectedSubagentId(item.id)}
-                />
-              </div>
-            )}
+              ))}
 
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
+              {/* Pending Approval / Proposed Budget Allocation Component */}
+              {pendingApproval && (
+                <div className="pt-2">
+                  {pendingApproval.type === "budget_proposal" &&
+                  pendingApproval.proposedAllocations &&
+                  pendingApproval.proposedAllocations.length > 0 ? (
+                    !isProposalMinimized && (
+                      <ProposedBudgetCard
+                        id={pendingApproval.id}
+                        mandateId={pendingApproval.mandateId}
+                        currency={pendingApproval.currency}
+                        rootBudgetMinor={
+                          pendingApproval.rootBudgetMinor ?? currentEnv?.budgetLimitMinor ?? 1000000
+                        }
+                        totalProposedMinor={pendingApproval.amountMinor}
+                        allocations={pendingApproval.proposedAllocations}
+                        isMinimized={false}
+                        onToggleMinimize={() => setIsProposalMinimized(true)}
+                        onApprove={handleApproveProposal}
+                        onDeny={handleDenyProposal}
+                      />
+                    )
+                  ) : (
+                    <>
+                      <PaymentResultCard
+                        id={pendingApproval.id}
+                        transactionId={pendingApproval.id}
+                        recipient={pendingApproval.recipient || "Hotel Merchant / Vendor"}
+                        merchantCategory="Lodging & Accommodations"
+                        amountMinor={pendingApproval.amountMinor}
+                        currency={pendingApproval.currency}
+                        rail="PayPal Sandbox"
+                        currentStage="sent_to_provider"
+                        agentName={pendingApproval.clientName}
+                        approvalUrl={pendingApproval.approvalUrl}
+                        onViewTrace={onViewTrace}
+                        className="mb-4"
+                      />
+                      <PaymentApprovalOverlay
+                        isOpen={!isProposalMinimized}
+                        environmentId={
+                          (isValidUuid(currentEnv?.id) ? currentEnv?.id : null) ||
+                          store.environmentsList.find((e) => isValidUuid(e.id))?.id
+                        }
+                        approvalId={pendingApproval.id}
+                        actionId={pendingApproval.id}
+                        clientName={pendingApproval.clientName}
+                        productName={pendingApproval.productName || "PayGuardian Gateway"}
+                        action={pendingApproval.action}
+                        amountMinor={pendingApproval.amountMinor}
+                        currency={pendingApproval.currency}
+                        recipient={pendingApproval.recipient || "Hotel Merchant / Vendor"}
+                        mandateId={pendingApproval.mandateId}
+                        approvalUrl={pendingApproval.approvalUrl}
+                        redirectUri="PayGuardian Gateway (PayPal Sandbox)"
+                        email="operator@payguardian.local"
+                        onClose={() => setIsProposalMinimized(true)}
+                        onApprove={async (captureResult?: any) => {
+                          const envId =
+                            (isValidUuid(currentEnv?.id) ? currentEnv?.id : null) ||
+                            store.environmentsList.find((e) => isValidUuid(e.id))?.id;
 
-            {/* Composer always stays at the bottom */}
-            <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-4 pb-6 pt-2 sm:px-6">
-              <AIComposer
-                disabled={isStreaming}
-                isStreaming={isStreaming}
-                onStop={() => {
-                  setIsStreaming(false);
-                  if (eventSourceRef.current) eventSourceRef.current.close();
-                }}
-                onSubmit={handleSendMessage}
-                className="mx-auto w-full max-w-3xl"
-              />
+                          if (captureResult) {
+                            const orderId =
+                              captureResult.orderId || captureResult.order?.id || "N/A";
+                            const captureId =
+                              captureResult.captureId || captureResult.transactionId || "N/A";
+                            const amt = ((pendingApproval.amountMinor || 15000) / 100).toFixed(2);
+                            const curr = pendingApproval.currency || "USD";
+
+                            setCompletedPayments((prev) => [
+                              ...prev,
+                              {
+                                id: pendingApproval.id,
+                                transactionId: captureId !== "N/A" ? captureId : orderId,
+                                recipient: pendingApproval.recipient || "Hotel Merchant / Vendor",
+                                merchantCategory: "Lodging & Accommodations",
+                                amountMinor: pendingApproval.amountMinor || 15000,
+                                currency: curr,
+                                rail: "PayPal Sandbox",
+                                agentName: pendingApproval.clientName,
+                                completedAt: new Date().toISOString(),
+                              },
+                            ]);
+
+                            const successMsg: ThreadMessage = {
+                              id: `asst-pp-capture-${Date.now()}`,
+                              role: "assistant",
+                              text:
+                                `### 🛡️ Payment Authorized & Settled via PayPal Sandbox\n\n` +
+                                `The delegated payment has been authorized and captured directly through PayPal Sandbox.\n\n` +
+                                `- **Order ID**: \`${orderId}\`\n` +
+                                `- **Capture ID**: \`${captureId}\`\n` +
+                                `- **Amount**: \`$${amt} ${curr}\`\n` +
+                                `- **Recipient**: ${pendingApproval.recipient || "Hotel Merchant / Vendor"}\n` +
+                                `- **Status**: **COMPLETED & Settled in Ledger**\n\n` +
+                                `The cryptographic child mandate ledger entry is settled and policy invariants are verified.`,
+                              steps: [],
+                            };
+                            setThreadMessages((prev) => [...prev, successMsg]);
+                            setPendingApproval(null);
+                            return;
+                          }
+
+                          let appUrl =
+                            pendingApproval.approvalUrl &&
+                            !pendingApproval.approvalUrl.includes("ORDER-") &&
+                            !pendingApproval.approvalUrl.includes("simulated") &&
+                            (pendingApproval.approvalUrl.startsWith(
+                              "https://www.sandbox.paypal.com",
+                            ) ||
+                              pendingApproval.approvalUrl.startsWith("https://www.paypal.com"))
+                              ? pendingApproval.approvalUrl
+                              : null;
+
+                          // If not already present, create a live PayPal Sandbox checkout order on the Gateway
+                          if (!appUrl && envId) {
+                            try {
+                              const res = await apiClient.payments.createPayPalOrder(envId, {
+                                agentId: pendingApproval.clientName?.toLowerCase().includes("hotel")
+                                  ? "hotel"
+                                  : "travel",
+                                mandateId: pendingApproval.mandateId,
+                                ledgerAccountId: `acc_${pendingApproval.mandateId}`,
+                                idempotencyKey: `pp_ord_${Date.now()}`,
+                                requestHash: `req_${Date.now()}`,
+                                action: pendingApproval.action || "book_hotel",
+                                amountMinor: pendingApproval.amountMinor || 15000,
+                                currency: "USD",
+                                approvalId: pendingApproval.id,
+                                returnUrl:
+                                  typeof window !== "undefined"
+                                    ? `${window.location.origin}/paypal/return`
+                                    : undefined,
+                                cancelUrl:
+                                  typeof window !== "undefined"
+                                    ? `${window.location.origin}/paypal/cancel`
+                                    : undefined,
+                              });
+                              const liveUrl =
+                                (res as any)?.order?.approvalUrl || (res as any)?.approveUrl;
+                              if (liveUrl && !liveUrl.includes("ORDER-")) {
+                                appUrl = liveUrl;
+                              }
+                            } catch (orderErr) {
+                              console.warn(
+                                "Failed creating live PayPal order on approve:",
+                                orderErr,
+                              );
+                            }
+                          }
+
+                          // Sync approval confirmation to Gateway approval store
+                          if (envId && pendingApproval.id) {
+                            try {
+                              await apiClient.approvals.approve(envId, pendingApproval.id);
+                            } catch (apprErr) {
+                              console.warn("Failed syncing approval to Gateway:", apprErr);
+                            }
+                          }
+
+                          setPendingApproval(null);
+
+                          // If a live PayPal URL is available, navigate directly to PayPal checkout
+                          if (appUrl && typeof window !== "undefined") {
+                            const popup = window.open(appUrl, "_blank", "noopener,noreferrer");
+                            if (!popup || popup.closed || typeof popup.closed === "undefined") {
+                              window.location.href = appUrl;
+                            }
+                            return;
+                          }
+
+                          // Fallback if PayPal API is unreachable: navigate to PayGuardian's return status page
+                          if (envId && typeof window !== "undefined") {
+                            window.location.href = `/paypal/return?environment_id=${encodeURIComponent(envId)}&action_id=${encodeURIComponent(pendingApproval.id)}`;
+                          }
+                        }}
+                        onDeny={async () => {
+                          setPendingApproval(null);
+                          await handleSendMessage({
+                            prompt: "I deny the payment request.",
+                            mode: "Ask",
+                            modelId: activeModelId,
+                            modelName: "Default Model",
+                            effort: "Medium",
+                            autoMode: true,
+                            attachedFiles: [],
+                            files: [],
+                          });
+                        }}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Subagents Progress Box beneath Main Agent */}
+              {subagents.length > 0 && (
+                <div className="pt-2">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-zinc-400">Delegated Subagents</span>
+                    <span className="text-[11px] text-zinc-500 font-mono">
+                      {subagents.filter((s) => s.status === "ready").length}/{subagents.length} done
+                    </span>
+                  </div>
+                  <BackgroundInbox
+                    items={subagents}
+                    onOpenSplitView={(item) => setSelectedSubagentId(item.id)}
+                  />
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
             </div>
           </div>
+
+          {/* Composer always stays at the bottom */}
+          <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-4 pb-6 pt-2 sm:px-6">
+            <AIComposer
+              disabled={isStreaming}
+              isStreaming={isStreaming}
+              onStop={() => {
+                setIsStreaming(false);
+                if (eventSourceRef.current) eventSourceRef.current.close();
+              }}
+              onSubmit={handleSendMessage}
+              className="mx-auto w-full max-w-3xl"
+            />
+          </div>
+        </div>
 
         {/* Right Side: Split Screen Window for Subagent Inspection */}
         {selectedSubagent && (
           <div className="flex w-1/2 min-h-0 flex-col bg-zinc-925 border-l border-zinc-850">
             {/* Breadcrumb Header */}
             <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-850 px-4">
-              <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-zinc-400">
+              <nav
+                aria-label="Breadcrumb"
+                className="flex items-center gap-1.5 text-xs text-zinc-400"
+              >
                 <span className="hover:text-zinc-200">Main Orchestrator</span>
                 <ChevronRight className="h-3 w-3 text-zinc-600" />
                 <span className="font-medium text-white">{selectedSubagent.title}</span>
@@ -1482,7 +1558,9 @@ export function AssistantView({
                     )}
                     <h4 className="text-sm font-semibold text-white">{selectedSubagent.title}</h4>
                   </div>
-                  <span className="text-xs font-mono text-zinc-400">{selectedSubagent.time || "Active"}</span>
+                  <span className="text-xs font-mono text-zinc-400">
+                    {selectedSubagent.time || "Active"}
+                  </span>
                 </div>
                 <p className="mt-2 text-xs text-zinc-400">{selectedSubagent.detail}</p>
               </div>
@@ -1494,7 +1572,9 @@ export function AssistantView({
                   {selectedSubagent.streamText ? (
                     selectedSubagent.streamText
                   ) : (
-                    <span className="text-zinc-600">Waiting for subagent thoughts and actions...</span>
+                    <span className="text-zinc-600">
+                      Waiting for subagent thoughts and actions...
+                    </span>
                   )}
                 </div>
               </div>
@@ -1533,7 +1613,8 @@ export function AssistantView({
         onOpenChange={setContextWindowOpen}
         conversationId={activeConversationId}
         environmentId={
-          (activeConversationId && conversations.find((c) => c.id === activeConversationId)?.environmentId) ||
+          (activeConversationId &&
+            conversations.find((c) => c.id === activeConversationId)?.environmentId) ||
           (isValidUuid(currentEnvId) ? currentEnvId : undefined) ||
           store.environmentsList.find((e) => isValidUuid(e.id))?.id
         }

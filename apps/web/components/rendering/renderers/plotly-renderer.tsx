@@ -205,12 +205,8 @@ export function PlotlyRenderer({ code, className = "", title }: PlotlyRendererPr
             )}
             {error ? (
               <div className="p-4 text-center">
-                <p className="text-xs font-semibold text-rose-400 mb-1">
-                  Plotly Rendering Error
-                </p>
-                <p className="text-[11px] text-zinc-500 font-mono max-w-md">
-                  {error}
-                </p>
+                <p className="text-xs font-semibold text-rose-400 mb-1">Plotly Rendering Error</p>
+                <p className="text-[11px] text-zinc-500 font-mono max-w-md">{error}</p>
                 <pre className="mt-3 max-h-36 overflow-auto rounded bg-zinc-900 p-2 text-left text-[10px] text-zinc-400 font-mono">
                   {code}
                 </pre>

@@ -1,9 +1,10 @@
 """Tests for Subagent Payment MCP Tools and Delegated Execution Architecture."""
 
 from unittest.mock import MagicMock
+
+from agent_runtime.gateway_client import GatewayClient
 from agent_runtime.mcp_tools import PayGuardianMCPTools
 from agent_runtime.personal_langgraph import PersonalLangGraphAgent
-from agent_runtime.gateway_client import GatewayClient
 
 
 def test_subagent_mcp_tools_balance_and_payment() -> None:
@@ -65,7 +66,7 @@ def test_subagent_budget_increase_escalation() -> None:
                 "currency": "USD",
                 "child_mandate_id": "mandate-child-hotel-123",
             }
-        ]
+        ],
     }
     tools = PayGuardianMCPTools(state=state)
     # Total allocated = $200, Root reserve = $800
@@ -172,13 +173,17 @@ def test_buy_hotel_triggers_gateway_approval_and_paypal_sandbox() -> None:
     assert pay_res["success"] is True
     assert pay_res["status"] == "awaiting_approval"
     assert pay_res["approval_id"] == "appr-gateway-sandbox-999"
-    assert pay_res["approval_url"] == "https://www.sandbox.paypal.com/checkoutnow?token=ORDER-SANDBOX-777"
+    assert (
+        pay_res["approval_url"]
+        == "https://www.sandbox.paypal.com/checkoutnow?token=ORDER-SANDBOX-777"
+    )
     assert "Approval request appr-gateway-sandbox-999 registered on Gateway" in pay_res["message"]
     assert "PayPal Sandbox" in pay_res["message"]
 
 
 def test_single_turn_buy_hotel_intent_classification() -> None:
     from agent_runtime.context_compiler import ContextCompiler
+
     compiler = ContextCompiler()
     intent, reasoning = compiler.classify_intent("buy me hotel room")
     assert intent == "PAYMENT_EXECUTION_INTENT"
@@ -248,10 +253,15 @@ def test_mcp_payment_request_emits_approval_and_order_events() -> None:
     assert "approval.requested" in emitted_types
     assert "payment.order_created" in emitted_types
 
-    appr_call = next(c for c in mock_emitter.emit.call_args_list if c.args[0] == "approval.requested")
+    appr_call = next(
+        c for c in mock_emitter.emit.call_args_list if c.args[0] == "approval.requested"
+    )
     payload = appr_call.kwargs.get("payload") or appr_call.args[1]
     assert payload["approvalId"] == "appr-12345"
-    assert payload["approvalUrl"] == "https://www.sandbox.paypal.com/checkoutnow?token=PAYPAL-ORDER-123"
+    assert (
+        payload["approvalUrl"]
+        == "https://www.sandbox.paypal.com/checkoutnow?token=PAYPAL-ORDER-123"
+    )
     assert payload["recipient"] == "Pune Central Hotel"
     assert payload["amountMinor"] == 12000
     assert payload["currency"] == "USD"
@@ -260,6 +270,7 @@ def test_mcp_payment_request_emits_approval_and_order_events() -> None:
 
 def test_main_agent_delegates_to_hotel_when_subagent_has_funds_in_mandate() -> None:
     """When Hotel subagent already has funds in its child mandate, main agent delegates directly and reuses child mandate."""
+
     class FundedHotelGateway(GatewayClient):
         def list_mandates(self, environment_id: str) -> list[dict]:
             return [
@@ -288,7 +299,10 @@ def test_main_agent_delegates_to_hotel_when_subagent_has_funds_in_mandate() -> N
     agent = PersonalLangGraphAgent(gateway_client=mock_gw)
     messages = [
         {"role": "user", "content": "I want to book the boutique hotel for $250"},
-        {"role": "assistant", "content": "The hotel quote is $250.00 and funds are allocated in your hotel mandate."},
+        {
+            "role": "assistant",
+            "content": "The hotel quote is $250.00 and funds are allocated in your hotel mandate.",
+        },
         {"role": "user", "content": "make the payment for hotel"},
     ]
 
@@ -305,6 +319,7 @@ def test_main_agent_delegates_to_hotel_when_subagent_has_funds_in_mandate() -> N
 
 def test_main_agent_rejects_when_funds_insufficient() -> None:
     """When neither Hotel mandate nor reserve has funds, main agent refuses delegation with clear explanation."""
+
     class UnfundedGateway(GatewayClient):
         def list_mandates(self, environment_id: str) -> list[dict]:
             return [
@@ -344,6 +359,3 @@ def test_main_agent_rejects_when_funds_insufficient() -> None:
     )
     assert "hotel" not in res.get("results", {})
     assert any("Insufficient funds" in str(p) for p in res.get("plan", []))
-
-
-

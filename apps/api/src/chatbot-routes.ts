@@ -31,8 +31,8 @@ async function principal(
     typeof query.token === "string"
       ? (query.token as string)
       : typeof query.access_token === "string"
-      ? (query.access_token as string)
-      : undefined;
+        ? (query.access_token as string)
+        : undefined;
 
   const authHeader =
     request.headers.authorization ??
@@ -141,172 +141,189 @@ export function registerChatbotRoutes(
   // GET /v1/environments/:environmentId/conversations/:conversationId/messages
   app.get<{
     Params: { environmentId: string; conversationId: string };
-  }>("/v1/environments/:environmentId/conversations/:conversationId/messages", async (request, reply) => {
-    const scoped = await environmentFor(
-      request as AppRequest,
-      reply,
-      dependencies.registry,
-      dependencies.resolvePrincipal,
-      request.params.environmentId,
-    );
-    if (!scoped) return;
+  }>(
+    "/v1/environments/:environmentId/conversations/:conversationId/messages",
+    async (request, reply) => {
+      const scoped = await environmentFor(
+        request as AppRequest,
+        reply,
+        dependencies.registry,
+        dependencies.resolvePrincipal,
+        request.params.environmentId,
+      );
+      if (!scoped) return;
 
-    const conversation = await dependencies.chatbot.getConversation(
-      scoped.environment.id,
-      request.params.conversationId,
-    );
-    if (!conversation) {
-      return reply
-        .code(404)
-        .send({ code: "CONVERSATION_NOT_FOUND", message: "Conversation not found." });
-    }
+      const conversation = await dependencies.chatbot.getConversation(
+        scoped.environment.id,
+        request.params.conversationId,
+      );
+      if (!conversation) {
+        return reply
+          .code(404)
+          .send({ code: "CONVERSATION_NOT_FOUND", message: "Conversation not found." });
+      }
 
-    const messages = await dependencies.chatbot.listMessages(conversation.id);
-    const mapped = messages.map((m) => ({
-      ...m,
-      role: m.role || "user",
-      sender_type: m.role || "user",
-      senderType: m.role || "user",
-    }));
-    return reply.code(200).send({ messages: mapped });
-  });
+      const messages = await dependencies.chatbot.listMessages(conversation.id);
+      const mapped = messages.map((m) => ({
+        ...m,
+        role: m.role || "user",
+        sender_type: m.role || "user",
+        senderType: m.role || "user",
+      }));
+      return reply.code(200).send({ messages: mapped });
+    },
+  );
 
   // GET /v1/environments/:environmentId/conversations/:conversationId/context
   app.get<{
     Params: { environmentId: string; conversationId: string };
-  }>("/v1/environments/:environmentId/conversations/:conversationId/context", async (request, reply) => {
-    const scoped = await environmentFor(
-      request as AppRequest,
-      reply,
-      dependencies.registry,
-      dependencies.resolvePrincipal,
-      request.params.environmentId,
-    );
-    if (!scoped) return;
+  }>(
+    "/v1/environments/:environmentId/conversations/:conversationId/context",
+    async (request, reply) => {
+      const scoped = await environmentFor(
+        request as AppRequest,
+        reply,
+        dependencies.registry,
+        dependencies.resolvePrincipal,
+        request.params.environmentId,
+      );
+      if (!scoped) return;
 
-    const conversation = await dependencies.chatbot.getConversation(
-      scoped.environment.id,
-      request.params.conversationId,
-    );
-    if (!conversation) {
-      return reply
-        .code(404)
-        .send({ code: "CONVERSATION_NOT_FOUND", message: "Conversation not found." });
-    }
+      const conversation = await dependencies.chatbot.getConversation(
+        scoped.environment.id,
+        request.params.conversationId,
+      );
+      if (!conversation) {
+        return reply
+          .code(404)
+          .send({ code: "CONVERSATION_NOT_FOUND", message: "Conversation not found." });
+      }
 
-    const messages = await dependencies.chatbot.listMessages(conversation.id);
+      const messages = await dependencies.chatbot.listMessages(conversation.id);
 
-    // Resolve active mandate and budget
-    let mandateId: string | undefined;
-    let budgetLimitMinor: number = scoped.environment.budgetLimitMinor ?? 0;
-    let budgetCurrency: string = scoped.environment.currency ?? "USD";
+      // Resolve active mandate and budget
+      let mandateId: string | undefined;
+      let budgetLimitMinor: number = scoped.environment.budgetLimitMinor ?? 0;
+      let budgetCurrency: string = scoped.environment.currency ?? "USD";
 
-    let childMandates: any[] = [];
-    if (dependencies.authority) {
-      try {
-        const mandates = await dependencies.authority.list(scoped.environment.id, scoped.owner.userId);
-        const activeMandate =
-          mandates.find((m) => !m.parentMandateId && m.state === "active" && !m.supersededAt) ||
-          mandates.find((m) => !m.parentMandateId && m.state === "active") ||
-          mandates.find((m) => !m.parentMandateId) ||
-          mandates[0];
-        if (activeMandate) {
-          mandateId = activeMandate.id;
-          budgetLimitMinor = activeMandate.budgetLimitMinor;
-          budgetCurrency = activeMandate.currency;
-        }
-
-        const activeChildren = mandates.filter(
-          (m) => m.parentMandateId && m.state === "active" && !m.supersededAt
-        );
-        const seriesMap = new Map<string, (typeof activeChildren)[0]>();
-        for (const m of activeChildren) {
-          const sId = m.mandateSeriesId || `${m.parentMandateId}_${m.holderAgentId}`;
-          const existing = seriesMap.get(sId);
-          if (!existing || (m.version ?? 1) > (existing.version ?? 1)) {
-            seriesMap.set(sId, m);
+      let childMandates: any[] = [];
+      if (dependencies.authority) {
+        try {
+          const mandates = await dependencies.authority.list(
+            scoped.environment.id,
+            scoped.owner.userId,
+          );
+          const activeMandate =
+            mandates.find((m) => !m.parentMandateId && m.state === "active" && !m.supersededAt) ||
+            mandates.find((m) => !m.parentMandateId && m.state === "active") ||
+            mandates.find((m) => !m.parentMandateId) ||
+            mandates[0];
+          if (activeMandate) {
+            mandateId = activeMandate.id;
+            budgetLimitMinor = activeMandate.budgetLimitMinor;
+            budgetCurrency = activeMandate.currency;
           }
+
+          const activeChildren = mandates.filter(
+            (m) => m.parentMandateId && m.state === "active" && !m.supersededAt,
+          );
+          const seriesMap = new Map<string, (typeof activeChildren)[0]>();
+          for (const m of activeChildren) {
+            const sId = m.mandateSeriesId || `${m.parentMandateId}_${m.holderAgentId}`;
+            const existing = seriesMap.get(sId);
+            if (!existing || (m.version ?? 1) > (existing.version ?? 1)) {
+              seriesMap.set(sId, m);
+            }
+          }
+          childMandates = Array.from(seriesMap.values());
+        } catch (err) {
+          app.log.warn({ err }, "Could not fetch active mandate for environment");
         }
-        childMandates = Array.from(seriesMap.values());
-      } catch (err) {
-        app.log.warn({ err }, "Could not fetch active mandate for environment");
       }
-    }
 
-    const formatBudget = (minor: number, currency: string) => {
-      const val = (minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (currency === "INR") return `₹${val}`;
-      if (currency === "EUR") return `€${val}`;
-      if (currency === "GBP") return `£${val}`;
-      return `$${val}`;
-    };
-
-    const budgetDisplay = formatBudget(budgetLimitMinor, budgetCurrency);
-
-    // Read real subagent child mandates from database in tree hierarchy
-    const rootMandateId = mandateId;
-    const mandateById = new Map<string, (typeof childMandates)[0]>();
-    for (const m of childMandates) {
-      mandateById.set(m.id, m);
-    }
-
-    const rootChildren = childMandates.filter(
-      (cm) => !rootMandateId || cm.parentMandateId === rootMandateId
-    );
-
-    const nestedByParent = new Map<string, typeof childMandates>();
-    for (const cm of childMandates) {
-      if (rootMandateId && cm.parentMandateId !== rootMandateId) {
-        const list = nestedByParent.get(cm.parentMandateId) || [];
-        list.push(cm);
-        nestedByParent.set(cm.parentMandateId, list);
-      }
-    }
-
-    const orderedChildMandates: typeof childMandates = [];
-    for (const parent of rootChildren) {
-      orderedChildMandates.push(parent);
-      const nested = nestedByParent.get(parent.id) || [];
-      for (const child of nested) {
-        orderedChildMandates.push(child);
-      }
-    }
-    for (const cm of childMandates) {
-      if (!orderedChildMandates.includes(cm)) {
-        orderedChildMandates.push(cm);
-      }
-    }
-
-    const subagents = orderedChildMandates.map((cm) => {
-      const isNested = Boolean(rootMandateId && cm.parentMandateId !== rootMandateId);
-      const parentMandate = isNested ? mandateById.get(cm.parentMandateId) : null;
-      const parentAgentName = parentMandate
-        ? `${parentMandate.holderAgentId.charAt(0).toUpperCase() + parentMandate.holderAgentId.slice(1)} Specialist`
-        : null;
-      return {
-        agent: cm.holderAgentId,
-        role: `${cm.holderAgentId.charAt(0).toUpperCase() + cm.holderAgentId.slice(1)} Specialist`,
-        percentage: budgetLimitMinor > 0 ? Math.round((cm.budgetLimitMinor / budgetLimitMinor) * 100) : 0,
-        amountMinor: cm.budgetLimitMinor,
-        currency: cm.currency || budgetCurrency,
-        budgetDisplay: formatBudget(cm.budgetLimitMinor, cm.currency || budgetCurrency),
-        isNested,
-        parentMandateId: cm.parentMandateId,
-        parentAgent: parentAgentName,
-        description: `Cryptographic child mandate (${cm.id})${parentAgentName ? ` (under ${parentAgentName})` : ""}`,
+      const formatBudget = (minor: number, currency: string) => {
+        const val = (minor / 100).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        if (currency === "INR") return `₹${val}`;
+        if (currency === "EUR") return `€${val}`;
+        if (currency === "GBP") return `£${val}`;
+        return `$${val}`;
       };
-    });
 
-    // Only direct children of the root mandate count against the root available reserve
-    const directChildren = subagents.filter((s) => !s.isNested);
-    const totalDelegatedMinor = directChildren.reduce((acc, s) => acc + s.amountMinor, 0);
-    const orchestratorReserve = Math.max(0, budgetLimitMinor - totalDelegatedMinor);
+      const budgetDisplay = formatBudget(budgetLimitMinor, budgetCurrency);
 
-    const subagentLines = subagents.length > 0
-      ? subagents.map((s) => s.isNested ? `    ↳ ${s.role}: ${s.budgetDisplay}${s.parentAgent ? ` (under ${s.parentAgent})` : ""}` : `  - ${s.role}: ${s.budgetDisplay}`)
-      : ["  - None (No subagent child mandates delegated yet)"];
+      // Read real subagent child mandates from database in tree hierarchy
+      const rootMandateId = mandateId;
+      const mandateById = new Map<string, (typeof childMandates)[0]>();
+      for (const m of childMandates) {
+        mandateById.set(m.id, m);
+      }
 
-    const systemInstruction = `You are the PayGuardian Personal Agent Orchestrator, an intelligent autonomous
+      const rootChildren = childMandates.filter(
+        (cm) => !rootMandateId || cm.parentMandateId === rootMandateId,
+      );
+
+      const nestedByParent = new Map<string, typeof childMandates>();
+      for (const cm of childMandates) {
+        if (rootMandateId && cm.parentMandateId !== rootMandateId) {
+          const list = nestedByParent.get(cm.parentMandateId) || [];
+          list.push(cm);
+          nestedByParent.set(cm.parentMandateId, list);
+        }
+      }
+
+      const orderedChildMandates: typeof childMandates = [];
+      for (const parent of rootChildren) {
+        orderedChildMandates.push(parent);
+        const nested = nestedByParent.get(parent.id) || [];
+        for (const child of nested) {
+          orderedChildMandates.push(child);
+        }
+      }
+      for (const cm of childMandates) {
+        if (!orderedChildMandates.includes(cm)) {
+          orderedChildMandates.push(cm);
+        }
+      }
+
+      const subagents = orderedChildMandates.map((cm) => {
+        const isNested = Boolean(rootMandateId && cm.parentMandateId !== rootMandateId);
+        const parentMandate = isNested ? mandateById.get(cm.parentMandateId) : null;
+        const parentAgentName = parentMandate
+          ? `${parentMandate.holderAgentId.charAt(0).toUpperCase() + parentMandate.holderAgentId.slice(1)} Specialist`
+          : null;
+        return {
+          agent: cm.holderAgentId,
+          role: `${cm.holderAgentId.charAt(0).toUpperCase() + cm.holderAgentId.slice(1)} Specialist`,
+          percentage:
+            budgetLimitMinor > 0 ? Math.round((cm.budgetLimitMinor / budgetLimitMinor) * 100) : 0,
+          amountMinor: cm.budgetLimitMinor,
+          currency: cm.currency || budgetCurrency,
+          budgetDisplay: formatBudget(cm.budgetLimitMinor, cm.currency || budgetCurrency),
+          isNested,
+          parentMandateId: cm.parentMandateId,
+          parentAgent: parentAgentName,
+          description: `Cryptographic child mandate (${cm.id})${parentAgentName ? ` (under ${parentAgentName})` : ""}`,
+        };
+      });
+
+      // Only direct children of the root mandate count against the root available reserve
+      const directChildren = subagents.filter((s) => !s.isNested);
+      const totalDelegatedMinor = directChildren.reduce((acc, s) => acc + s.amountMinor, 0);
+      const orchestratorReserve = Math.max(0, budgetLimitMinor - totalDelegatedMinor);
+
+      const subagentLines =
+        subagents.length > 0
+          ? subagents.map((s) =>
+              s.isNested
+                ? `    ↳ ${s.role}: ${s.budgetDisplay}${s.parentAgent ? ` (under ${s.parentAgent})` : ""}`
+                : `  - ${s.role}: ${s.budgetDisplay}`,
+            )
+          : ["  - None (No subagent child mandates delegated yet)"];
+
+      const systemInstruction = `You are the PayGuardian Personal Agent Orchestrator, an intelligent autonomous
 orchestrator responsible for understanding user objectives,
 coordinating specialist agents, managing delegated tasks, and
 communicating results to the user.
@@ -635,11 +652,24 @@ financial constraints and execution rules.
 Never replace deterministic enforcement with an LLM
 assumption.`;
 
-    const lastUserMessage = [...messages].reverse().find((m) => (m.role || "user") === "user")?.content || "Assist user with authorized tasks.";
-    const convTurns = messages.slice(-4).map((m, i) => `- Turn ${i + 1} (${m.role}): ${m.content.slice(0, 140)}`).join("\n") || "No previous turns.";
-    const activeTasksSummary = subagents.map((s) => s.isNested ? `    ↳ [${s.agent}] phase=active, amount=${s.budgetDisplay}${s.parentAgent ? ` (under ${s.parentAgent})` : ""}` : `  - [${s.agent}] phase=active, amount=${s.budgetDisplay}`).join("\n") || "  None active.";
+      const lastUserMessage =
+        [...messages].reverse().find((m) => (m.role || "user") === "user")?.content ||
+        "Assist user with authorized tasks.";
+      const convTurns =
+        messages
+          .slice(-4)
+          .map((m, i) => `- Turn ${i + 1} (${m.role}): ${m.content.slice(0, 140)}`)
+          .join("\n") || "No previous turns.";
+      const activeTasksSummary =
+        subagents
+          .map((s) =>
+            s.isNested
+              ? `    ↳ [${s.agent}] phase=active, amount=${s.budgetDisplay}${s.parentAgent ? ` (under ${s.parentAgent})` : ""}`
+              : `  - [${s.agent}] phase=active, amount=${s.budgetDisplay}`,
+          )
+          .join("\n") || "  None active.";
 
-    const assembledPrompt = `<OPERATIONAL_CONTEXT>
+      const assembledPrompt = `<OPERATIONAL_CONTEXT>
 
 REQUEST
 Current user message:
@@ -682,31 +712,32 @@ The information above was assembled by the application from authoritative state.
 Financial facts, pending proposals, and authorization states are controlled by the Gateway.
 </OPERATIONAL_CONTEXT>`;
 
-    const fullPromptText = `${systemInstruction}\n\n${assembledPrompt}`;
-    const estimatedTokens = Math.ceil(fullPromptText.length / 4);
+      const fullPromptText = `${systemInstruction}\n\n${assembledPrompt}`;
+      const estimatedTokens = Math.ceil(fullPromptText.length / 4);
 
-    return reply.code(200).send({
-      conversationId: conversation.id,
-      title: conversation.title,
-      environmentId: scoped.environment.id,
-      mandate: {
-        mandateId,
-        budgetLimitMinor,
-        currency: budgetCurrency,
-        budgetDisplay,
-        spendableMinor: orchestratorReserve,
-        reserveMinor: orchestratorReserve,
-        reserveDisplay: formatBudget(orchestratorReserve, budgetCurrency),
-      },
-      subagents,
-      systemInstruction,
-      assembledPrompt,
-      fullPromptText,
-      estimatedTokens,
-      totalCharacters: fullPromptText.length,
-      messages,
-    });
-  });
+      return reply.code(200).send({
+        conversationId: conversation.id,
+        title: conversation.title,
+        environmentId: scoped.environment.id,
+        mandate: {
+          mandateId,
+          budgetLimitMinor,
+          currency: budgetCurrency,
+          budgetDisplay,
+          spendableMinor: orchestratorReserve,
+          reserveMinor: orchestratorReserve,
+          reserveDisplay: formatBudget(orchestratorReserve, budgetCurrency),
+        },
+        subagents,
+        systemInstruction,
+        assembledPrompt,
+        fullPromptText,
+        estimatedTokens,
+        totalCharacters: fullPromptText.length,
+        messages,
+      });
+    },
+  );
 
   // POST /v1/environments/:environmentId/conversations/:conversationId/messages
   app.post<{
@@ -717,366 +748,374 @@ Financial facts, pending proposals, and authorization states are controlled by t
       agentId?: string;
       metadata?: Record<string, unknown>;
     };
-  }>("/v1/environments/:environmentId/conversations/:conversationId/messages", async (request, reply) => {
-    const scoped = await environmentFor(
-      request as AppRequest,
-      reply,
-      dependencies.registry,
-      dependencies.resolvePrincipal,
-      request.params.environmentId,
-    );
-    if (!scoped) return;
+  }>(
+    "/v1/environments/:environmentId/conversations/:conversationId/messages",
+    async (request, reply) => {
+      const scoped = await environmentFor(
+        request as AppRequest,
+        reply,
+        dependencies.registry,
+        dependencies.resolvePrincipal,
+        request.params.environmentId,
+      );
+      if (!scoped) return;
 
-    const conversation = await dependencies.chatbot.getConversation(
-      scoped.environment.id,
-      request.params.conversationId,
-    );
-    if (!conversation) {
-      return reply
-        .code(404)
-        .send({ code: "CONVERSATION_NOT_FOUND", message: "Conversation not found." });
-    }
-
-    const rawMessage = request.body?.content ?? request.body?.message;
-    if (!rawMessage || typeof rawMessage !== "string" || !rawMessage.trim()) {
-      return reply
-        .code(400)
-        .send({ code: "INVALID_MESSAGE", message: "Message content is required." });
-    }
-
-    const messageText = rawMessage.trim();
-    const agentId = request.body?.agentId ?? "personal";
-    const requestedModel =
-      typeof request.body?.metadata?.model === "string"
-        ? (request.body.metadata.model as string)
-        : "free/gpt-6-luna";
-
-    // 1. Create message
-    const message = await dependencies.chatbot.createMessage({
-      conversationId: conversation.id,
-      role: "user",
-      content: messageText,
-      sender: scoped.owner.userId,
-    });
-
-    if (dependencies.audit) {
-      try {
-        await dependencies.audit.append({
-          environmentId: scoped.environment.id,
-          actorType: "user",
-          actorId: scoped.owner.userId,
-          eventType: "user_message.sent",
-          outcome: "success",
-          payload: {
-            conversationId: conversation.id,
-            message: messageText.slice(0, 100),
-            action: "Chat message sent",
-            purpose: `Chat: ${messageText.slice(0, 48)}${messageText.length > 48 ? "..." : ""}`,
-          },
-        });
-      } catch (err) {
-        app.log.warn({ err }, "Non-fatal: failed to append user_message.sent audit event");
+      const conversation = await dependencies.chatbot.getConversation(
+        scoped.environment.id,
+        request.params.conversationId,
+      );
+      if (!conversation) {
+        return reply
+          .code(404)
+          .send({ code: "CONVERSATION_NOT_FOUND", message: "Conversation not found." });
       }
-    }
 
-    // 2. Create agent run
-    const run = await dependencies.chatbot.createRun({
-      conversationId: conversation.id,
-      environmentId: scoped.environment.id,
-      status: "queued",
-    });
+      const rawMessage = request.body?.content ?? request.body?.message;
+      if (!rawMessage || typeof rawMessage !== "string" || !rawMessage.trim()) {
+        return reply
+          .code(400)
+          .send({ code: "INVALID_MESSAGE", message: "Message content is required." });
+      }
 
-    // 3. Create root agent task
-    const rootTask = await dependencies.chatbot.createTask({
-      runId: run.id,
-      agentId,
-      status: "queued",
-    });
+      const messageText = rawMessage.trim();
+      const agentId = request.body?.agentId ?? "personal";
+      const requestedModel =
+        typeof request.body?.metadata?.model === "string"
+          ? (request.body.metadata.model as string)
+          : "free/gpt-6-luna";
 
-    // Resolve active mandate and budget
-    let mandateId: string | undefined;
-    let budgetLimitMinor: number = scoped.environment.budgetLimitMinor ?? 0;
-    let budgetCurrency: string = scoped.environment.currency ?? "USD";
-    let approvalRequired = false;
-    let alreadyDelegatedMinor = 0;
-    let availableReserveMinor = budgetLimitMinor;
+      // 1. Create message
+      const message = await dependencies.chatbot.createMessage({
+        conversationId: conversation.id,
+        role: "user",
+        content: messageText,
+        sender: scoped.owner.userId,
+      });
 
-    if (dependencies.authority) {
-      try {
-        const mandates = await dependencies.authority.list(scoped.environment.id, scoped.owner.userId);
-        const activeMandate =
-          mandates.find((m) => !m.parentMandateId && m.state === "active" && !m.supersededAt) ||
-          mandates.find((m) => !m.parentMandateId && m.state === "active") ||
-          mandates.find((m) => !m.parentMandateId) ||
-          mandates[0];
-        if (activeMandate) {
-          mandateId = activeMandate.id;
-          budgetLimitMinor = activeMandate.budgetLimitMinor;
-          budgetCurrency = activeMandate.currency;
-          approvalRequired = Boolean(activeMandate.approvalRequired);
-
-          const activeChildren = mandates.filter(
-            (m) => m.parentMandateId && m.state === "active" && !m.supersededAt
-          );
-          const rootChildren = activeChildren.filter(
-            (cm) => !mandateId || cm.parentMandateId === mandateId
-          );
-          alreadyDelegatedMinor = rootChildren.reduce((acc, cm) => acc + cm.budgetLimitMinor, 0);
-          availableReserveMinor = Math.max(0, budgetLimitMinor - alreadyDelegatedMinor);
+      if (dependencies.audit) {
+        try {
+          await dependencies.audit.append({
+            environmentId: scoped.environment.id,
+            actorType: "user",
+            actorId: scoped.owner.userId,
+            eventType: "user_message.sent",
+            outcome: "success",
+            payload: {
+              conversationId: conversation.id,
+              message: messageText.slice(0, 100),
+              action: "Chat message sent",
+              purpose: `Chat: ${messageText.slice(0, 48)}${messageText.length > 48 ? "..." : ""}`,
+            },
+          });
+        } catch (err) {
+          app.log.warn({ err }, "Non-fatal: failed to append user_message.sent audit event");
         }
-      } catch (err) {
-        app.log.warn({ err }, "Could not fetch active mandate for environment");
       }
-    }
 
-    // Immediately emit initial run.started so SSE subscriber gets immediate feedback
-    await dependencies.chatbot.appendEvent({
-      runId: run.id,
-      taskId: rootTask.id,
-      eventType: "run.started",
-      payload: {
-        run_id: run.id,
-        prompt_preview: messageText.slice(0, 80),
-        agent: "personal",
-        agentId: "personal",
-        budget_limit_minor: budgetLimitMinor,
-        available_reserve_minor: availableReserveMinor,
-        already_delegated_minor: alreadyDelegatedMinor,
-        budget_currency: budgetCurrency,
-      },
-    });
-
-    // 4. Enqueue provider job (Outbox)
-    await dependencies.providerJobs.enqueue({
-      provider: "agent_runtime",
-      intent: "agent.run_task",
-      dedupeKey: `agent_task:${rootTask.id}`,
-      payload: {
-        runId: run.id,
-        taskId: rootTask.id,
+      // 2. Create agent run
+      const run = await dependencies.chatbot.createRun({
         conversationId: conversation.id,
         environmentId: scoped.environment.id,
-        mandateId,
-        budgetLimitMinor,
-        availableReserveMinor,
-        alreadyDelegatedMinor,
-        budgetCurrency,
-        approvalRequired,
-        message: messageText,
-        modelId: requestedModel,
-        model: requestedModel,
-      },
-    });
-
-    // 5. Also publish into Supabase PGMQ queue (agent_task_queue)
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (supabaseUrl && supabaseKey) {
-      void fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/rpc/enqueue_agent_task_pgmq`, {
-        method: "POST",
-        headers: {
-          "apikey": supabaseKey,
-          "Authorization": `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          p_run_id: run.id,
-          p_task_id: rootTask.id,
-          p_conversation_id: conversation.id,
-          p_environment_id: scoped.environment.id,
-          p_mandate_id: mandateId,
-          p_budget_limit_minor: budgetLimitMinor,
-          p_budget_currency: budgetCurrency,
-          p_message: messageText,
-        }),
-      }).catch((err) => {
-        app.log.warn({ err }, "Failed to publish into PGMQ agent_task_queue");
+        status: "queued",
       });
-    }
 
-    // 6. Direct async fallback to local agent runtime if running
-    let conversationMessages: Array<{ role: string; content: string }> | undefined;
-    try {
-      const dbMessages = await dependencies.chatbot.listMessages(conversation.id);
-      conversationMessages = dbMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-    } catch (err) {
-      app.log.warn({ err }, "Could not fetch conversation history for langgraph run");
-    }
+      // 3. Create root agent task
+      const rootTask = await dependencies.chatbot.createTask({
+        runId: run.id,
+        agentId,
+        status: "queued",
+      });
 
-    const agentRuntimeUrl = process.env.AGENT_RUNTIME_URL ?? "http://localhost:8000";
-    void fetch(`${agentRuntimeUrl}/langgraph/run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: messageText,
-        messages: conversationMessages,
-        environment_id: scoped.environment.id,
-        mandate_id: mandateId,
-        budget_limit_minor: budgetLimitMinor,
-        available_reserve_minor: availableReserveMinor,
-        already_delegated_minor: alreadyDelegatedMinor,
-        budget_currency: budgetCurrency,
-        approval_required: approvalRequired,
-        run_id: run.id,
-        model_id: requestedModel,
-      }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          app.log.warn({ status: res.status }, "Agent runtime /langgraph/run non-ok response");
-          return;
+      // Resolve active mandate and budget
+      let mandateId: string | undefined;
+      let budgetLimitMinor: number = scoped.environment.budgetLimitMinor ?? 0;
+      let budgetCurrency: string = scoped.environment.currency ?? "USD";
+      let approvalRequired = false;
+      let alreadyDelegatedMinor = 0;
+      let availableReserveMinor = budgetLimitMinor;
+
+      if (dependencies.authority) {
+        try {
+          const mandates = await dependencies.authority.list(
+            scoped.environment.id,
+            scoped.owner.userId,
+          );
+          const activeMandate =
+            mandates.find((m) => !m.parentMandateId && m.state === "active" && !m.supersededAt) ||
+            mandates.find((m) => !m.parentMandateId && m.state === "active") ||
+            mandates.find((m) => !m.parentMandateId) ||
+            mandates[0];
+          if (activeMandate) {
+            mandateId = activeMandate.id;
+            budgetLimitMinor = activeMandate.budgetLimitMinor;
+            budgetCurrency = activeMandate.currency;
+            approvalRequired = Boolean(activeMandate.approvalRequired);
+
+            const activeChildren = mandates.filter(
+              (m) => m.parentMandateId && m.state === "active" && !m.supersededAt,
+            );
+            const rootChildren = activeChildren.filter(
+              (cm) => !mandateId || cm.parentMandateId === mandateId,
+            );
+            alreadyDelegatedMinor = rootChildren.reduce((acc, cm) => acc + cm.budgetLimitMinor, 0);
+            availableReserveMinor = Math.max(0, budgetLimitMinor - alreadyDelegatedMinor);
+          }
+        } catch (err) {
+          app.log.warn({ err }, "Could not fetch active mandate for environment");
         }
-        const data = (await res.json()) as {
-          finalResponse?: string;
-          final_response?: string;
-          events?: Array<{
-            event_type?: string;
-            eventType?: string;
-            payload?: Record<string, unknown>;
-            agent?: string;
-            agentId?: string;
-            task_id?: string;
-            taskId?: string;
-          }>;
-          [key: string]: unknown;
-        };
+      }
 
-        // Stream and persist all intermediate subagent events emitted by agent runtime
-        if (Array.isArray(data.events)) {
-          for (const ev of data.events) {
-            const evType = ev.eventType ?? ev.event_type;
-            if (!evType || evType === "run.completed" || evType === "run.started") continue;
-            const evAgent =
-              ev.agentId ??
-              ev.agent ??
-              (ev.payload as Record<string, unknown> | undefined)?.agentId ??
-              (ev.payload as Record<string, unknown> | undefined)?.agent ??
-              "personal";
-            if (evType === "agent.output" && evAgent === "personal") continue;
-            const evTaskId = ev.taskId ?? ev.task_id ?? rootTask.id;
-            if (evType === "approval.requested" && dependencies.approvals) {
-              const p = (ev.payload as Record<string, unknown>) ?? {};
-              const apprId = String(p.approvalId || `appr-${run.id}`);
-              const apprAmount = Number(p.amountMinor ?? availableReserveMinor);
-              const apprCurrency = String(p.currency ?? budgetCurrency);
-              const apprMandate = String(p.mandateId || mandateId);
-              await dependencies.approvals.create({
-                id: apprId,
-                environmentId: scoped.environment.id,
-                mandateId: apprMandate,
-                agentId: String(evAgent || agentId),
-                action: String(p.action || "budget.delegate"),
-                amountMinor: apprAmount,
-                currency: apprCurrency,
-                requestHash: apprId,
-              }).catch(() => undefined);
+      // Immediately emit initial run.started so SSE subscriber gets immediate feedback
+      await dependencies.chatbot.appendEvent({
+        runId: run.id,
+        taskId: rootTask.id,
+        eventType: "run.started",
+        payload: {
+          run_id: run.id,
+          prompt_preview: messageText.slice(0, 80),
+          agent: "personal",
+          agentId: "personal",
+          budget_limit_minor: budgetLimitMinor,
+          available_reserve_minor: availableReserveMinor,
+          already_delegated_minor: alreadyDelegatedMinor,
+          budget_currency: budgetCurrency,
+        },
+      });
+
+      // 4. Enqueue provider job (Outbox)
+      await dependencies.providerJobs.enqueue({
+        provider: "agent_runtime",
+        intent: "agent.run_task",
+        dedupeKey: `agent_task:${rootTask.id}`,
+        payload: {
+          runId: run.id,
+          taskId: rootTask.id,
+          conversationId: conversation.id,
+          environmentId: scoped.environment.id,
+          mandateId,
+          budgetLimitMinor,
+          availableReserveMinor,
+          alreadyDelegatedMinor,
+          budgetCurrency,
+          approvalRequired,
+          message: messageText,
+          modelId: requestedModel,
+          model: requestedModel,
+        },
+      });
+
+      // 5. Also publish into Supabase PGMQ queue (agent_task_queue)
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseUrl && supabaseKey) {
+        void fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/rpc/enqueue_agent_task_pgmq`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            p_run_id: run.id,
+            p_task_id: rootTask.id,
+            p_conversation_id: conversation.id,
+            p_environment_id: scoped.environment.id,
+            p_mandate_id: mandateId,
+            p_budget_limit_minor: budgetLimitMinor,
+            p_budget_currency: budgetCurrency,
+            p_message: messageText,
+          }),
+        }).catch((err) => {
+          app.log.warn({ err }, "Failed to publish into PGMQ agent_task_queue");
+        });
+      }
+
+      // 6. Direct async fallback to local agent runtime if running
+      let conversationMessages: Array<{ role: string; content: string }> | undefined;
+      try {
+        const dbMessages = await dependencies.chatbot.listMessages(conversation.id);
+        conversationMessages = dbMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+      } catch (err) {
+        app.log.warn({ err }, "Could not fetch conversation history for langgraph run");
+      }
+
+      const agentRuntimeUrl = process.env.AGENT_RUNTIME_URL ?? "http://localhost:8000";
+      void fetch(`${agentRuntimeUrl}/langgraph/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: messageText,
+          messages: conversationMessages,
+          environment_id: scoped.environment.id,
+          mandate_id: mandateId,
+          budget_limit_minor: budgetLimitMinor,
+          available_reserve_minor: availableReserveMinor,
+          already_delegated_minor: alreadyDelegatedMinor,
+          budget_currency: budgetCurrency,
+          approval_required: approvalRequired,
+          run_id: run.id,
+          model_id: requestedModel,
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            app.log.warn({ status: res.status }, "Agent runtime /langgraph/run non-ok response");
+            return;
+          }
+          const data = (await res.json()) as {
+            finalResponse?: string;
+            final_response?: string;
+            events?: Array<{
+              event_type?: string;
+              eventType?: string;
+              payload?: Record<string, unknown>;
+              agent?: string;
+              agentId?: string;
+              task_id?: string;
+              taskId?: string;
+            }>;
+            [key: string]: unknown;
+          };
+
+          // Stream and persist all intermediate subagent events emitted by agent runtime
+          if (Array.isArray(data.events)) {
+            for (const ev of data.events) {
+              const evType = ev.eventType ?? ev.event_type;
+              if (!evType || evType === "run.completed" || evType === "run.started") continue;
+              const evAgent =
+                ev.agentId ??
+                ev.agent ??
+                (ev.payload as Record<string, unknown> | undefined)?.agentId ??
+                (ev.payload as Record<string, unknown> | undefined)?.agent ??
+                "personal";
+              if (evType === "agent.output" && evAgent === "personal") continue;
+              const evTaskId = ev.taskId ?? ev.task_id ?? rootTask.id;
+              if (evType === "approval.requested" && dependencies.approvals) {
+                const p = (ev.payload as Record<string, unknown>) ?? {};
+                const apprId = String(p.approvalId || `appr-${run.id}`);
+                const apprAmount = Number(p.amountMinor ?? availableReserveMinor);
+                const apprCurrency = String(p.currency ?? budgetCurrency);
+                const apprMandate = String(p.mandateId || mandateId);
+                await dependencies.approvals
+                  .create({
+                    id: apprId,
+                    environmentId: scoped.environment.id,
+                    mandateId: apprMandate,
+                    agentId: String(evAgent || agentId),
+                    action: String(p.action || "budget.delegate"),
+                    amountMinor: apprAmount,
+                    currency: apprCurrency,
+                    requestHash: apprId,
+                  })
+                  .catch(() => undefined);
+              }
+              await dependencies.chatbot.appendEvent({
+                runId: run.id,
+                taskId: rootTask.id,
+                eventType: evType,
+                payload: {
+                  ...(ev.payload ?? {}),
+                  taskId: String(evTaskId),
+                  agentId: String(evAgent),
+                  agent: String(evAgent),
+                },
+              });
             }
-            await dependencies.chatbot.appendEvent({
-              runId: run.id,
-              taskId: rootTask.id,
-              eventType: evType,
+          }
+
+          const assistantText =
+            typeof data.finalResponse === "string" && data.finalResponse.trim()
+              ? data.finalResponse.trim()
+              : typeof data.final_response === "string" && data.final_response.trim()
+                ? data.final_response.trim()
+                : "Task completed successfully by Personal Agent.";
+
+          // Append assistant message in conversation
+          await dependencies.chatbot.createMessage({
+            conversationId: conversation.id,
+            role: "assistant",
+            content: assistantText,
+            sender: "personal",
+          });
+
+          // Emit final run events to SSE stream
+          await dependencies.chatbot.appendEvent({
+            runId: run.id,
+            taskId: rootTask.id,
+            eventType: "agent.output",
+            payload: { text: assistantText, agentId: "personal" },
+          });
+
+          await dependencies.chatbot.appendEvent({
+            runId: run.id,
+            taskId: rootTask.id,
+            eventType: "task.completed",
+            payload: { agentId: "personal", status: "completed" },
+          });
+
+          await dependencies.chatbot.appendEvent({
+            runId: run.id,
+            taskId: rootTask.id,
+            eventType: "run.completed",
+            payload: { status: "completed" },
+          });
+
+          await dependencies.chatbot.updateTaskStatus(rootTask.id, "completed");
+          await dependencies.chatbot.updateRunStatus(run.id, "completed");
+
+          if (dependencies.audit) {
+            await dependencies.audit.append({
+              environmentId: scoped.environment.id,
+              actorType: "agent",
+              actorId: agentId,
+              eventType: "agent_task.completed",
+              outcome: "success",
               payload: {
-                ...(ev.payload ?? {}),
-                taskId: String(evTaskId),
-                agentId: String(evAgent),
-                agent: String(evAgent),
+                runId: run.id,
+                conversationId: conversation.id,
+                action: "Agent workflow completed",
+                purpose: `Executed: ${assistantText.slice(0, 50)}...`,
+                amountMinor: 1000,
+                currency: "USD",
               },
             });
           }
-        }
-
-        const assistantText =
-          typeof data.finalResponse === "string" && data.finalResponse.trim()
-            ? data.finalResponse.trim()
-            : typeof data.final_response === "string" && data.final_response.trim()
-            ? data.final_response.trim()
-            : "Task completed successfully by Personal Agent.";
-
-        // Append assistant message in conversation
-        await dependencies.chatbot.createMessage({
-          conversationId: conversation.id,
-          role: "assistant",
-          content: assistantText,
-          sender: "personal",
+        })
+        .catch((err) => {
+          app.log.warn({ err }, "Failed to reach agent runtime at /langgraph/run");
         });
 
-        // Emit final run events to SSE stream
-        await dependencies.chatbot.appendEvent({
-          runId: run.id,
-          taskId: rootTask.id,
-          eventType: "agent.output",
-          payload: { text: assistantText, agentId: "personal" },
-        });
-
-        await dependencies.chatbot.appendEvent({
-          runId: run.id,
-          taskId: rootTask.id,
-          eventType: "task.completed",
-          payload: { agentId: "personal", status: "completed" },
-        });
-
-        await dependencies.chatbot.appendEvent({
-          runId: run.id,
-          taskId: rootTask.id,
-          eventType: "run.completed",
-          payload: { status: "completed" },
-        });
-
-        await dependencies.chatbot.updateTaskStatus(rootTask.id, "completed");
-        await dependencies.chatbot.updateRunStatus(run.id, "completed");
-
-        if (dependencies.audit) {
+      if (dependencies.audit) {
+        try {
           await dependencies.audit.append({
             environmentId: scoped.environment.id,
-            actorType: "agent",
-            actorId: agentId,
-            eventType: "agent_task.completed",
+            actorType: scoped.owner.kind,
+            actorId: scoped.owner.userId,
+            eventType: "agent_run.queued",
             outcome: "success",
             payload: {
-              runId: run.id,
               conversationId: conversation.id,
-              action: "Agent workflow completed",
-              purpose: `Executed: ${assistantText.slice(0, 50)}...`,
-              amountMinor: 1000,
-              currency: "USD",
+              messageId: message.id,
+              runId: run.id,
+              rootTaskId: rootTask.id,
             },
           });
+        } catch (err) {
+          app.log.warn({ err }, "Non-fatal: failed to append agent_run.queued audit event");
         }
-      })
-      .catch((err) => {
-        app.log.warn({ err }, "Failed to reach agent runtime at /langgraph/run");
-      });
-
-    if (dependencies.audit) {
-      try {
-        await dependencies.audit.append({
-          environmentId: scoped.environment.id,
-          actorType: scoped.owner.kind,
-          actorId: scoped.owner.userId,
-          eventType: "agent_run.queued",
-          outcome: "success",
-          payload: {
-            conversationId: conversation.id,
-            messageId: message.id,
-            runId: run.id,
-            rootTaskId: rootTask.id,
-          },
-        });
-      } catch (err) {
-        app.log.warn({ err }, "Non-fatal: failed to append agent_run.queued audit event");
       }
-    }
 
-    return reply.code(201).send({
-      conversationId: conversation.id,
-      messageId: message.id,
-      runId: run.id,
-      rootTaskId: rootTask.id,
-    });
-  });
+      return reply.code(201).send({
+        conversationId: conversation.id,
+        messageId: message.id,
+        runId: run.id,
+        rootTaskId: rootTask.id,
+      });
+    },
+  );
 
   // POST /v1/environments/:environmentId/runs/:runId/complete (Internal worker callback)
   app.post<{
@@ -1168,7 +1207,7 @@ Financial facts, pending proposals, and authorization states are controlled by t
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
       "X-Accel-Buffering": "no",
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Credentials": "true",
@@ -1182,8 +1221,8 @@ Financial facts, pending proposals, and authorization states are controlled by t
       typeof lastEventIdHeader === "string"
         ? lastEventIdHeader
         : typeof lastEventIdParam === "string"
-        ? lastEventIdParam
-        : undefined;
+          ? lastEventIdParam
+          : undefined;
 
     let lastId = 0;
     if (rawLastEventId) {

@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Zap,
-  ShieldAlert,
-  CheckCircle2,
-  Trash2,
-  Lock,
-  Activity,
-} from "lucide-react";
+import { Zap, ShieldAlert, CheckCircle2, Trash2, Lock, Activity } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { Button } from "../ui/button";
@@ -21,10 +14,7 @@ export interface AttackSimulatorProps {
   onNavigateTab?: (tab: "workspace" | "approvals" | "traces") => void;
 }
 
-export function AttackSimulator({
-  className = "",
-  onNavigateTab,
-}: AttackSimulatorProps) {
+export function AttackSimulator({ className = "", onNavigateTab }: AttackSimulatorProps) {
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
   const isSandbox = currentEnv?.type === "sandbox";
@@ -111,7 +101,8 @@ export function AttackSimulator({
 
         setActiveFeedback({
           title: "Attack 1 Defended: BUDGET_EXCEEDED",
-          description: "Gateway blocked the $500.00 overspend attempt. Streamed red rejection flash to 3D node and appended verified RejectionCard to decision stream.",
+          description:
+            "Gateway blocked the $500.00 overspend attempt. Streamed red rejection flash to 3D node and appended verified RejectionCard to decision stream.",
           type: "blocked",
         });
 
@@ -175,7 +166,10 @@ export function AttackSimulator({
         });
 
         setTimeout(() => {
-          workspaceStore.updateGraphEdge(`edge-root-travel`, { status: "flowing", isSimulation: true });
+          workspaceStore.updateGraphEdge(`edge-root-travel`, {
+            status: "flowing",
+            isSimulation: true,
+          });
         }, 2500);
         break;
       }
@@ -221,7 +215,8 @@ export function AttackSimulator({
 
         setActiveFeedback({
           title: "Attack 3 Held: THRESHOLD_EXCEEDED",
-          description: "Payment held by autonomous guardrail. Routed to Approvals Inbox with plain-language rationale. Zero funds disbursed autonomously.",
+          description:
+            "Payment held by autonomous guardrail. Routed to Approvals Inbox with plain-language rationale. Zero funds disbursed autonomously.",
           type: "held",
         });
         break;
@@ -275,12 +270,16 @@ export function AttackSimulator({
 
         setActiveFeedback({
           title: "Attack 4 Defended: FORGED_SIGNATURE",
-          description: "Cryptographic verification checklist failed on signature verification. Request killed and flagged in Security Audit Table.",
+          description:
+            "Cryptographic verification checklist failed on signature verification. Request killed and flagged in Security Audit Table.",
           type: "blocked",
         });
 
         setTimeout(() => {
-          workspaceStore.updateGraphEdge(`edge-travel-scraper`, { status: "idle", isSimulation: true });
+          workspaceStore.updateGraphEdge(`edge-travel-scraper`, {
+            status: "idle",
+            isSimulation: true,
+          });
         }, 2500);
         break;
       }
@@ -321,7 +320,8 @@ export function AttackSimulator({
 
         setActiveFeedback({
           title: "Attack 5 Defended: REVOKED_AGENT_DENIED",
-          description: "Revoked agent call immediately refused by gateway authority tree. Canvas node desaturated to grey with strike-through.",
+          description:
+            "Revoked agent call immediately refused by gateway authority tree. Canvas node desaturated to grey with strike-through.",
           type: "blocked",
         });
 
@@ -351,7 +351,9 @@ export function AttackSimulator({
   };
 
   return (
-    <div className={`flex flex-col min-h-0 flex-1 bg-background text-foreground overflow-y-auto ${className}`}>
+    <div
+      className={`flex flex-col min-h-0 flex-1 bg-background text-foreground overflow-y-auto ${className}`}
+    >
       {/* Top Banner / Header */}
       <div className="border-b border-border bg-card px-6 py-6 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -366,8 +368,9 @@ export function AttackSimulator({
               </h1>
             </div>
             <p className="mt-1 text-xs text-muted-foreground max-w-2xl">
-              Stress-test the PayGuardian Gateway against autonomous adversary vectors in a safe sandbox.
-              All events are simulated, streamed to the 3D canvas and activity feeds, and explicitly tagged with [SIMULATION].
+              Stress-test the PayGuardian Gateway against autonomous adversary vectors in a safe
+              sandbox. All events are simulated, streamed to the 3D canvas and activity feeds, and
+              explicitly tagged with [SIMULATION].
             </p>
           </div>
 
@@ -398,9 +401,9 @@ export function AttackSimulator({
                   Production Environment Guard Active
                 </h3>
                 <p className="mt-1 text-xs text-destructive/80 leading-relaxed max-w-2xl">
-                  The Attack Simulator is strictly disabled in Production environments to ensure zero
-                  disruption to live financial ledger mandates. To safely run interactive attack vectors,
-                  switch to a Sandbox environment.
+                  The Attack Simulator is strictly disabled in Production environments to ensure
+                  zero disruption to live financial ledger mandates. To safely run interactive
+                  attack vectors, switch to a Sandbox environment.
                 </p>
               </div>
             </div>
@@ -442,12 +445,16 @@ export function AttackSimulator({
         {/* 5 Attack Vector Cards Grid */}
         <section aria-labelledby="attack-vectors-heading">
           <div className="mb-3">
-            <h2 id="attack-vectors-heading" className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <h2
+              id="attack-vectors-heading"
+              className="text-sm font-semibold text-foreground flex items-center gap-2"
+            >
               <ShieldAlert className="h-4 w-4 text-warning" />
               Interactive Simulated Attack Vectors (5 Vectors)
             </h2>
             <p className="text-[11px] text-muted-foreground">
-              Execute any attack vector below to stream the simulated adversarial event through the gateway defense engine.
+              Execute any attack vector below to stream the simulated adversarial event through the
+              gateway defense engine.
             </p>
           </div>
 
@@ -465,22 +472,27 @@ export function AttackSimulator({
         </section>
 
         {/* Live Simulation Audit Feed */}
-        <section aria-labelledby="simulation-feed-heading" className="rounded-xl border border-border bg-card p-5 top-shade">
+        <section
+          aria-labelledby="simulation-feed-heading"
+          className="rounded-xl border border-border bg-card p-5 top-shade"
+        >
           <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-success" />
-              <h3 id="simulation-feed-heading" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+              <h3
+                id="simulation-feed-heading"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono"
+              >
                 Simulation Execution Log ({simulationLogs.length} Events)
               </h3>
             </div>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              Isolated to Sandbox
-            </span>
+            <span className="font-mono text-[10px] text-muted-foreground">Isolated to Sandbox</span>
           </div>
 
           {simulationLogs.length === 0 ? (
             <div className="py-8 text-center text-xs text-muted-foreground">
-              No attack simulations executed in this session. Click &ldquo;Simulate Attack&rdquo; on any vector above to trigger live gateway defense.
+              No attack simulations executed in this session. Click &ldquo;Simulate Attack&rdquo; on
+              any vector above to trigger live gateway defense.
             </div>
           ) : (
             <div className="space-y-2.5">

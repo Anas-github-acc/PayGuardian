@@ -3,16 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ChevronDown,
-  Moon,
-  Sun,
-  Bot,
-  Layers,
-  Terminal,
-  Building2,
-  Lock,
-} from "lucide-react";
+import { ChevronDown, Moon, Sun, Bot, Layers, Terminal, Building2, Lock } from "lucide-react";
 import { useAuth } from "@/app/auth-provider";
 
 interface LandingNavProps {
@@ -170,11 +161,7 @@ export function LandingNav({ onToggleTheme, isDark = true }: LandingNavProps) {
             aria-label="Toggle theme"
             className="grid size-[34px] place-items-center rounded-[9px] text-foreground/80 transition-colors hover:bg-primary/[0.04] hover:text-foreground"
           >
-            {isDark ? (
-              <Sun className="size-[17px]" />
-            ) : (
-              <Moon className="size-[17px]" />
-            )}
+            {isDark ? <Sun className="size-[17px]" /> : <Moon className="size-[17px]" />}
           </button>
 
           {!user && (
@@ -188,19 +175,14 @@ export function LandingNav({ onToggleTheme, isDark = true }: LandingNavProps) {
 
           <a
             href={
-              process.env.NEXT_PUBLIC_GITHUB_URL ||
-              "https://github.com/Anas-github-acc/PayGuardian"
+              process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/Anas-github-acc/PayGuardian"
             }
             target="_blank"
             rel="noopener noreferrer"
             aria-label="PayGuardian GitHub Repository"
             className="grid size-[34px] place-items-center rounded-[9px] text-foreground/80 transition-colors hover:bg-primary/[0.04] hover:text-foreground"
           >
-            <svg
-              className="size-[20px] fill-current"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
+            <svg className="size-[20px] fill-current" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fillRule="evenodd"
                 clipRule="evenodd"
@@ -279,9 +261,7 @@ export function LandingNav({ onToggleTheme, isDark = true }: LandingNavProps) {
             </ul>
 
             <div>
-              <div className="text-[13px] font-medium text-muted-foreground/70">
-                Solutions
-              </div>
+              <div className="text-[13px] font-medium text-muted-foreground/70">Solutions</div>
               <ul className="mt-[10px] flex flex-col gap-[4px]">
                 <li>
                   <a

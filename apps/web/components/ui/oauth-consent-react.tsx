@@ -10,13 +10,7 @@ import {
 } from "@/components/ui/oauth-consent-react-utils/use-oauth-consent";
 import { Button } from "@/components/ui/button";
 import { PayPalCheckoutButton } from "./paypal-checkout-button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ConsentCardShellProps extends React.ComponentPropsWithoutRef<"div"> {
   clientName: string;
@@ -138,16 +132,14 @@ export function OAuthConsentCard({
   const isRealPayPalUrl = (url?: string | null): boolean => {
     if (!url) return false;
     if (url.includes("ORDER-") || url.includes("simulated")) return false;
-    return url.startsWith("https://www.sandbox.paypal.com") || url.startsWith("https://www.paypal.com");
+    return (
+      url.startsWith("https://www.sandbox.paypal.com") || url.startsWith("https://www.paypal.com")
+    );
   };
   const effectiveApprovalUrl = isRealPayPalUrl(approvalUrl) ? approvalUrl : null;
 
   return (
-    <ConsentCardShell
-      clientName={clientName}
-      productName={productName}
-      {...props}
-    >
+    <ConsentCardShell clientName={clientName} productName={productName} {...props}>
       <dl className="divide-y divide-border/60 rounded-xl border border-border/80 bg-muted/20 text-sm overflow-hidden">
         {formattedAmount && (
           <div className="flex items-center justify-between gap-6 p-3.5 bg-blue-500/5">
@@ -168,16 +160,12 @@ export function OAuthConsentCard({
         {mandateId && (
           <div className="flex items-center justify-between gap-6 p-3.5">
             <dt className="text-muted-foreground">Child Mandate</dt>
-            <dd className="min-w-0 font-mono text-xs text-right text-cyan-400">
-              {mandateId}
-            </dd>
+            <dd className="min-w-0 font-mono text-xs text-right text-cyan-400">{mandateId}</dd>
           </div>
         )}
         <div className="flex items-center justify-between gap-6 p-3.5">
           <dt className="text-muted-foreground">Specialist Subagent</dt>
-          <dd className="min-w-0 break-all text-right font-medium text-foreground">
-            {clientName}
-          </dd>
+          <dd className="min-w-0 break-all text-right font-medium text-foreground">{clientName}</dd>
         </div>
         <div className="flex items-center justify-between gap-6 p-3.5">
           <dt className="text-muted-foreground">Settlement Route</dt>
@@ -205,11 +193,15 @@ export function OAuthConsentCard({
         )}
       </dl>
       <p className="text-xs text-muted-foreground leading-relaxed">
-        Allow payment only if you recognize this subagent and merchant. The transaction
-        is strictly limited to the verified cryptographic child mandate bounds and cannot exceed your delegated budget.
+        Allow payment only if you recognize this subagent and merchant. The transaction is strictly
+        limited to the verified cryptographic child mandate bounds and cannot exceed your delegated
+        budget.
       </p>
       {error && (
-        <div role="alert" className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive"
+        >
           <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -275,19 +267,14 @@ export function OAuthConsent({
   productName = "PayGuardian Gateway",
   ...props
 }: OAuthConsentProps) {
-  const { details, email, error, isLoading, decision, approve, deny } =
-    useOAuthConsent({
-      authorizationId,
-      signInPath,
-    });
+  const { details, email, error, isLoading, decision, approve, deny } = useOAuthConsent({
+    authorizationId,
+    signInPath,
+  });
 
   if (isLoading || !details || !email) {
     return (
-      <ConsentCardShell
-        clientName="Subagent Payment"
-        productName={productName}
-        {...props}
-      >
+      <ConsentCardShell clientName="Subagent Payment" productName={productName} {...props}>
         {isLoading ? (
           <p role="status" className="text-sm text-muted-foreground text-center py-6">
             Loading authorization request...

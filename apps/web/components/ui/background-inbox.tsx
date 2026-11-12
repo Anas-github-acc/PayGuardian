@@ -33,8 +33,7 @@ export interface BackgroundInboxItem {
   model?: string;
 }
 
-export interface BackgroundInboxProps
-  extends Omit<React.ComponentProps<"section">, "onSelect"> {
+export interface BackgroundInboxProps extends Omit<React.ComponentProps<"section">, "onSelect"> {
   items: BackgroundInboxItem[];
   title?: string;
   onSelect?: (id: string) => void;
@@ -68,19 +67,9 @@ function InboxStatus({ status }: Pick<BackgroundInboxItem, "status">) {
     );
   }
   if (status === "error") {
-    return (
-      <X
-        aria-label="Error"
-        className="size-4 text-destructive"
-      />
-    );
+    return <X aria-label="Error" className="size-4 text-destructive" />;
   }
-  return (
-    <Clock
-      aria-label="Waiting"
-      className="size-4 text-muted-foreground/70"
-    />
-  );
+  return <Clock aria-label="Waiting" className="size-4 text-muted-foreground/70" />;
 }
 
 function ActionStatus({ status }: { status?: SubagentAction["status"] }) {
@@ -124,7 +113,7 @@ export function BackgroundInbox({
       aria-label="Subagent workspace"
       className={cn(
         "flex flex-col gap-2 rounded-xl border border-border bg-card/60 p-3 shadow-xs backdrop-blur-xs",
-        className
+        className,
       )}
       {...props}
     >
@@ -139,13 +128,11 @@ export function BackgroundInbox({
             runningCount > 0
               ? "bg-blue-500/10 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300"
               : readyCount > 0
-              ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300"
-              : "bg-muted text-muted-foreground"
+                ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300"
+                : "bg-muted text-muted-foreground",
           )}
         >
-          {runningCount > 0
-            ? `${runningCount} active`
-            : `${readyCount}/${items.length} done`}
+          {runningCount > 0 ? `${runningCount} active` : `${readyCount}/${items.length} done`}
         </span>
       </header>
 
@@ -167,7 +154,7 @@ export function BackgroundInbox({
                 className={cn(
                   "group relative rounded-lg border border-border/50 bg-background/50 p-2.5 transition-all duration-150 hover:border-border hover:bg-muted/30",
                   isSelected && "border-primary/50 bg-primary/5",
-                  item.status === "running" && "ring-1 ring-blue-500/20"
+                  item.status === "running" && "ring-1 ring-blue-500/20",
                 )}
               >
                 <div className="flex items-start gap-2.5">
@@ -181,7 +168,7 @@ export function BackgroundInbox({
                         <span
                           className={cn(
                             "truncate text-xs font-medium cursor-pointer hover:underline",
-                            titleTone[item.status]
+                            titleTone[item.status],
                           )}
                           onClick={() => {
                             onSelect?.(item.id);

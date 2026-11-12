@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import { BookOpen, Copy, Check, Sliders, Activity, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "../../lib/utils";
 import type { ThreadMessage } from "../ui/reasoning-thread";
@@ -422,7 +417,9 @@ export function ContextWindowDialog({
   activeRunId,
   assembledContext,
 }: ContextWindowDialogProps) {
-  const [activeTab, setActiveTab] = React.useState<"breakdown" | "system" | "assembled">("breakdown");
+  const [activeTab, setActiveTab] = React.useState<"breakdown" | "system" | "assembled">(
+    "breakdown",
+  );
   const [copied, setCopied] = React.useState(false);
   const [, setIsLoading] = React.useState(false);
   const [serverContext, setServerContext] = React.useState<ServerContextData | null>(null);
@@ -434,12 +431,9 @@ export function ContextWindowDialog({
     let isMounted = true;
     setIsLoading(true);
 
-    fetch(
-      `${API_BASE}/v1/environments/${environmentId}/conversations/${conversationId}/context`,
-      {
-        headers: getAuthHeaders(),
-      }
-    )
+    fetch(`${API_BASE}/v1/environments/${environmentId}/conversations/${conversationId}/context`, {
+      headers: getAuthHeaders(),
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: ServerContextData | null) => {
         if (isMounted && data) {
@@ -477,28 +471,20 @@ export function ContextWindowDialog({
   const systemPromptChars = actualSystemPrompt.length;
   const assembledPromptChars = actualAssembledPrompt.length;
   const totalCharacters =
-    assembledContext?.total_characters ??
-    (systemPromptChars + assembledPromptChars);
+    assembledContext?.total_characters ?? systemPromptChars + assembledPromptChars;
 
-  const estimatedTokens =
-    assembledContext?.estimated_tokens ??
-    Math.ceil(totalCharacters / 4);
+  const estimatedTokens = assembledContext?.estimated_tokens ?? Math.ceil(totalCharacters / 4);
 
-  const systemTokens =
-    assembledContext?.system_prompt_tokens ??
-    Math.ceil(systemPromptChars / 4);
+  const systemTokens = assembledContext?.system_prompt_tokens ?? Math.ceil(systemPromptChars / 4);
 
   const assembledTokens =
-    assembledContext?.assembled_prompt_tokens ??
-    Math.ceil(assembledPromptChars / 4);
+    assembledContext?.assembled_prompt_tokens ?? Math.ceil(assembledPromptChars / 4);
 
   const messagesCount =
     assembledContext?.messages_count ??
     (threadMessages.length > 0 ? threadMessages.length : (serverContext?.messages?.length ?? 0));
 
-  const activeSubagentsCount =
-    assembledContext?.active_tasks_count ??
-    subagents.length;
+  const activeSubagentsCount = assembledContext?.active_tasks_count ?? subagents.length;
 
   const handleCopy = () => {
     let textToCopy = "";
@@ -516,7 +502,10 @@ export function ContextWindowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideCloseButton className="w-[860px] h-[640px] max-w-[94vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card text-foreground border border-border shadow-2xl rounded-lg">
+      <DialogContent
+        hideCloseButton
+        className="w-[860px] h-[640px] max-w-[94vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card text-foreground border border-border shadow-2xl rounded-lg"
+      >
         {/* Header - follows Card pattern: border-b px-4 py-3 */}
         <div className="border-b border-border px-4 py-3 flex items-center justify-between shrink-0 bg-card">
           <div className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4">
@@ -575,7 +564,7 @@ export function ContextWindowDialog({
               "py-2.5 text-xs font-medium border-b-2 transition-colors -mb-px",
               activeTab === "breakdown"
                 ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             Context Breakdown
@@ -587,7 +576,7 @@ export function ContextWindowDialog({
               "py-2.5 text-xs font-medium border-b-2 transition-colors -mb-px",
               activeTab === "system"
                 ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             System Prompt
@@ -599,7 +588,7 @@ export function ContextWindowDialog({
               "py-2.5 text-xs font-medium border-b-2 transition-colors -mb-px",
               activeTab === "assembled"
                 ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             Assembled Prompt
@@ -636,25 +625,47 @@ export function ContextWindowDialog({
                       </thead>
                       <tbody className="divide-y divide-border text-xs">
                         <tr className="hover:bg-muted/30 transition-colors">
-                          <td className="py-2.5 px-4 font-medium text-foreground">System Instruction (Core)</td>
-                          <td className="py-2.5 px-4 text-muted-foreground font-mono">{systemPromptChars.toLocaleString()}</td>
-                          <td className="py-2.5 px-4 text-muted-foreground font-mono">~{systemTokens.toLocaleString()}</td>
+                          <td className="py-2.5 px-4 font-medium text-foreground">
+                            System Instruction (Core)
+                          </td>
                           <td className="py-2.5 px-4 text-muted-foreground font-mono">
-                            {totalCharacters > 0 ? Math.round((systemPromptChars / totalCharacters) * 100) : 0}%
+                            {systemPromptChars.toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-4 text-muted-foreground font-mono">
+                            ~{systemTokens.toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-4 text-muted-foreground font-mono">
+                            {totalCharacters > 0
+                              ? Math.round((systemPromptChars / totalCharacters) * 100)
+                              : 0}
+                            %
                           </td>
                         </tr>
                         <tr className="hover:bg-muted/30 transition-colors">
-                          <td className="py-2.5 px-4 font-medium text-foreground">Assembled Operational Context</td>
-                          <td className="py-2.5 px-4 text-muted-foreground font-mono">{assembledPromptChars.toLocaleString()}</td>
-                          <td className="py-2.5 px-4 text-muted-foreground font-mono">~{assembledTokens.toLocaleString()}</td>
+                          <td className="py-2.5 px-4 font-medium text-foreground">
+                            Assembled Operational Context
+                          </td>
                           <td className="py-2.5 px-4 text-muted-foreground font-mono">
-                            {totalCharacters > 0 ? Math.round((assembledPromptChars / totalCharacters) * 100) : 0}%
+                            {assembledPromptChars.toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-4 text-muted-foreground font-mono">
+                            ~{assembledTokens.toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-4 text-muted-foreground font-mono">
+                            {totalCharacters > 0
+                              ? Math.round((assembledPromptChars / totalCharacters) * 100)
+                              : 0}
+                            %
                           </td>
                         </tr>
                         <tr className="bg-muted/30 font-medium text-foreground">
                           <td className="py-2.5 px-4">Total Context Window</td>
-                          <td className="py-2.5 px-4 font-mono">{totalCharacters.toLocaleString()}</td>
-                          <td className="py-2.5 px-4 font-mono text-primary">~{estimatedTokens.toLocaleString()}</td>
+                          <td className="py-2.5 px-4 font-mono">
+                            {totalCharacters.toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-4 font-mono text-primary">
+                            ~{estimatedTokens.toLocaleString()}
+                          </td>
                           <td className="py-2.5 px-4 font-mono">100%</td>
                         </tr>
                       </tbody>
@@ -681,11 +692,15 @@ export function ContextWindowDialog({
                     </div>
                     <div className="flex items-center justify-between px-4 py-2.5 text-muted-foreground">
                       <span>Conversation Turns Tracked</span>
-                      <span className="font-medium text-foreground font-mono">{messagesCount} turns</span>
+                      <span className="font-medium text-foreground font-mono">
+                        {messagesCount} turns
+                      </span>
                     </div>
                     <div className="flex items-center justify-between px-4 py-2.5 text-muted-foreground">
                       <span>Specialist Subagents Monitored</span>
-                      <span className="font-medium text-foreground font-mono">{activeSubagentsCount} specialists</span>
+                      <span className="font-medium text-foreground font-mono">
+                        {activeSubagentsCount} specialists
+                      </span>
                     </div>
                     {activeRunId && (
                       <div className="flex items-center justify-between px-4 py-2.5 text-muted-foreground">
@@ -716,7 +731,8 @@ export function ContextWindowDialog({
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">
-                    {systemPromptChars.toLocaleString()} chars · ~{systemTokens.toLocaleString()} tokens
+                    {systemPromptChars.toLocaleString()} chars · ~{systemTokens.toLocaleString()}{" "}
+                    tokens
                   </span>
                 </div>
                 <div className="p-4 flex-1 min-h-0 overflow-y-auto">
@@ -739,9 +755,12 @@ export function ContextWindowDialog({
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-emerald-400 text-xs font-mono font-medium">Assembled Live</span>
+                    <span className="text-emerald-400 text-xs font-mono font-medium">
+                      Assembled Live
+                    </span>
                     <span className="text-xs text-muted-foreground font-mono">
-                      {assembledPromptChars.toLocaleString()} chars · ~{assembledTokens.toLocaleString()} tokens
+                      {assembledPromptChars.toLocaleString()} chars · ~
+                      {assembledTokens.toLocaleString()} tokens
                     </span>
                   </div>
                 </div>

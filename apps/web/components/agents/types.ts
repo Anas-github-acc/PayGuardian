@@ -1,11 +1,5 @@
 export type AgentCategory =
-  | "all"
-  | "logistics"
-  | "infrastructure"
-  | "procurement"
-  | "finance"
-  | "gateway"
-  | "compliance";
+  "all" | "logistics" | "infrastructure" | "procurement" | "finance" | "gateway" | "compliance";
 
 export type AuthorityTierLevel = 1 | 2 | 3 | 4;
 

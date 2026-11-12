@@ -27,11 +27,7 @@ export interface SheetProps {
   children: React.ReactNode;
 }
 
-export function Sheet({
-  open: controlledOpen,
-  onOpenChange,
-  children,
-}: SheetProps) {
+export function Sheet({ open: controlledOpen, onOpenChange, children }: SheetProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
@@ -43,7 +39,7 @@ export function Sheet({
       }
       onOpenChange?.(newOpen);
     },
-    [isControlled, onOpenChange]
+    [isControlled, onOpenChange],
   );
 
   const contextValue = React.useMemo(() => ({ open, setOpen }), [open, setOpen]);
@@ -61,11 +57,7 @@ export const SheetTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Trigger
-    ref={ref}
-    className={cn("outline-none", className)}
-    {...props}
-  />
+  <DialogPrimitive.Trigger ref={ref} className={cn("outline-none", className)} {...props} />
 ));
 SheetTrigger.displayName = "SheetTrigger";
 
@@ -124,7 +116,7 @@ export const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
                   "fixed z-50 flex flex-col overflow-y-auto bg-card p-6 text-foreground shadow-2xl",
                   sheetSides[side],
                   "w-full max-w-md sm:max-w-md",
-                  className
+                  className,
                 )}
               >
                 {!hideCloseButton && (
@@ -144,31 +136,20 @@ export const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
         </AnimatePresence>
       </DialogPrimitive.Portal>
     );
-  }
+  },
 );
 SheetContent.displayName = "SheetContent";
 
-export function SheetHeader({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("flex flex-col space-y-1.5 text-left mb-4", className)}
-      {...props}
-    />
-  );
+export function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("flex flex-col space-y-1.5 text-left mb-4", className)} {...props} />;
 }
 
-export function SheetTitle({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLHeadingElement>) {
+export function SheetTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
       className={cn(
         "text-base font-semibold leading-none tracking-tight text-foreground",
-        className
+        className,
       )}
       {...props}
     />
@@ -180,22 +161,16 @@ export function SheetDescription({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p
-      className={cn("text-xs text-muted-foreground leading-relaxed pt-1", className)}
-      {...props}
-    />
+    <p className={cn("text-xs text-muted-foreground leading-relaxed pt-1", className)} {...props} />
   );
 }
 
-export function SheetFooter({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function SheetFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
         "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t border-border mt-auto",
-        className
+        className,
       )}
       {...props}
     />

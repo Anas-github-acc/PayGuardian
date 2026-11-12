@@ -39,10 +39,9 @@ export function ActivityMicroFeed({
   const store = useWorkspaceStore();
   const currentEnv = store.currentEnvironment;
 
-  const hookResult = useActivityFeed(
-    propActivities ? null : currentEnv?.id,
-    { pollingIntervalMs: 3000 },
-  );
+  const hookResult = useActivityFeed(propActivities ? null : currentEnv?.id, {
+    pollingIntervalMs: 3000,
+  });
 
   const items = propActivities ?? hookResult.activities;
   const isLoading = propIsLoading ?? (propActivities ? false : hookResult.isLoading);
@@ -68,9 +67,7 @@ export function ActivityMicroFeed({
             <Activity className="h-4 w-4" />
           </span>
           <div>
-            <h3 className="text-sm font-semibold tracking-tight text-foreground">
-              Live activity
-            </h3>
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">Live activity</h3>
             <p className="flex items-center gap-1 text-[11px] font-mono text-success">
               <Radio className="h-2.5 w-2.5 animate-pulse" />
               Streaming
@@ -145,8 +142,8 @@ export function ActivityMicroFeed({
                     isDenied
                       ? "border-destructive/30 bg-destructive/10 text-destructive"
                       : isPending
-                      ? "border-warning/30 bg-warning/10 text-warning"
-                      : "border-success/30 bg-success/10 text-success"
+                        ? "border-warning/30 bg-warning/10 text-warning"
+                        : "border-success/30 bg-success/10 text-success"
                   }`}
                 >
                   {isDenied ? (

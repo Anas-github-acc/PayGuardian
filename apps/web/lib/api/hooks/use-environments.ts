@@ -3,7 +3,11 @@
 import * as React from "react";
 import { apiClient } from "../client";
 import { mapEnvironmentDto } from "../mappers/environment";
-import { useWorkspaceStore, workspaceStore, type Environment } from "../../../app/lib/workspace-store";
+import {
+  useWorkspaceStore,
+  workspaceStore,
+  type Environment,
+} from "../../../app/lib/workspace-store";
 
 export interface CreateAndBootstrapOptions {
   name: string;
@@ -78,8 +82,7 @@ export function useEnvironments(): UseEnvironmentsResult {
       });
 
       // 3. Create Root Mandate bound to Root Agent
-      const expiresAt =
-        options.expiresAt || new Date(Date.now() + 90 * 86400 * 1000).toISOString();
+      const expiresAt = options.expiresAt || new Date(Date.now() + 90 * 86400 * 1000).toISOString();
       const rootMandate = await apiClient.mandates.createRoot(envId, {
         holderAgentId: rootAgent.id,
         budgetLimitMinor: options.budgetLimitMinor,
@@ -112,20 +115,17 @@ export function useEnvironments(): UseEnvironmentsResult {
     [],
   );
 
-  const deleteEnvironment = React.useCallback(
-    async (environmentId: string): Promise<boolean> => {
-      try {
-        await apiClient.environments.delete(environmentId);
-        workspaceStore.removeEnvironment(environmentId);
-        return true;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to delete environment";
-        setError(msg);
-        return false;
-      }
-    },
-    [],
-  );
+  const deleteEnvironment = React.useCallback(async (environmentId: string): Promise<boolean> => {
+    try {
+      await apiClient.environments.delete(environmentId);
+      workspaceStore.removeEnvironment(environmentId);
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete environment";
+      setError(msg);
+      return false;
+    }
+  }, []);
 
   return {
     environments: environmentsList,

@@ -2,7 +2,16 @@
 
 import * as React from "react";
 import mermaid from "mermaid";
-import { Check, Copy, Download, ZoomIn, ZoomOut, RotateCcw, Maximize2, AlertCircle } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Download,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2,
+  AlertCircle,
+} from "lucide-react";
 
 interface MermaidRendererProps {
   chart: string;
@@ -85,7 +94,9 @@ export function MermaidRenderer({ chart, className = "" }: MermaidRendererProps)
   };
 
   return (
-    <div className={`my-4 overflow-hidden rounded-xl border border-zinc-800 bg-[#070b14] shadow-xl ${className}`}>
+    <div
+      className={`my-4 overflow-hidden rounded-xl border border-zinc-800 bg-[#070b14] shadow-xl ${className}`}
+    >
       {/* Diagram Header */}
       <div className="flex h-10 items-center justify-between border-b border-zinc-800 bg-zinc-900/90 px-3.5 text-xs text-zinc-400">
         <div className="flex items-center gap-2">
@@ -134,7 +145,11 @@ export function MermaidRenderer({ chart, className = "" }: MermaidRendererProps)
             className="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-zinc-400 hover:bg-zinc-800 hover:text-white"
             title="Copy SVG"
           >
-            {copiedSvg ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+            {copiedSvg ? (
+              <Check className="h-3 w-3 text-emerald-400" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
             <span>SVG</span>
           </button>
 

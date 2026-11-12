@@ -43,7 +43,7 @@ export function CreateEnvironmentWizard({
   const [slug, setSlug] = React.useState("procurement-travel");
   const [envType, setEnvType] = React.useState<"sandbox" | "production">("sandbox");
   const [purpose, setPurpose] = React.useState(
-    "Autonomous flight booking, vendor procurement, and travel logistics"
+    "Autonomous flight booking, vendor procurement, and travel logistics",
   );
 
   // Step 2: Root Mandate
@@ -285,11 +285,10 @@ export function CreateEnvironmentWizard({
           <div className="mt-4 space-y-2 pt-1">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="font-medium text-zinc-400">
-                Step {step} of 5 · <span className="text-zinc-200">{stepTitles[step - 1]?.title}</span>
+                Step {step} of 5 ·{" "}
+                <span className="text-zinc-200">{stepTitles[step - 1]?.title}</span>
               </span>
-              <span className="font-semibold text-zinc-300 font-mono">
-                {step * 20}%
-              </span>
+              <span className="font-semibold text-zinc-300 font-mono">{step * 20}%</span>
             </div>
 
             <div className="grid grid-cols-5 gap-1.5">
@@ -304,7 +303,7 @@ export function CreateEnvironmentWizard({
                         "h-1 w-full rounded-full transition-all duration-200",
                         isCurrent && "bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]",
                         isPast && "bg-zinc-500",
-                        !isPast && !isCurrent && "bg-zinc-800"
+                        !isPast && !isCurrent && "bg-zinc-800",
                       )}
                     />
                     <span
@@ -313,8 +312,8 @@ export function CreateEnvironmentWizard({
                         isCurrent
                           ? "text-white font-medium"
                           : isPast
-                          ? "text-zinc-400"
-                          : "text-zinc-600"
+                            ? "text-zinc-400"
+                            : "text-zinc-600",
                       )}
                     >
                       {s.number}. {s.title}
@@ -372,7 +371,7 @@ export function CreateEnvironmentWizard({
                       "cursor-pointer rounded-xl border p-4 transition-all duration-150 select-none",
                       envType === "sandbox"
                         ? "border-zinc-600 bg-zinc-900/90 shadow-sm ring-1 ring-zinc-700"
-                        : "border-zinc-800/80 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
+                        : "border-zinc-800/80 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60",
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -398,7 +397,7 @@ export function CreateEnvironmentWizard({
                       "cursor-pointer rounded-xl border p-4 transition-all duration-150 select-none",
                       envType === "production"
                         ? "border-blue-500/60 bg-blue-950/20 shadow-sm ring-1 ring-blue-500/40"
-                        : "border-zinc-800/80 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
+                        : "border-zinc-800/80 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60",
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -439,9 +438,7 @@ export function CreateEnvironmentWizard({
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-zinc-300 block mb-1.5">
-                    Currency
-                  </label>
+                  <label className="text-xs font-medium text-zinc-300 block mb-1.5">Currency</label>
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
@@ -492,7 +489,8 @@ export function CreateEnvironmentWizard({
                   <span className="text-[11px] text-zinc-400">Integer Minor Units</span>
                   <div className="mt-1">
                     <div className="text-lg font-bold tracking-tight text-zinc-300 font-mono tabular-nums">
-                      {budgetLimitMinor.toLocaleString()} {currency === "JPY" ? "yen" : "minor units"}
+                      {budgetLimitMinor.toLocaleString()}{" "}
+                      {currency === "JPY" ? "yen" : "minor units"}
                     </div>
                     <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">
                       Zero floating-point drift
@@ -516,7 +514,7 @@ export function CreateEnvironmentWizard({
                         "rounded-lg border py-2 text-xs font-medium transition-all cursor-pointer text-center select-none",
                         expiryPreset === preset
                           ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
-                          : "border-zinc-800/80 bg-zinc-900/40 text-zinc-400 hover:text-white hover:bg-zinc-900/80"
+                          : "border-zinc-800/80 bg-zinc-900/40 text-zinc-400 hover:text-white hover:bg-zinc-900/80",
                       )}
                     >
                       {preset === "7d" && "7 Days"}
@@ -537,7 +535,10 @@ export function CreateEnvironmentWizard({
                 ) : (
                   <div className="flex items-center gap-2 rounded-lg border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-xs text-zinc-400 font-mono">
                     <Clock className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-                    <span>Authority expires on: <strong className="text-zinc-200">{formattedExpiryDisplay}</strong></span>
+                    <span>
+                      Authority expires on:{" "}
+                      <strong className="text-zinc-200">{formattedExpiryDisplay}</strong>
+                    </span>
                   </div>
                 )}
               </div>
@@ -567,7 +568,9 @@ export function CreateEnvironmentWizard({
                     />
                     <div className="space-y-0.5">
                       <div className="text-xs font-medium text-white">PayPal Rails</div>
-                      <div className="text-[11px] text-zinc-500">Orders & Authorizations API v2 with idempotent capture</div>
+                      <div className="text-[11px] text-zinc-500">
+                        Orders & Authorizations API v2 with idempotent capture
+                      </div>
                     </div>
                     <span className="ml-auto font-mono text-[10px] text-zinc-400 rounded border border-zinc-800 px-2 py-0.5 bg-zinc-900/80">
                       Standard
@@ -590,7 +593,9 @@ export function CreateEnvironmentWizard({
                       />
                       <div className="space-y-0.5">
                         <div className="text-xs font-medium text-white">Simulation Mock Rail</div>
-                        <div className="text-[11px] text-zinc-500">In-memory synthetic payment simulator for attack vectors</div>
+                        <div className="text-[11px] text-zinc-500">
+                          In-memory synthetic payment simulator for attack vectors
+                        </div>
                       </div>
                       <span className="ml-auto font-mono text-[10px] text-zinc-400 rounded border border-zinc-800 px-2 py-0.5 bg-zinc-900/80">
                         Simulated
@@ -649,10 +654,13 @@ export function CreateEnvironmentWizard({
                 >
                   <option value={1}>1 Tier (Root Agent only, no sub-delegation)</option>
                   <option value={2}>2 Tiers (Root Orchestrator → Specialist Subagents)</option>
-                  <option value={3}>3 Tiers (Extended Tree: Root → Specialists → Micro-Agents)</option>
+                  <option value={3}>
+                    3 Tiers (Extended Tree: Root → Specialists → Micro-Agents)
+                  </option>
                 </select>
                 <span className="text-[11px] text-zinc-500 mt-1 block">
-                  Enforces monotonically decreasing spending bounds down the agent delegation hierarchy.
+                  Enforces monotonically decreasing spending bounds down the agent delegation
+                  hierarchy.
                 </span>
               </div>
             </div>
@@ -683,7 +691,9 @@ export function CreateEnvironmentWizard({
               </div>
 
               <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3 text-[11px] text-zinc-400 leading-relaxed">
-                <strong className="text-zinc-200">Notice:</strong> This statement is mathematically compiled from the configured parameters. It cannot be edited manually. Your authorization binds this root mandate policy to the double-entry ledger.
+                <strong className="text-zinc-200">Notice:</strong> This statement is mathematically
+                compiled from the configured parameters. It cannot be edited manually. Your
+                authorization binds this root mandate policy to the double-entry ledger.
               </div>
 
               <label className="flex items-start gap-3 p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 cursor-pointer transition-colors select-none">
@@ -698,7 +708,8 @@ export function CreateEnvironmentWizard({
                     I explicitly authorize this root delegation grant
                   </span>
                   <span className="text-[11px] text-zinc-400 block leading-relaxed">
-                    I acknowledge that autonomous child subagents will be bounded by these invariants and high-value payments will demand biometric passkey sign-off.
+                    I acknowledge that autonomous child subagents will be bounded by these
+                    invariants and high-value payments will demand biometric passkey sign-off.
                   </span>
                 </div>
               </label>
@@ -720,34 +731,46 @@ export function CreateEnvironmentWizard({
                   {/* Row 1: Environment & Type */}
                   <div className="grid grid-cols-2 gap-3 pb-3 border-b border-zinc-900">
                     <div>
-                      <span className="text-zinc-500 block text-[10px] uppercase font-mono">Environment</span>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-mono">
+                        Environment
+                      </span>
                       <span className="font-medium text-white text-sm">{name}</span>
                       <span className="font-mono text-[11px] text-zinc-400 block">/e/{slug}</span>
                     </div>
                     <div>
-                      <span className="text-zinc-500 block text-[10px] uppercase font-mono">Type & Rails</span>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-mono">
+                        Type & Rails
+                      </span>
                       <span className="font-medium text-white">{envType.toUpperCase()}</span>
-                      <span className="text-zinc-400 text-[11px] block">{allowedRails.join(", ")}</span>
+                      <span className="text-zinc-400 text-[11px] block">
+                        {allowedRails.join(", ")}
+                      </span>
                     </div>
                   </div>
 
                   {/* Row 2: Financial Caps */}
                   <div className="grid grid-cols-3 gap-3 pb-3 border-b border-zinc-900 font-mono">
                     <div>
-                      <span className="text-zinc-500 block text-[10px] uppercase">Root Ceiling</span>
+                      <span className="text-zinc-500 block text-[10px] uppercase">
+                        Root Ceiling
+                      </span>
                       <span className="font-bold text-white text-sm">
                         {formatMinorUnits(budgetLimitMinor, currency)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-zinc-500 block text-[10px] uppercase">Approval Trigger</span>
+                      <span className="text-zinc-500 block text-[10px] uppercase">
+                        Approval Trigger
+                      </span>
                       <span className="font-medium text-zinc-300 text-sm">
                         {formatMinorUnits(approvalThresholdMinor, currency)}
                       </span>
                     </div>
                     <div>
                       <span className="text-zinc-500 block text-[10px] uppercase">Max Depth</span>
-                      <span className="font-medium text-zinc-300 text-sm">{maxDelegationDepth} Tiers</span>
+                      <span className="font-medium text-zinc-300 text-sm">
+                        {maxDelegationDepth} Tiers
+                      </span>
                     </div>
                   </div>
 

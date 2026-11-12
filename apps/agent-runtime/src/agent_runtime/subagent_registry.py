@@ -8,8 +8,9 @@ or in the Gateway agent catalog without modifying the Personal Agent's orchestra
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 logger = logging.getLogger("agent_runtime.subagent_registry")
 
@@ -35,7 +36,9 @@ class SubagentCapability:
     capabilities: list[str] = field(default_factory=list)
     default_action: str = "execute"
     sample_prompts: list[str] = field(default_factory=list)
-    clarification_checker: Callable[[str, dict[str, Any]], tuple[bool, ClarificationRequest | None]] | None = None
+    clarification_checker: (
+        Callable[[str, dict[str, Any]], tuple[bool, ClarificationRequest | None]] | None
+    ) = None
     parent_agent_id: str | None = None
     allowed_child_agent_ids: list[str] = field(default_factory=list)
     can_delegate: bool = False
@@ -46,9 +49,8 @@ def _check_merchant_clarification(
     prompt: str, preferences: dict[str, Any]
 ) -> tuple[bool, ClarificationRequest | None]:
     prompt_lower = prompt.lower()
-    is_direct_simulation = (
-        "proceed with payment" in prompt_lower
-        and ("biscuit" in prompt_lower or "chai" in prompt_lower)
+    is_direct_simulation = "proceed with payment" in prompt_lower and (
+        "biscuit" in prompt_lower or "chai" in prompt_lower
     )
     is_budget_planning = (
         "budget plan" in prompt_lower
@@ -248,7 +250,8 @@ class SubagentRegistry:
         if not parent or not parent.can_delegate:
             return []
         return [
-            a for a in self.list_capabilities(parent_agent_id=canonical_id)
+            a
+            for a in self.list_capabilities(parent_agent_id=canonical_id)
             if not parent.allowed_child_agent_ids or a.id in parent.allowed_child_agent_ids
         ]
 

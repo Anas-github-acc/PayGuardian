@@ -1,9 +1,4 @@
-export type TraceStatus =
-  | "completed"
-  | "authorized"
-  | "pending_capture"
-  | "rejected"
-  | "failed";
+export type TraceStatus = "completed" | "authorized" | "pending_capture" | "rejected" | "failed";
 
 export type TraceRail = "PayPal" | "Simulation" | "Card";
 
@@ -75,5 +70,3 @@ export interface PaymentTrace {
   rawRecord: Record<string, unknown>;
   uncertainStateNotice?: string;
 }
-
-

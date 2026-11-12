@@ -88,13 +88,13 @@ export const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentPro
         className={cn(
           "absolute z-50 whitespace-nowrap rounded-md border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground shadow-lg top-shade pointer-events-none animate-in fade-in-0 zoom-in-95 duration-100",
           sideStyles[side],
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </div>
     );
-  }
+  },
 );
 TooltipContent.displayName = "TooltipContent";

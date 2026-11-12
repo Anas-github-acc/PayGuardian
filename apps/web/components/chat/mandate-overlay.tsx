@@ -57,7 +57,7 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
 
       // 1. Map existing mandates - filter out superseded versions and deduplicate by series
       const activeMandates = mandatesList.filter(
-        (m) => m.state !== "superseded" && !m.supersededAt
+        (m) => m.state !== "superseded" && !m.supersededAt,
       );
 
       const latestSeriesMandates = new Map<string, (typeof mandatesList)[0]>();
@@ -75,9 +75,20 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
 
         const budgetLimitMinor = typeof m.budgetLimitMinor === "number" ? m.budgetLimitMinor : 0;
         const allocatedMinor = typeof m.allocatedMinor === "number" ? m.allocatedMinor : 0;
-        const spentMinor = account ? account.capturedMinor : typeof m.spentMinor === "number" ? m.spentMinor : 0;
-        const reservedMinor = account ? account.reservedMinor : typeof m.reservedMinor === "number" ? m.reservedMinor : 0;
-        const availableMinor = Math.max(0, budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor);
+        const spentMinor = account
+          ? account.capturedMinor
+          : typeof m.spentMinor === "number"
+            ? m.spentMinor
+            : 0;
+        const reservedMinor = account
+          ? account.reservedMinor
+          : typeof m.reservedMinor === "number"
+            ? m.reservedMinor
+            : 0;
+        const availableMinor = Math.max(
+          0,
+          budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor,
+        );
 
         const isRoot = !m.parentMandateId || !agent?.parentAgentId || agent?.kind === "root";
         const agentName =
@@ -149,9 +160,7 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
           <div className="border-b border-border px-4 py-3 flex items-center justify-between shrink-0 bg-card">
             <div className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4">
               <Shield aria-hidden="true" className="size-4 shrink-0" />
-              <span className="font-medium text-foreground text-sm">
-                Active Spending Mandates
-              </span>
+              <span className="font-medium text-foreground text-sm">Active Spending Mandates</span>
               <span className="text-xs text-muted-foreground font-mono">/</span>
               <span className="text-xs text-muted-foreground font-mono">
                 {currentEnv?.name ?? "Sandbox"} ({currency})
@@ -171,21 +180,28 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
           {/* Content Body - follows same rule: space-y-3 p-4 */}
           <div className="space-y-4 p-4 overflow-y-auto">
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Cryptographic spending envelopes for this environment. Only authorized agents can reserve and execute payments within their designated ceilings.
+              Cryptographic spending envelopes for this environment. Only authorized agents can
+              reserve and execute payments within their designated ceilings.
             </p>
 
             {/* Current Available Budget (Root Agent) */}
             {(() => {
               const rootMandate = mandates.find((m) => m.role === "orchestrator") ?? mandates[0];
-              const rootAvailableMinor = rootMandate ? rootMandate.availableMinor : (currentEnv?.budgetLimitMinor ?? 0);
-              const rootLimitMinor = rootMandate ? rootMandate.budgetLimitMinor : (currentEnv?.budgetLimitMinor ?? 0);
+              const rootAvailableMinor = rootMandate
+                ? rootMandate.availableMinor
+                : (currentEnv?.budgetLimitMinor ?? 0);
+              const rootLimitMinor = rootMandate
+                ? rootMandate.budgetLimitMinor
+                : (currentEnv?.budgetLimitMinor ?? 0);
               const rootSpentMinor = rootMandate ? rootMandate.spentMinor : 0;
               const rootReservedMinor = rootMandate ? rootMandate.reservedMinor : 0;
 
               return (
                 <div className="rounded-lg border border-border bg-card p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                   <div>
-                    <div className="text-xs text-muted-foreground font-medium">Current Available Budget</div>
+                    <div className="text-xs text-muted-foreground font-medium">
+                      Current Available Budget
+                    </div>
                     <div className="text-xl font-bold font-mono text-foreground mt-0.5">
                       {formatMinorUnits(rootAvailableMinor, currency)}
                     </div>
@@ -196,15 +212,21 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
                   <div className="flex items-center gap-4 text-xs font-mono border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0 sm:pl-4">
                     <div>
                       <span className="text-muted-foreground text-[10px] block">Total Limit</span>
-                      <span className="text-foreground font-medium">{formatMinorUnits(rootLimitMinor, currency)}</span>
+                      <span className="text-foreground font-medium">
+                        {formatMinorUnits(rootLimitMinor, currency)}
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-[10px] block">Spent</span>
-                      <span className="text-muted-foreground">{formatMinorUnits(rootSpentMinor, currency)}</span>
+                      <span className="text-muted-foreground">
+                        {formatMinorUnits(rootSpentMinor, currency)}
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-[10px] block">Reserved</span>
-                      <span className="text-muted-foreground">{formatMinorUnits(rootReservedMinor, currency)}</span>
+                      <span className="text-muted-foreground">
+                        {formatMinorUnits(rootReservedMinor, currency)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -268,7 +290,8 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
             {/* Bottom Actions - actual button in shades of black and white */}
             <div className="flex items-center justify-between pt-1">
               <span className="text-xs text-muted-foreground font-mono">
-                {isFromCache ? "Cached · " : ""}{mandates.length} agent mandate{mandates.length === 1 ? "" : "s"} tracked
+                {isFromCache ? "Cached · " : ""}
+                {mandates.length} agent mandate{mandates.length === 1 ? "" : "s"} tracked
               </span>
               <button
                 type="button"
@@ -278,7 +301,10 @@ export function MandateOverlay({ open, onClose }: MandateOverlayProps) {
               >
                 <RefreshCw
                   aria-hidden="true"
-                  className={cn("size-3 shrink-0 text-muted-foreground", isRefreshing && "animate-spin")}
+                  className={cn(
+                    "size-3 shrink-0 text-muted-foreground",
+                    isRefreshing && "animate-spin",
+                  )}
                 />
                 <span>Sync latest ledger</span>
               </button>

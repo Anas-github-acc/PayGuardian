@@ -9,15 +9,12 @@ export interface SimulationBadgeProps {
   showIcon?: boolean;
 }
 
-export function SimulationBadge({
-  className = "",
-  showIcon = true,
-}: SimulationBadgeProps) {
+export function SimulationBadge({ className = "", showIcon = true }: SimulationBadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded border border-warning/40 bg-warning/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-warning shadow-[0_0_8px_oklch(var(--warning-solid)/0.15)] select-none",
-        className
+        className,
       )}
       title="Simulated Sandbox Event: Zero real financial funds affected"
     >

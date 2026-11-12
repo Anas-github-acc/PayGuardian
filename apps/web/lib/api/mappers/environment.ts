@@ -4,10 +4,7 @@ import type { Environment } from "../../../app/lib/workspace-store";
 /**
  * Maps a backend EnvironmentDto to the frontend Environment model.
  */
-export function mapEnvironmentDto(
-  dto: EnvironmentDto,
-  extra?: Partial<Environment>,
-): Environment {
+export function mapEnvironmentDto(dto: EnvironmentDto, extra?: Partial<Environment>): Environment {
   const slug =
     extra?.slug ||
     dto.name
@@ -38,8 +35,7 @@ export function mapEnvironmentDto(
     agentCount: extra?.agentCount ?? 1,
     pendingApprovalsCount: extra?.pendingApprovalsCount ?? 0,
     maxDelegationDepth: extra?.maxDelegationDepth ?? 2,
-    approvalThresholdMinor:
-      extra?.approvalThresholdMinor ?? Math.round(budgetLimitMinor * 0.1),
+    approvalThresholdMinor: extra?.approvalThresholdMinor ?? Math.round(budgetLimitMinor * 0.1),
     allowedRails: extra?.allowedRails ?? ["PayPal", "Simulation"],
     consentStatement:
       extra?.consentStatement ??

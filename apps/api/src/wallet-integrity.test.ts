@@ -111,7 +111,8 @@ describe("Wallet integrity verification and fail-closed authorization", () => {
   }
 
   it("maintains cryptographic transition record and verifies integrity on valid operations", async () => {
-    const { app, headers, environmentId, rootMandateId, rootAccountId, childAgentId } = await setup();
+    const { app, headers, environmentId, rootMandateId, rootAccountId, childAgentId } =
+      await setup();
 
     // Delegate to child agent
     const delegationRes = await app.inject({
@@ -215,7 +216,16 @@ describe("Wallet integrity verification and fail-closed authorization", () => {
   });
 
   it("fails closed on spending when wallet integrity verification fails", async () => {
-    const { app, ledger, audit, headers, environmentId, rootMandateId, rootAccountId, rootAgentId } = await setup();
+    const {
+      app,
+      ledger,
+      audit,
+      headers,
+      environmentId,
+      rootMandateId,
+      rootAccountId,
+      rootAgentId,
+    } = await setup();
 
     // Verify valid before tamper
     const initialCheck = await ledger.verifyAccountIntegrity(environmentId, rootAccountId);
@@ -264,7 +274,16 @@ describe("Wallet integrity verification and fail-closed authorization", () => {
   });
 
   it("fails closed on delegation when wallet integrity verification fails", async () => {
-    const { app, ledger, audit, headers, environmentId, rootMandateId, rootAccountId, childAgentId } = await setup();
+    const {
+      app,
+      ledger,
+      audit,
+      headers,
+      environmentId,
+      rootMandateId,
+      rootAccountId,
+      childAgentId,
+    } = await setup();
 
     // Tamper with root account balance
     await ledger.tamperAccount!(environmentId, rootAccountId, (account) => {
@@ -305,7 +324,8 @@ describe("Wallet integrity verification and fail-closed authorization", () => {
   });
 
   it("fails closed on payment authorization when wallet integrity verification fails", async () => {
-    const { app, ledger, headers, environmentId, rootMandateId, rootAccountId, rootAgentId } = await setup();
+    const { app, ledger, headers, environmentId, rootMandateId, rootAccountId, rootAgentId } =
+      await setup();
 
     // Tamper with account balance
     await ledger.tamperAccount!(environmentId, rootAccountId, (account) => {

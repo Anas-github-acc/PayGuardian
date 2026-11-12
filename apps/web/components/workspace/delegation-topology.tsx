@@ -106,9 +106,7 @@ export function DelegationTopology({
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-zinc-800/80 bg-zinc-950 shrink-0">
         <div className="flex items-center gap-2.5">
           <span className="w-2 h-2 rounded-full bg-blue-500 inline-block animate-pulse" />
-          <h2 className="text-base font-semibold tracking-tight text-white">
-            Delegation topology
-          </h2>
+          <h2 className="text-base font-semibold tracking-tight text-white">Delegation topology</h2>
           <div className="flex items-center gap-1.5 text-xs font-mono">
             <span className="rounded-md border border-zinc-800 bg-zinc-900/80 px-2 py-0.5 text-zinc-400">
               {totalNodes} {totalNodes === 1 ? "node" : "nodes"}
@@ -163,8 +161,8 @@ export function DelegationTopology({
           {viewMode === "pipeline"
             ? "Orchestrator Pipeline"
             : viewMode === "3d"
-            ? "3D Network View"
-            : "Agent Authority List"}
+              ? "3D Network View"
+              : "Agent Authority List"}
         </span>
 
         {(viewMode === "pipeline" || viewMode === "3d") && (
@@ -259,7 +257,8 @@ export function DelegationTopology({
             <div className="space-y-1">
               <p className="text-sm font-medium text-white">Failed to load agent topology</p>
               <p className="text-xs text-zinc-400 max-w-sm">
-                {error.message || "An unexpected error occurred while communicating with the backend gateway."}
+                {error.message ||
+                  "An unexpected error occurred while communicating with the backend gateway."}
               </p>
             </div>
             {onRetry && (
@@ -281,7 +280,8 @@ export function DelegationTopology({
             <div className="space-y-1">
               <p className="text-sm font-medium text-white">No child agents attached</p>
               <p className="text-xs text-zinc-400 max-w-sm">
-                Provision a specialist agent from the Library to begin constructing the delegation pipeline.
+                Provision a specialist agent from the Library to begin constructing the delegation
+                pipeline.
               </p>
             </div>
             <Button

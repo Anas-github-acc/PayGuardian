@@ -127,7 +127,14 @@ export function RechartsRenderer({ spec, code, className = "" }: RechartsRendere
               {effectiveSeries.map((s, idx) => {
                 const color = s.color || PALETTE[idx % PALETTE.length];
                 return (
-                  <linearGradient key={s.dataKey} id={`grad-${s.dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    key={s.dataKey}
+                    id={`grad-${s.dataKey}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="5%" stopColor={color} stopOpacity={0.6} />
                     <stop offset="95%" stopColor={color} stopOpacity={0.05} />
                   </linearGradient>
@@ -262,13 +269,17 @@ export function RechartsRenderer({ spec, code, className = "" }: RechartsRendere
   };
 
   return (
-    <div className={`my-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-xl ${className}`}>
+    <div
+      className={`my-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-xl ${className}`}
+    >
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-4 py-2.5">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-blue-500" />
-            <h4 className="text-xs font-semibold text-zinc-100">{title || `${type.toUpperCase()} CHART`}</h4>
+            <h4 className="text-xs font-semibold text-zinc-100">
+              {title || `${type.toUpperCase()} CHART`}
+            </h4>
           </div>
           {description && <p className="mt-0.5 text-[11px] text-zinc-400">{description}</p>}
         </div>
@@ -279,7 +290,9 @@ export function RechartsRenderer({ spec, code, className = "" }: RechartsRendere
               type="button"
               onClick={() => setViewMode("chart")}
               className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                viewMode === "chart" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-200"
+                viewMode === "chart"
+                  ? "bg-zinc-800 text-white"
+                  : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
               <BarChart3 className="h-3 w-3" />
@@ -289,7 +302,9 @@ export function RechartsRenderer({ spec, code, className = "" }: RechartsRendere
               type="button"
               onClick={() => setViewMode("table")}
               className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                viewMode === "table" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-200"
+                viewMode === "table"
+                  ? "bg-zinc-800 text-white"
+                  : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
               <Table className="h-3 w-3" />

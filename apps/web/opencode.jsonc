@@ -3,12 +3,12 @@
     "motion": {
       "type": "remote",
       "url": "https://mcp.motion.dev",
-      "enabled": true
+      "enabled": true,
     },
     "motion-plus": {
       "type": "remote",
       "url": "https://mcp.motion.dev/plus",
-      "enabled": true
-    }
-  }
+      "enabled": true,
+    },
+  },
 }

@@ -11,7 +11,9 @@ async function debug() {
   page.on("pageerror", (err) => console.log(`[Browser PageError]:`, err.message));
 
   console.log("Navigating to /dashboard?preview=true...");
-  await page.goto("https://payguardiana3.vercel.app/dashboard?preview=true", { waitUntil: "networkidle2" });
+  await page.goto("https://payguardiana3.vercel.app/dashboard?preview=true", {
+    waitUntil: "networkidle2",
+  });
   await new Promise((r) => setTimeout(r, 2000));
 
   const text = await page.evaluate(() => document.body.innerText);
@@ -19,7 +21,10 @@ async function debug() {
   console.log(text.slice(0, 600));
 
   console.log("\nNavigating to /dashboard?preview=true&tab=tables&sub=mandates...");
-  await page.goto("https://payguardiana3.vercel.app/dashboard?preview=true&tab=tables&sub=mandates", { waitUntil: "networkidle2" });
+  await page.goto(
+    "https://payguardiana3.vercel.app/dashboard?preview=true&tab=tables&sub=mandates",
+    { waitUntil: "networkidle2" },
+  );
   await new Promise((r) => setTimeout(r, 2000));
 
   const tablesText = await page.evaluate(() => document.body.innerText);

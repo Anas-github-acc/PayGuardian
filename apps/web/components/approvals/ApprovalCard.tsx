@@ -79,7 +79,7 @@ export function ApprovalCard({
 
   const canApprove = approval.allowedActions
     ? approval.allowedActions.includes("approve")
-    : (!approval.isHardLimitExceeded && isPending);
+    : !approval.isHardLimitExceeded && isPending;
   const canReject = approval.allowedActions
     ? approval.allowedActions.includes("reject")
     : isPending;
@@ -112,10 +112,10 @@ export function ApprovalCard({
   const tileClass = isPending
     ? "border-amber-900/50 bg-amber-950/40 text-amber-400"
     : isApproved
-    ? "border-blue-900/50 bg-blue-950/40 text-blue-400"
-    : isRejected
-    ? "border-red-900/50 bg-red-950/40 text-red-400"
-    : "border-zinc-800 bg-zinc-900 text-zinc-500";
+      ? "border-blue-900/50 bg-blue-950/40 text-blue-400"
+      : isRejected
+        ? "border-red-900/50 bg-red-950/40 text-red-400"
+        : "border-zinc-800 bg-zinc-900 text-zinc-500";
   const TileIcon = isPending ? Clock : isApproved ? CheckCircle2 : isRejected ? X : Clock;
 
   return (
@@ -133,83 +133,91 @@ export function ApprovalCard({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
         <div className="flex min-w-0 items-start gap-3 sm:contents">
           {/* Status icon tile */}
-          <span aria-hidden className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tileClass}`}>
+          <span
+            aria-hidden
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tileClass}`}
+          >
             <TileIcon className="h-4 w-4" />
           </span>
 
           {/* Title + subtitle */}
           <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="line-clamp-2 text-xs font-semibold text-white sm:truncate">
-              {approval.agentName}
-              <span className="text-zinc-600"> · </span>
-              {approval.purpose}
-            </span>
-            {isPending && timeLeft && (
-              <span className="rounded-md border border-amber-900/60 bg-amber-950/40 px-2 py-0.5 text-[10px] font-mono text-amber-400 shrink-0">
-                {timeLeft === "Expired" ? "expired" : `expires in ${timeLeft}`}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="line-clamp-2 text-xs font-semibold text-white sm:truncate">
+                {approval.agentName}
+                <span className="text-zinc-600"> · </span>
+                {approval.purpose}
               </span>
-            )}
-            {isApproved && (
-              <span className="rounded-md border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-[10px] font-mono text-blue-400 shrink-0">
-                approved
-              </span>
-            )}
-            {isExpired && (
-              <span className="rounded-md border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[10px] font-mono text-zinc-400 shrink-0">
-                expired
-              </span>
-            )}
-          </div>
-
-          {/* Muted subtitle: amount · reason · time (wraps on mobile) */}
-          <p className="mt-1 text-[11px] text-zinc-400 sm:truncate">
-            <span className="font-mono font-medium text-white">
-              {formatMinorUnits(approval.amountMinor, approval.currency)}
-            </span>
-            <span aria-hidden className="text-zinc-600"> · </span>
-            {approval.reasonForSignOff}
-            <span aria-hidden className="text-zinc-600"> · </span>
-            <span className="font-mono text-zinc-500">{relativeTime(approval.createdAt)}</span>
-          </p>
-
-          {/* Outcome notes for decided requests */}
-          {isApproved && approval.approvedBy && (
-            <p className="mt-1 text-[11px] text-zinc-400 sm:truncate">
-              Decided by {approval.approvedBy}
-              {approval.approvedAt &&
-                ` at ${new Date(approval.approvedAt).toLocaleTimeString()}`}
-            </p>
-          )}
-          {isRejected && approval.rejectionReason && (
-            <p className="mt-1 line-clamp-2 text-[11px] text-red-400 font-mono">
-              {approval.rejectionReason}
-            </p>
-          )}
-
-          {/* Hard limit guardrail */}
-          {isPending && approval.isHardLimitExceeded && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-900/40 bg-red-950/20 px-3 py-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-400" />
-              <span className="min-w-0 flex-1 text-[11px] leading-snug text-red-300">
-                {approval.hardLimitExceededReason ??
-                  "Exceeds ancestor mandate budget — approval locked until the limit is amended."}
-              </span>
-              {onAmendLimit && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAmendLimit(approval.mandateId);
-                  }}
-                  className="h-7 shrink-0 rounded-md border border-red-900/60 bg-red-950 px-2.5 text-[11px] text-red-400 hover:bg-red-900/40 transition-colors flex items-center gap-1.5"
-                >
-                  <SlidersHorizontal className="h-3 w-3" />
-                  Amend limit
-                </button>
+              {isPending && timeLeft && (
+                <span className="rounded-md border border-amber-900/60 bg-amber-950/40 px-2 py-0.5 text-[10px] font-mono text-amber-400 shrink-0">
+                  {timeLeft === "Expired" ? "expired" : `expires in ${timeLeft}`}
+                </span>
+              )}
+              {isApproved && (
+                <span className="rounded-md border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-[10px] font-mono text-blue-400 shrink-0">
+                  approved
+                </span>
+              )}
+              {isExpired && (
+                <span className="rounded-md border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[10px] font-mono text-zinc-400 shrink-0">
+                  expired
+                </span>
               )}
             </div>
-          )}
+
+            {/* Muted subtitle: amount · reason · time (wraps on mobile) */}
+            <p className="mt-1 text-[11px] text-zinc-400 sm:truncate">
+              <span className="font-mono font-medium text-white">
+                {formatMinorUnits(approval.amountMinor, approval.currency)}
+              </span>
+              <span aria-hidden className="text-zinc-600">
+                {" "}
+                ·{" "}
+              </span>
+              {approval.reasonForSignOff}
+              <span aria-hidden className="text-zinc-600">
+                {" "}
+                ·{" "}
+              </span>
+              <span className="font-mono text-zinc-500">{relativeTime(approval.createdAt)}</span>
+            </p>
+
+            {/* Outcome notes for decided requests */}
+            {isApproved && approval.approvedBy && (
+              <p className="mt-1 text-[11px] text-zinc-400 sm:truncate">
+                Decided by {approval.approvedBy}
+                {approval.approvedAt && ` at ${new Date(approval.approvedAt).toLocaleTimeString()}`}
+              </p>
+            )}
+            {isRejected && approval.rejectionReason && (
+              <p className="mt-1 line-clamp-2 text-[11px] text-red-400 font-mono">
+                {approval.rejectionReason}
+              </p>
+            )}
+
+            {/* Hard limit guardrail */}
+            {isPending && approval.isHardLimitExceeded && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-900/40 bg-red-950/20 px-3 py-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-400" />
+                <span className="min-w-0 flex-1 text-[11px] leading-snug text-red-300">
+                  {approval.hardLimitExceededReason ??
+                    "Exceeds ancestor mandate budget — approval locked until the limit is amended."}
+                </span>
+                {onAmendLimit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAmendLimit(approval.mandateId);
+                    }}
+                    className="h-7 shrink-0 rounded-md border border-red-900/60 bg-red-950 px-2.5 text-[11px] text-red-400 hover:bg-red-900/40 transition-colors flex items-center gap-1.5"
+                  >
+                    <SlidersHorizontal className="h-3 w-3" />
+                    Amend limit
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -249,10 +257,7 @@ export function ApprovalCard({
               Trace
             </button>
           )}
-          <ChevronRight
-            aria-hidden
-            className="h-4 w-4 shrink-0 text-zinc-500"
-          />
+          <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-zinc-500" />
         </div>
       </div>
 

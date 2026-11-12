@@ -82,7 +82,7 @@ export function AppHeader({
     <header
       className={cn(
         "sticky top-0 z-30 flex h-14 w-full shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 select-none",
-        className
+        className,
       )}
     >
       {/* Left: sidebar toggle + environment switcher */}
@@ -116,7 +116,9 @@ export function AppHeader({
             variant={isPaused ? "warning" : "outline"}
             onClick={handleTogglePause}
             className="h-8 gap-1.5 px-2.5 text-xs"
-            title={isPaused ? "Resume environment operations" : "Emergency pause all agent operations"}
+            title={
+              isPaused ? "Resume environment operations" : "Emergency pause all agent operations"
+            }
           >
             {isPaused ? (
               <>

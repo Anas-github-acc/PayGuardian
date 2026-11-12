@@ -74,7 +74,9 @@ export function EmergencyControls({
       }).catch(() => null);
 
       workspaceStore.updateEnvironment(activeEnvId, { status: "paused" });
-      setFeedbackMessage("Environment successfully paused. All autonomous agent spending is halted.");
+      setFeedbackMessage(
+        "Environment successfully paused. All autonomous agent spending is halted.",
+      );
       setTimeout(() => setFeedbackMessage(null), 5000);
     } finally {
       setIsProcessing(false);
@@ -91,7 +93,9 @@ export function EmergencyControls({
       }).catch(() => null);
 
       workspaceStore.updateEnvironment(activeEnvId, { status: "active" });
-      setFeedbackMessage("Environment resumed. Active mandates restored to normal operational state.");
+      setFeedbackMessage(
+        "Environment resumed. Active mandates restored to normal operational state.",
+      );
       setTimeout(() => setFeedbackMessage(null), 5000);
     } finally {
       setIsProcessing(false);
@@ -107,8 +111,8 @@ export function EmergencyControls({
         isPaused
           ? "border-warning/40 bg-warning/5"
           : isRevoked
-          ? "border-destructive/40 bg-destructive/5"
-          : "border-border bg-card"
+            ? "border-destructive/40 bg-destructive/5"
+            : "border-border bg-card"
       } ${className}`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -118,8 +122,8 @@ export function EmergencyControls({
               isPaused
                 ? "border-warning/30 bg-warning/10 text-warning"
                 : isRevoked
-                ? "border-destructive/30 bg-destructive/10 text-destructive"
-                : "border-success/30 bg-success/10 text-success"
+                  ? "border-destructive/30 bg-destructive/10 text-destructive"
+                  : "border-success/30 bg-success/10 text-success"
             }`}
           >
             {isPaused ? (
@@ -147,8 +151,8 @@ export function EmergencyControls({
               {isPaused
                 ? "Protected actions are paused. No agent can make external payments until resumed."
                 : isRevoked
-                ? "Root environment authority has been revoked. All child authority is terminated."
-                : "Immediate fail-safe intervention controls for active autonomous spend."}
+                  ? "Root environment authority has been revoked. All child authority is terminated."
+                  : "Immediate fail-safe intervention controls for active autonomous spend."}
             </p>
           </div>
         </div>
@@ -213,8 +217,10 @@ export function EmergencyControls({
               Delete Environment
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground pt-1.5 leading-relaxed">
-              Are you sure you want to delete <strong className="text-foreground">{currentEnv?.name ?? activeEnvId}</strong>?
-              This will permanently purge this environment along with all associated agent credentials, child mandates, and ledger allocations.
+              Are you sure you want to delete{" "}
+              <strong className="text-foreground">{currentEnv?.name ?? activeEnvId}</strong>? This
+              will permanently purge this environment along with all associated agent credentials,
+              child mandates, and ledger allocations.
             </DialogDescription>
           </DialogHeader>
 

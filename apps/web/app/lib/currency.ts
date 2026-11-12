@@ -45,7 +45,7 @@ export const CURRENCY_SYMBOLS: Readonly<Record<string, string>> = Object.freeze(
 export function assertSafeInteger(value: number, fieldName = "amountMinor"): void {
   if (!Number.isSafeInteger(value)) {
     throw new TypeError(
-      `[CurrencyError] Expected ${fieldName} to be a safe integer, received: ${value} (${typeof value})`
+      `[CurrencyError] Expected ${fieldName} to be a safe integer, received: ${value} (${typeof value})`,
     );
   }
 }
@@ -83,7 +83,7 @@ export function formatMinorUnits(
   options?: {
     showSymbol?: boolean;
     locale?: string;
-  }
+  },
 ): string {
   assertSafeInteger(amountMinor, "amountMinor");
 
@@ -119,7 +119,7 @@ export function formatMinorUnits(
 export function calculateAvailableMinor(
   allocatedMinor: number,
   spentMinor: number,
-  reservedMinor: number
+  reservedMinor: number,
 ): number {
   assertSafeInteger(allocatedMinor, "allocatedMinor");
   assertSafeInteger(spentMinor, "spentMinor");
@@ -170,7 +170,7 @@ export function multiplyMinor(amountMinor: number, factorInteger: number): numbe
  */
 export function divideMinor(
   amountMinor: number,
-  divisorInteger: number
+  divisorInteger: number,
 ): { quotient: number; remainder: number } {
   assertSafeInteger(amountMinor, "amountMinor");
   assertSafeInteger(divisorInteger, "divisorInteger");
@@ -257,7 +257,9 @@ export function parseMajorToMinor(majorStr: string, currency = "USD"): number {
 
   const wholeNum = parseInt(wholeStr, 10);
   if (!Number.isSafeInteger(wholeNum)) {
-    throw new TypeError(`[CurrencyError] Whole amount is outside safe integer range: "${majorStr}"`);
+    throw new TypeError(
+      `[CurrencyError] Whole amount is outside safe integer range: "${majorStr}"`,
+    );
   }
 
   if (decimals === 0) {

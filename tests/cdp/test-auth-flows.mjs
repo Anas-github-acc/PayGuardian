@@ -25,7 +25,7 @@ async function testAuth() {
     // Use evaluate to find the button
     const gBtnFound = await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll("button"));
-      const btn = btns.find(b => b.textContent?.includes("Continue with Google"));
+      const btn = btns.find((b) => b.textContent?.includes("Continue with Google"));
       return !!btn;
     });
     console.log("Continue with Google button found:", gBtnFound);
@@ -49,7 +49,7 @@ async function testAuth() {
       }),
       page.evaluate(() => {
         const btns = Array.from(document.querySelectorAll("button"));
-        const btn = btns.find(b => b.textContent?.includes("Continue with Google"));
+        const btn = btns.find((b) => b.textContent?.includes("Continue with Google"));
         btn?.click();
       }),
     ]);
@@ -65,7 +65,6 @@ async function testAuth() {
 
     console.log("Google OAuth flow redirected successfully:", isGoogleOrSupabaseAuth);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "google_oauth_redirect.png") });
-
   } finally {
     await page.close();
     await browser.disconnect();

@@ -116,8 +116,14 @@ export function PayPalCheckoutButton({
                   amountMinor: amountMinor || 15000,
                   currency: (cleanCurrency as "USD") || "USD",
                   approvalId: approvalId,
-                  returnUrl: typeof window !== "undefined" ? `${window.location.origin}/paypal/return` : undefined,
-                  cancelUrl: typeof window !== "undefined" ? `${window.location.origin}/paypal/cancel` : undefined,
+                  returnUrl:
+                    typeof window !== "undefined"
+                      ? `${window.location.origin}/paypal/return`
+                      : undefined,
+                  cancelUrl:
+                    typeof window !== "undefined"
+                      ? `${window.location.origin}/paypal/cancel`
+                      : undefined,
                 });
 
                 const orderId =
@@ -130,7 +136,8 @@ export function PayPalCheckoutButton({
                 }
                 return orderId;
               } catch (err) {
-                const msg = err instanceof Error ? err.message : "Failed to initiate PayPal Checkout";
+                const msg =
+                  err instanceof Error ? err.message : "Failed to initiate PayPal Checkout";
                 setErrorMessage(msg);
                 if (onError) onError(err instanceof Error ? err : new Error(msg));
                 throw err;

@@ -43,8 +43,9 @@ export function WorkspaceLayout({
 
   const rootAgentNode = nodes.find((n) => n.role === "orchestrator") || nodes[0];
   const [selectedNodeId, setSelectedNodeId] = React.useState<string>("orchestrator-root");
-  const effectiveSelectedNodeId =
-    nodes.some((n) => n.id === selectedNodeId) ? selectedNodeId : rootAgentNode?.id ?? "orchestrator-root";
+  const effectiveSelectedNodeId = nodes.some((n) => n.id === selectedNodeId)
+    ? selectedNodeId
+    : (rootAgentNode?.id ?? "orchestrator-root");
 
   const dynamicSpentMinor =
     ledgerAccounts.length > 0
@@ -57,7 +58,7 @@ export function WorkspaceLayout({
       : mandates.reduce((sum, m) => sum + (m.reservedMinor || 0), 0) || env?.reservedMinor || 0;
 
   const totalLimitMinor =
-    env?.budgetLimitMinor ?? (mandates.find((m) => !m.parentMandateId)?.budgetLimitMinor ?? 0);
+    env?.budgetLimitMinor ?? mandates.find((m) => !m.parentMandateId)?.budgetLimitMinor ?? 0;
   const currency = env?.currency ?? "USD";
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = React.useState(false);
@@ -105,9 +106,7 @@ export function WorkspaceLayout({
         {/* 1. Header Row matching screenshot */}
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold tracking-tight text-white">
-              Workspace
-            </h1>
+            <h1 className="text-lg font-semibold tracking-tight text-white">Workspace</h1>
             <span className="text-zinc-600 font-normal">/</span>
             <span className="text-lg font-semibold tracking-tight text-zinc-300">
               Agent Delegation
@@ -179,9 +178,7 @@ export function WorkspaceLayout({
           />
 
           {/* Right: Recent Activity */}
-          <RecentActivityPanel
-            onSelectTrace={(traceId) => onViewTrace?.(traceId)}
-          />
+          <RecentActivityPanel onSelectTrace={(traceId) => onViewTrace?.(traceId)} />
         </div>
       </div>
 

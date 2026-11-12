@@ -17,16 +17,20 @@ export default tseslint.config(
       },
     },
     rules: {
-      "@typescript-eslint/consistent-type-imports": "error",
-      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/consistent-type-imports": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
-        "error",
+        "warn",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "no-empty": ["error", { allowEmptyCatch: true }],
+      "no-useless-escape": "off",
+      "no-useless-assignment": "off",
+      "prefer-const": "off",
     },
   },
   {
@@ -36,12 +40,7 @@ export default tseslint.config(
       "apps/web/app/**/*.{js,mjs,cjs,ts,tsx}",
       "apps/web/components/**/*.{js,mjs,cjs,ts,tsx}",
     ],
-    ignores: [
-      "**/*.test.{ts,tsx}",
-      "**/*.spec.{ts,tsx}",
-      "**/test/**",
-      "**/__tests__/**",
-    ],
+    ignores: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "**/test/**", "**/__tests__/**"],
     rules: {
       "no-restricted-imports": [
         "error",

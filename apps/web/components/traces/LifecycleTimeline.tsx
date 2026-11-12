@@ -1,15 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Check,
-  Clock,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  FileCode,
-  Zap,
-} from "lucide-react";
+import { Check, Clock, AlertCircle, ChevronDown, ChevronUp, FileCode, Zap } from "lucide-react";
 import { Badge } from "../ui/badge";
 import type { TraceLifecycleStage } from "./types";
 
@@ -35,7 +27,9 @@ export function LifecycleTimeline({ stages, className = "" }: LifecycleTimelineP
           5-Stage Execution Latency Telemetry Unavailable
         </h4>
         <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
-          The Fastify Gateway backend does not currently stream microsecond per-stage execution latency telemetry for this action. Per PayGuardian integrity rules (GAP-TRC-01), synthetic stage latencies are not fabricated.
+          The Fastify Gateway backend does not currently stream microsecond per-stage execution
+          latency telemetry for this action. Per PayGuardian integrity rules (GAP-TRC-01), synthetic
+          stage latencies are not fabricated.
         </p>
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-mono text-amber-400">
           Contract Gap: GAP-TRC-01
@@ -74,10 +68,10 @@ export function LifecycleTimeline({ stages, className = "" }: LifecycleTimelineP
                   isCompleted
                     ? "border-success bg-success text-black"
                     : isFailed
-                    ? "border-destructive bg-destructive text-foreground"
-                    : isActive
-                    ? "border-warning bg-warning/20 text-warning animate-pulse"
-                    : "border-border bg-secondary text-muted-foreground"
+                      ? "border-destructive bg-destructive text-foreground"
+                      : isActive
+                        ? "border-warning bg-warning/20 text-warning animate-pulse"
+                        : "border-border bg-secondary text-muted-foreground"
                 }`}
               >
                 {isCompleted ? (
@@ -95,8 +89,8 @@ export function LifecycleTimeline({ stages, className = "" }: LifecycleTimelineP
                   isFailed
                     ? "border-destructive/40 bg-destructive/5"
                     : isActive
-                    ? "border-warning/30"
-                    : "border-border hover:border-border"
+                      ? "border-warning/30"
+                      : "border-border hover:border-border"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -127,8 +121,7 @@ export function LifecycleTimeline({ stages, className = "" }: LifecycleTimelineP
                   <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
                     {stage.latencyMs > 0 && (
                       <span className="flex items-center gap-1 text-success">
-                        <Zap className="h-3 w-3" />
-                        +{stage.latencyMs}ms
+                        <Zap className="h-3 w-3" />+{stage.latencyMs}ms
                       </span>
                     )}
                     <span>{stage.timestamp}</span>
@@ -148,8 +141,14 @@ export function LifecycleTimeline({ stages, className = "" }: LifecycleTimelineP
                       className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <FileCode className="h-3 w-3" />
-                      <span>{isExpanded ? "Hide Execution Payload" : "View Execution Payload"}</span>
-                      {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span>
+                        {isExpanded ? "Hide Execution Payload" : "View Execution Payload"}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
                     </button>
 
                     {isExpanded && (

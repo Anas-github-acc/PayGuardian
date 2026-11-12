@@ -2,14 +2,7 @@
 
 import { Brain, Check, ChevronRight, Copy, LoaderCircle, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AIRenderer } from "@/components/rendering";
 import { AgentProgress } from "./agent-progress";
@@ -96,7 +89,7 @@ export function inline(text: string): ReactNode[] {
       </strong>
     ) : (
       part
-    )
+    ),
   );
 }
 
@@ -143,7 +136,7 @@ export function Reasoning({ seconds, text }: { text: string; seconds?: number })
           aria-hidden="true"
           className={cn(
             "size-3.5 transition-transform duration-200",
-            (open || thinking) && "rotate-90"
+            (open || thinking) && "rotate-90",
           )}
         />
       </button>
@@ -174,11 +167,9 @@ export function Step({ step }: { step: ThreadStep }) {
         <span
           className={cn(
             "flex size-5 shrink-0 items-center justify-center rounded-full border",
-            step.state === "done" &&
-              "border-primary bg-primary text-primary-foreground",
+            step.state === "done" && "border-primary bg-primary text-primary-foreground",
             step.state === "running" && "border-[#D0785A] text-[#D0785A]",
-            step.state === "error" &&
-              "border-destructive bg-destructive/10 text-destructive"
+            step.state === "error" && "border-destructive bg-destructive/10 text-destructive",
           )}
         >
           {step.state === "running" ? (
@@ -192,15 +183,9 @@ export function Step({ step }: { step: ThreadStep }) {
             <X aria-hidden="true" className="size-3" />
           )}
         </span>
-        <span className="min-w-0 flex-1 truncate font-medium">
-          {step.title}
-        </span>
+        <span className="min-w-0 flex-1 truncate font-medium">{step.title}</span>
         <span className="sr-only">
-          {step.state === "running"
-            ? "in progress"
-            : step.state === "done"
-              ? "done"
-              : "failed"}
+          {step.state === "running" ? "in progress" : step.state === "done" ? "done" : "failed"}
         </span>
         {step.durationMs !== undefined && step.state !== "running" ? (
           <span className="font-mono text-muted-foreground text-xs tabular-nums">
@@ -270,7 +255,7 @@ export function ReasoningThread({
       aria-live="polite"
       className={cn(
         "flex w-full max-w-3xl flex-col gap-6 text-foreground text-[15px] sm:text-base",
-        className
+        className,
       )}
       data-slot="reasoning-thread"
       role="log"
@@ -306,7 +291,7 @@ export function ReasoningThread({
             </div>
           ) : (
             <div key={message.id} className="flex flex-col gap-2">
-              {(message.streaming || (isStreaming && index === messages.length - 1)) ? (
+              {message.streaming || (isStreaming && index === messages.length - 1) ? (
                 <div className="flex items-center text-zinc-300 py-1">
                   <AgentProgress label={message.progressLabel || progressLabel || "Thinking…"} />
                 </div>
@@ -364,7 +349,7 @@ export function ReasoningThread({
                 ) : null}
               </motion.article>
             </div>
-          )
+          ),
         )}
       </AnimatePresence>
       {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "user" ? (

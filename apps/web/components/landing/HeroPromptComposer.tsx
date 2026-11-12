@@ -76,10 +76,7 @@ export function HeroPromptComposer() {
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsModeDropdownOpen(false);
       }
     }
@@ -112,9 +109,12 @@ export function HeroPromptComposer() {
     if (!isDeleting) {
       // Typing forward
       if (displayText.length < currentFullPrompt.length) {
-        timeout = setTimeout(() => {
-          setDisplayText(currentFullPrompt.slice(0, displayText.length + 1));
-        }, 38 + Math.random() * 25);
+        timeout = setTimeout(
+          () => {
+            setDisplayText(currentFullPrompt.slice(0, displayText.length + 1));
+          },
+          38 + Math.random() * 25,
+        );
       } else {
         // Finished typing full prompt, pause before deleting
         timeout = setTimeout(() => {
@@ -212,9 +212,7 @@ export function HeroPromptComposer() {
                   >
                     <span className="shrink-0">{item.icon}</span>
                     <span className="flex-1 leading-snug">{item.label}</span>
-                    {selectedMode === item.mode && (
-                      <Check className="size-3.5 text-primary" />
-                    )}
+                    {selectedMode === item.mode && <Check className="size-3.5 text-primary" />}
                   </button>
                 ))}
               </div>
@@ -238,9 +236,7 @@ export function HeroPromptComposer() {
             >
               <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
             </svg>
-            <span className="truncate max-w-[130px] sm:max-w-none">
-              APInex GPT-6 Luna (Free)
-            </span>
+            <span className="truncate max-w-[130px] sm:max-w-none">APInex GPT-6 Luna (Free)</span>
             <span className="text-[11px] sm:text-[12px] text-muted-foreground font-normal">
               Medium
             </span>

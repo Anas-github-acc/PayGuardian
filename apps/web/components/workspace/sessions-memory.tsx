@@ -58,7 +58,7 @@ export function SessionsGrid({
   const { sessions, isLoading, error, createSession, refetch } = useSessions(currentEnv?.id);
 
   const [activeSessionId, setActiveSessionId] = React.useState<string | null>(
-    () => workspaceStore.getState().activeSessionId
+    () => workspaceStore.getState().activeSessionId,
   );
   const [isCreating, setIsCreating] = React.useState(false);
   const [creationError, setCreationError] = React.useState<string | null>(null);
@@ -109,7 +109,7 @@ export function SessionsGrid({
       onNewSession?.();
     } catch (err) {
       setCreationError(
-        err instanceof Error ? err.message : "Failed to create session on backend gateway."
+        err instanceof Error ? err.message : "Failed to create session on backend gateway.",
       );
     } finally {
       setIsCreating(false);
@@ -205,8 +205,8 @@ export function SessionsGrid({
           <Bot className="h-9 w-9 text-muted-foreground mb-2" />
           <h4 className="text-sm font-semibold text-foreground">No active sessions</h4>
           <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-            No task sessions initialized in this environment. Click &apos;New session&apos; to create an
-            autonomous thread.
+            No task sessions initialized in this environment. Click &apos;New session&apos; to
+            create an autonomous thread.
           </p>
           <Button
             variant="outline"
@@ -327,7 +327,9 @@ export function MemoryVaultContent({
   // Wire to useAgentMemory hook
   const { isUnavailable, reason } = useAgentMemory(currentEnv?.id);
 
-  const [activeMemoryTab, setActiveMemoryTab] = React.useState<"all" | "session" | "environment" | "agent">("all");
+  const [activeMemoryTab, setActiveMemoryTab] = React.useState<
+    "all" | "session" | "environment" | "agent"
+  >("all");
 
   return (
     <div className={className}>
@@ -370,16 +372,20 @@ export function MemoryVaultContent({
         <div className="flex flex-col items-center justify-center rounded-lg border border-warning/30 bg-card p-8 text-center">
           <Bookmark className="h-10 w-10 text-warning mb-3 opacity-80" />
           <h3 className="text-sm font-semibold text-foreground">
-            Memory Vault Unavailable: Persistent backend storage for agent memories is not yet implemented
+            Memory Vault Unavailable: Persistent backend storage for agent memories is not yet
+            implemented
           </h3>
-          <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-            {reason}
-          </p>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">{reason}</p>
           <div className="mt-4 rounded border border-border bg-secondary/60 px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
             Tracking in docs/gaps.md &bull; GAP-MEM-01 &bull; public.memories
           </div>
           <div className="mt-4">
-            <Button variant="outline" size="sm" disabled className="h-7 text-xs opacity-50 cursor-not-allowed">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className="h-7 text-xs opacity-50 cursor-not-allowed"
+            >
               <RotateCcw className="mr-1 h-3 w-3" />
               Forget Actions Disabled
             </Button>
@@ -391,8 +397,8 @@ export function MemoryVaultContent({
       <div className="mt-4 flex items-start gap-1.5 rounded-md border border-border bg-secondary/60 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
         <Info className="mt-0.5 h-3 w-3 shrink-0 text-warning" />
         <span>
-          <strong className="text-foreground">Security notice:</strong> Memory never grants
-          spending permission. Authority can only be granted via signed cryptographic mandates.
+          <strong className="text-foreground">Security notice:</strong> Memory never grants spending
+          permission. Authority can only be granted via signed cryptographic mandates.
         </span>
       </div>
     </div>

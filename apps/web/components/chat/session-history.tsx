@@ -132,7 +132,9 @@ export function SessionHistoryPanel({
       <div className="flex items-center gap-1.5 px-1 text-[11px] text-zinc-500">
         <Database className="h-3 w-3 text-zinc-400" />
         <span>IndexedDB Cache (Last 10 chats)</span>
-        {isFromCache && <span className="ml-auto text-[10px] text-emerald-500 font-mono">Offline-ready</span>}
+        {isFromCache && (
+          <span className="ml-auto text-[10px] text-emerald-500 font-mono">Offline-ready</span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-1">
@@ -163,7 +165,10 @@ export function SessionHistoryPanel({
                   <span className="truncate">{c.title}</span>
                 </div>
                 <span className="text-[10px] text-zinc-500 pl-5.5">
-                  {new Date(c.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(c.updatedAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
               </button>
             );

@@ -10,10 +10,7 @@ export interface VerificationChecklistProps {
   className?: string;
 }
 
-export function VerificationChecklist({
-  checks,
-  className = "",
-}: VerificationChecklistProps) {
+export function VerificationChecklist({ checks, className = "" }: VerificationChecklistProps) {
   if (!checks || checks.length === 0) {
     return (
       <div
@@ -24,7 +21,9 @@ export function VerificationChecklist({
           5-Point Cryptographic Policy Verification Matrix Unavailable
         </h4>
         <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
-          Individual cryptographic checklist records are not exposed by the current Fastify Gateway action trace endpoint. Per PayGuardian integrity rules (GAP-TRC-01), synthetic check verdicts are not fabricated.
+          Individual cryptographic checklist records are not exposed by the current Fastify Gateway
+          action trace endpoint. Per PayGuardian integrity rules (GAP-TRC-01), synthetic check
+          verdicts are not fabricated.
         </p>
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-mono text-amber-400">
           Contract Gap: GAP-TRC-01
@@ -99,7 +98,10 @@ export function VerificationChecklist({
                     </p>
                     {check.details && (
                       <div className="mt-1.5 font-mono text-[11px] text-foreground">
-                        Result: <span className={check.passed ? "text-success" : "text-destructive"}>{check.details}</span>
+                        Result:{" "}
+                        <span className={check.passed ? "text-success" : "text-destructive"}>
+                          {check.details}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -119,7 +121,9 @@ export function VerificationChecklist({
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
                     <div>
-                      <strong className="font-medium text-destructive">Recommended Remediation: </strong>
+                      <strong className="font-medium text-destructive">
+                        Recommended Remediation:{" "}
+                      </strong>
                       <span className="text-foreground">{check.remediation}</span>
                     </div>
                   </div>

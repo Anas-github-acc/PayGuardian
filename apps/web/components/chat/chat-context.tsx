@@ -17,7 +17,10 @@ import {
 const PINNED_STORAGE_KEY = "pg_pinned_chat_ids";
 
 function isValidUuid(id: unknown): id is string {
-  return typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  return (
+    typeof id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  );
 }
 
 interface ChatContextValue {
@@ -86,7 +89,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(
         new CustomEvent("payguardian:conversation-selected", {
           detail: { conversationId: id },
-        })
+        }),
       );
     };
 
@@ -107,10 +110,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const isPinned = React.useCallback(
-    (id: string) => pinnedChatIds.includes(id),
-    [pinnedChatIds]
-  );
+  const isPinned = React.useCallback((id: string) => pinnedChatIds.includes(id), [pinnedChatIds]);
 
   const toggleSidebar = React.useCallback(() => {
     setSidebarOpen((prev) => !prev);
@@ -129,7 +129,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(
         new CustomEvent("payguardian:conversation-selected", {
           detail: { conversationId: targetId },
-        })
+        }),
       );
     }
   }, []);
@@ -157,15 +157,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const effectiveEnvId =
           (currentEnvId && isValidUuid(currentEnvId) ? currentEnvId : null) ||
           environments.find((e) => isValidUuid(e.id))?.id ||
-          (typeof window !== "undefined" && isValidUuid(localStorage.getItem("payguardian_active_env_id"))
+          (typeof window !== "undefined" &&
+          isValidUuid(localStorage.getItem("payguardian_active_env_id"))
             ? localStorage.getItem("payguardian_active_env_id")
             : null);
 
         if (!effectiveEnvId) return;
 
-        const res = await fetch(`${API_BASE}/v1/environments/${effectiveEnvId}/conversations/${convId}/messages`, {
-          headers: getAuthHeaders(),
-        });
+        const res = await fetch(
+          `${API_BASE}/v1/environments/${effectiveEnvId}/conversations/${convId}/messages`,
+          {
+            headers: getAuthHeaders(),
+          },
+        );
 
         if (res.ok) {
           const data = await res.json();
@@ -190,7 +194,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const effectiveEnvId =
       (currentEnvId && isValidUuid(currentEnvId) ? currentEnvId : null) ||
       environments.find((e) => isValidUuid(e.id))?.id ||
-      (typeof window !== "undefined" && isValidUuid(localStorage.getItem("payguardian_active_env_id"))
+      (typeof window !== "undefined" &&
+      isValidUuid(localStorage.getItem("payguardian_active_env_id"))
         ? localStorage.getItem("payguardian_active_env_id")
         : null);
 
@@ -235,21 +240,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     refreshConversations();
   }, [refreshConversations]);
 
-  const upsertConversation = React.useCallback(
-    async (item: CachedConversation) => {
-      setConversations((prev) => {
-        const index = prev.findIndex((c) => c.id === item.id);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = item;
-          return updated;
-        }
-        return [item, ...prev];
-      });
-      await saveConversation(item);
-    },
-    [],
-  );
+  const upsertConversation = React.useCallback(async (item: CachedConversation) => {
+    setConversations((prev) => {
+      const index = prev.findIndex((c) => c.id === item.id);
+      if (index >= 0) {
+        const updated = [...prev];
+        updated[index] = item;
+        return updated;
+      }
+      return [item, ...prev];
+    });
+    await saveConversation(item);
+  }, []);
 
   const deleteConversation = React.useCallback(
     async (id: string) => {

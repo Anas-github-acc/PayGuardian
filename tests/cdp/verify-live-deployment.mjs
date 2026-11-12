@@ -41,58 +41,88 @@ async function run() {
 
     const googleBtn = await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll("button"));
-      const gBtn = btns.find((b) => b.textContent && b.textContent.includes("Continue with Google"));
+      const gBtn = btns.find(
+        (b) => b.textContent && b.textContent.includes("Continue with Google"),
+      );
       return gBtn ? { found: true, text: gBtn.textContent.trim() } : { found: false };
     });
 
     console.log("Google Auth Button found:", googleBtn);
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "01_login_google_auth.png"), fullPage: true });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "01_login_google_auth.png"),
+      fullPage: true,
+    });
 
     testResults.push({
       feature: "Google Social Auth on Login",
       status: googleBtn.found ? "PASSED" : "FAILED",
       details: googleBtn,
-      screenshot: "01_login_google_auth.png"
+      screenshot: "01_login_google_auth.png",
     });
 
     // TEST 2: Signup / Dashboard Access
     console.log("\n4. Testing Dashboard Overview...");
-    await page.goto(`${WEB_URL}/dashboard?preview=true`, { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto(`${WEB_URL}/dashboard?preview=true`, {
+      waitUntil: "networkidle2",
+      timeout: 30000,
+    });
     await page.waitForFunction(() => document.body.innerText.length > 50, { timeout: 10000 });
 
     const pageTitle = await page.title();
     console.log("Dashboard Title:", pageTitle);
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "02_dashboard_overview.png"), fullPage: true });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "02_dashboard_overview.png"),
+      fullPage: true,
+    });
 
     testResults.push({
       feature: "Dashboard Overview & Preview Auth Access",
       status: "PASSED",
       details: { title: pageTitle },
-      screenshot: "02_dashboard_overview.png"
+      screenshot: "02_dashboard_overview.png",
     });
 
     // TEST 3: Mandates Management View
     console.log("\n5. Testing Mandates Management View...");
-    await page.goto(`${WEB_URL}/dashboard?preview=true&tab=tables&sub=mandates`, { waitUntil: "networkidle2", timeout: 30000 });
-    await page.waitForFunction(() => document.body.innerText.includes("Mandate") || document.body.innerText.includes("Authority") || document.body.innerText.includes("Policy"), { timeout: 10000 });
+    await page.goto(`${WEB_URL}/dashboard?preview=true&tab=tables&sub=mandates`, {
+      waitUntil: "networkidle2",
+      timeout: 30000,
+    });
+    await page.waitForFunction(
+      () =>
+        document.body.innerText.includes("Mandate") ||
+        document.body.innerText.includes("Authority") ||
+        document.body.innerText.includes("Policy"),
+      { timeout: 10000 },
+    );
 
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "03_mandates_view.png"), fullPage: true });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "03_mandates_view.png"),
+      fullPage: true,
+    });
 
     testResults.push({
       feature: "Mandates Table & Governance View",
       status: "PASSED",
       details: { url: page.url() },
-      screenshot: "03_mandates_view.png"
+      screenshot: "03_mandates_view.png",
     });
 
     // TEST 4: Assistant Chat & Talking to Assistant
     console.log("\n6. Testing Assistant Chat...");
-    await page.goto(`${WEB_URL}/dashboard?preview=true&tab=assistant`, { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto(`${WEB_URL}/dashboard?preview=true&tab=assistant`, {
+      waitUntil: "networkidle2",
+      timeout: 30000,
+    });
     await new Promise((r) => setTimeout(r, 2000));
 
     // Look for chat composer input
     const composerExists = await page.evaluate(() => {
-      const textarea = document.querySelector("textarea") || document.querySelector("input[placeholder*='Ask'], input[placeholder*='assistant'], textarea[placeholder*='agent']");
+      const textarea =
+        document.querySelector("textarea") ||
+        document.querySelector(
+          "input[placeholder*='Ask'], input[placeholder*='assistant'], textarea[placeholder*='agent']",
+        );
       return !!textarea;
     });
 
@@ -106,21 +136,23 @@ async function run() {
       await new Promise((r) => setTimeout(r, 4000));
     }
 
-    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "04_assistant_chat.png"), fullPage: true });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "04_assistant_chat.png"),
+      fullPage: true,
+    });
 
     testResults.push({
       feature: "Assistant Chat & Agent Interaction",
       status: composerExists ? "PASSED" : "PASSED (View Loaded)",
       details: { composerPresent: composerExists },
-      screenshot: "04_assistant_chat.png"
+      screenshot: "04_assistant_chat.png",
     });
-
   } catch (err) {
     console.error("Test error:", err);
     testResults.push({
       feature: "CDP Automation",
       status: "ERROR",
-      details: { error: err.message }
+      details: { error: err.message },
     });
   } finally {
     await page.close();
@@ -134,13 +166,10 @@ async function run() {
     timestamp: new Date().toISOString(),
     api: { url: API_URL, health: apiHealth },
     agentRuntime: { url: AGENT_URL, health: agentHealth },
-    results: testResults
+    results: testResults,
   };
 
-  await writeFile(
-    path.join(__dirname, "live-deploy-report.json"),
-    JSON.stringify(report, null, 2)
-  );
+  await writeFile(path.join(__dirname, "live-deploy-report.json"), JSON.stringify(report, null, 2));
   console.log(`Saved report to ${path.join(__dirname, "live-deploy-report.json")}`);
 }
 

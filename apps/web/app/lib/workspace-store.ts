@@ -69,11 +69,7 @@ export interface AgentEdgeData {
 }
 
 export type GatewayCardType =
-  | "budget_plan"
-  | "payment_result"
-  | "rejection"
-  | "delegation"
-  | "memory";
+  "budget_plan" | "payment_result" | "rejection" | "delegation" | "memory";
 
 export interface GatewayCardPayload {
   id: string;
@@ -236,7 +232,7 @@ export function removeCookie(name: string): void {
 export function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(
-    new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/+^])/g, "\\$1") + "=([^;]*)")
+    new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\\/+^])/g, "\\$1") + "=([^;]*)"),
   );
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -321,7 +317,9 @@ class WorkspaceStore {
     return this.state;
   };
 
-  public setState = (partial: Partial<WorkspaceState> | ((prev: WorkspaceState) => Partial<WorkspaceState>)): void => {
+  public setState = (
+    partial: Partial<WorkspaceState> | ((prev: WorkspaceState) => Partial<WorkspaceState>),
+  ): void => {
     const nextPartial = typeof partial === "function" ? partial(this.state) : partial;
     this.state = { ...this.state, ...nextPartial };
     this.notify();
@@ -457,10 +455,13 @@ class WorkspaceStore {
   };
 
   public updateEnvironment = (id: string, updates: Partial<Environment>): void => {
-    const updated = this.state.environmentsList.map((e) => (e.id === id ? { ...e, ...updates } : e));
-    const current = id === this.state.currentEnvironmentId && this.state.currentEnvironment
-      ? { ...this.state.currentEnvironment, ...updates }
-      : this.state.currentEnvironment;
+    const updated = this.state.environmentsList.map((e) =>
+      e.id === id ? { ...e, ...updates } : e,
+    );
+    const current =
+      id === this.state.currentEnvironmentId && this.state.currentEnvironment
+        ? { ...this.state.currentEnvironment, ...updates }
+        : this.state.currentEnvironment;
     this.setState({
       environmentsList: updated,
       currentEnvironment: current,
@@ -675,7 +676,7 @@ export function useWorkspaceStore(): WorkspaceState {
   return useSyncExternalStore(
     workspaceStore.subscribe,
     workspaceStore.getState,
-    workspaceStore.getState
+    workspaceStore.getState,
   );
 }
 
@@ -685,7 +686,7 @@ export function useWorkspaceStoreSelector<T>(selector: (state: WorkspaceState) =
     useSyncExternalStore(
       workspaceStore.subscribe,
       workspaceStore.getState,
-      workspaceStore.getState
-    )
+      workspaceStore.getState,
+    ),
   );
 }

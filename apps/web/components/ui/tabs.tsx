@@ -43,7 +43,7 @@ export function Tabs({
       }
       onValueChange?.(newValue);
     },
-    [isControlled, onValueChange]
+    [isControlled, onValueChange],
   );
 
   return (
@@ -55,20 +55,19 @@ export function Tabs({
   );
 }
 
-export const TabsList = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="tablist"
-    className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-card p-1 border border-border text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
-));
+export const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      role="tablist"
+      className={cn(
+        "inline-flex h-9 items-center justify-center rounded-lg bg-card p-1 border border-border text-muted-foreground",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
 TabsList.displayName = "TabsList";
 
 export interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -96,12 +95,12 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
           isActive
             ? "bg-secondary text-foreground border border-border shadow-sm top-shade"
             : "text-muted-foreground hover:text-foreground border border-transparent",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 TabsTrigger.displayName = "TabsTrigger";
 
@@ -120,11 +119,11 @@ export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
         role="tabpanel"
         className={cn(
           "mt-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring animate-in fade-in-50 duration-150",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 TabsContent.displayName = "TabsContent";

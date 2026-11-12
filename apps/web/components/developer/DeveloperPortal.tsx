@@ -23,15 +23,17 @@ export function DeveloperPortal({ className = "" }: DeveloperPortalProps) {
   const [endpointUrl, setEndpointUrl] = React.useState("http://localhost:3001/v1/mcp");
 
   return (
-    <div className={`flex flex-col min-h-0 flex-1 bg-background text-foreground overflow-y-auto ${className}`}>
+    <div
+      className={`flex flex-col min-h-0 flex-1 bg-background text-foreground overflow-y-auto ${className}`}
+    >
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
         {/* Page header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">Developer</h1>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              Connect external LLM agents (Claude Desktop, Cursor, LangChain, AutoGen) to PayGuardian
-              via the Model Context Protocol, or integrate native REST/SDK clients.
+              Connect external LLM agents (Claude Desktop, Cursor, LangChain, AutoGen) to
+              PayGuardian via the Model Context Protocol, or integrate native REST/SDK clients.
             </p>
           </div>
           <Button
@@ -54,10 +56,7 @@ export function DeveloperPortal({ className = "" }: DeveloperPortalProps) {
           <h2 id="connection-tester-heading" className="sr-only">
             MCP connection handshake
           </h2>
-          <ConnectionTester
-            initialEndpoint={endpointUrl}
-            onEndpointChange={setEndpointUrl}
-          />
+          <ConnectionTester initialEndpoint={endpointUrl} onEndpointChange={setEndpointUrl} />
         </section>
 
         {/* Integration code snippets */}
@@ -89,14 +88,23 @@ export function DeveloperPortal({ className = "" }: DeveloperPortalProps) {
               <dl className="divide-y divide-border overflow-hidden rounded-md border border-border bg-muted/50 text-xs">
                 <div className="flex items-center justify-between gap-4 px-3 py-2.5">
                   <dt className="shrink-0 text-muted-foreground">Gateway endpoint</dt>
-                  <dd className="truncate font-mono text-[11px] font-medium text-foreground" title={endpointUrl}>
+                  <dd
+                    className="truncate font-mono text-[11px] font-medium text-foreground"
+                    title={endpointUrl}
+                  >
                     {endpointUrl}
                   </dd>
                 </div>
                 {CONFIG_ROWS.map((row) => (
-                  <div key={row.label} className="flex items-center justify-between gap-4 px-3 py-2.5">
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between gap-4 px-3 py-2.5"
+                  >
                     <dt className="shrink-0 text-muted-foreground">{row.label}</dt>
-                    <dd className="truncate font-mono text-[11px] font-medium text-foreground" title={row.value}>
+                    <dd
+                      className="truncate font-mono text-[11px] font-medium text-foreground"
+                      title={row.value}
+                    >
                       {row.value}
                     </dd>
                   </div>
@@ -117,11 +125,11 @@ export function DeveloperPortal({ className = "" }: DeveloperPortalProps) {
             </CardHeader>
             <CardContent>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                All calls through the Model Context Protocol require bearer token authentication. Payment
-                execution requests are evaluated against the calling agent&apos;s active mandate limits in
-                real-time. If an action exceeds single-payment thresholds, the gateway halts execution and
-                creates an item in the Human Approvals Inbox, returning an in-progress verification receipt
-                without disbursing funds.
+                All calls through the Model Context Protocol require bearer token authentication.
+                Payment execution requests are evaluated against the calling agent&apos;s active
+                mandate limits in real-time. If an action exceeds single-payment thresholds, the
+                gateway halts execution and creates an item in the Human Approvals Inbox, returning
+                an in-progress verification receipt without disbursing funds.
               </p>
             </CardContent>
           </Card>

@@ -36,16 +36,13 @@ export function ActivityAuditTable({
   const store = useWorkspaceStore();
   const activeEnvId = environmentId ?? store.currentEnvironmentId ?? "env-sandbox-travel-01";
 
-  const [filterType, setFilterType] = React.useState<"all" | "denied" | "payments" | "approvals">("all");
+  const [filterType, setFilterType] = React.useState<"all" | "denied" | "payments" | "approvals">(
+    "all",
+  );
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [isLivePolling, setIsLivePolling] = React.useState<boolean>(true);
 
-  const {
-    rawEvents,
-    isLoading,
-    error,
-    refetch,
-  } = useActivityFeed(activeEnvId, {
+  const { rawEvents, isLoading, error, refetch } = useActivityFeed(activeEnvId, {
     pollingIntervalMs: isLivePolling ? 3000 : 0,
     limit: 100,
   });
@@ -56,7 +53,8 @@ export function ActivityAuditTable({
   const events: ActivityAuditRow[] = React.useMemo(() => {
     return rawEvents.map((raw) => {
       const payload = (raw.payload ?? {}) as Record<string, unknown>;
-      const rawAmount = typeof payload.amountMinor === "number" ? payload.amountMinor : payload.amount_minor;
+      const rawAmount =
+        typeof payload.amountMinor === "number" ? payload.amountMinor : payload.amount_minor;
       const amountMinor = typeof rawAmount === "number" ? rawAmount : undefined;
       const currency = typeof payload.currency === "string" ? payload.currency : "USD";
 
@@ -187,7 +185,12 @@ export function ActivityAuditTable({
                 ? "text-destructive"
                 : "text-muted-foreground";
           return (
-            <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium capitalize", tone)}>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 text-xs font-medium capitalize",
+                tone,
+              )}
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {outcome}
             </span>
@@ -377,7 +380,9 @@ export function ActivityAuditTable({
       ) : !isLoading && error && events.length === 0 ? (
         <div className="w-full rounded-lg border border-border bg-card p-8 flex flex-col items-center justify-center text-center">
           <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
-          <p className="text-sm font-semibold text-foreground">Failed to load activity audit trail</p>
+          <p className="text-sm font-semibold text-foreground">
+            Failed to load activity audit trail
+          </p>
           <p className="text-xs text-muted-foreground mt-1 max-w-md">{error.message}</p>
           <Button
             variant="outline"

@@ -116,7 +116,12 @@ body {
 
 body {
   margin: 0;
-  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  font-family:
+    var(--font-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
     sans-serif;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
@@ -141,7 +146,11 @@ body {
 
 /* Gateway verified accent wash */
 .verified-glow {
-  background-image: radial-gradient(90% 120% at 50% 0%, oklch(var(--success) / 0.05), transparent 80%);
+  background-image: radial-gradient(
+    90% 120% at 50% 0%,
+    oklch(var(--success) / 0.05),
+    transparent 80%
+  );
 }
 
 /* Hairline border utilities */
@@ -424,31 +433,70 @@ div[class*="@container"] {
   --ring: #3b82f6;
 }
 
-.landing-container .bg-background { background-color: var(--background) !important; }
-.landing-container .bg-background\/85 { background-color: color-mix(in srgb, var(--background) 85%, transparent) !important; }
-.landing-container .bg-background\/95 { background-color: color-mix(in srgb, var(--background) 95%, transparent) !important; }
-.landing-container .text-foreground { color: var(--foreground) !important; }
-.landing-container .text-foreground\/80 { color: color-mix(in srgb, var(--foreground) 80%, transparent) !important; }
-.landing-container .bg-card { background-color: var(--card) !important; }
-.landing-container .text-card-foreground { color: var(--card-foreground) !important; }
-.landing-container .bg-muted { background-color: var(--muted) !important; }
-.landing-container .text-muted-foreground { color: var(--muted-foreground) !important; }
-.landing-container .text-muted-foreground\/70 { color: color-mix(in srgb, var(--muted-foreground) 70%, transparent) !important; }
-.landing-container .bg-secondary { background-color: var(--secondary) !important; }
-.landing-container .text-secondary-foreground { color: var(--secondary-foreground) !important; }
-.landing-container .bg-accent { background-color: var(--accent) !important; }
-.landing-container .text-accent-foreground { color: var(--accent-foreground) !important; }
-.landing-container .bg-primary { background-color: var(--primary) !important; }
-.landing-container .text-primary-foreground { color: var(--primary-foreground) !important; }
-.landing-container .text-primary-foreground\/60 { color: color-mix(in srgb, var(--primary-foreground) 60%, transparent) !important; }
-.landing-container .border-border { border-color: var(--border) !important; }
-.landing-container .ring-border { --tw-ring-color: var(--border) !important; }
+.landing-container .bg-background {
+  background-color: var(--background) !important;
+}
+.landing-container .bg-background\/85 {
+  background-color: color-mix(in srgb, var(--background) 85%, transparent) !important;
+}
+.landing-container .bg-background\/95 {
+  background-color: color-mix(in srgb, var(--background) 95%, transparent) !important;
+}
+.landing-container .text-foreground {
+  color: var(--foreground) !important;
+}
+.landing-container .text-foreground\/80 {
+  color: color-mix(in srgb, var(--foreground) 80%, transparent) !important;
+}
+.landing-container .bg-card {
+  background-color: var(--card) !important;
+}
+.landing-container .text-card-foreground {
+  color: var(--card-foreground) !important;
+}
+.landing-container .bg-muted {
+  background-color: var(--muted) !important;
+}
+.landing-container .text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}
+.landing-container .text-muted-foreground\/70 {
+  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent) !important;
+}
+.landing-container .bg-secondary {
+  background-color: var(--secondary) !important;
+}
+.landing-container .text-secondary-foreground {
+  color: var(--secondary-foreground) !important;
+}
+.landing-container .bg-accent {
+  background-color: var(--accent) !important;
+}
+.landing-container .text-accent-foreground {
+  color: var(--accent-foreground) !important;
+}
+.landing-container .bg-primary {
+  background-color: var(--primary) !important;
+}
+.landing-container .text-primary-foreground {
+  color: var(--primary-foreground) !important;
+}
+.landing-container .text-primary-foreground\/60 {
+  color: color-mix(in srgb, var(--primary-foreground) 60%, transparent) !important;
+}
+.landing-container .border-border {
+  border-color: var(--border) !important;
+}
+.landing-container .ring-border {
+  --tw-ring-color: var(--border) !important;
+}
 
 /* ==========================================================================
    Agent Progress 3x3 Grid Loader Animation
    ========================================================================== */
 @keyframes agentGridPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.2;
     transform: scale(0.8);
   }
@@ -462,5 +510,3 @@ div[class*="@container"] {
   animation: agentGridPulse 1.4s cubic-bezier(0.77, 0, 0.175, 1) infinite;
   will-change: opacity, transform;
 }
-
-

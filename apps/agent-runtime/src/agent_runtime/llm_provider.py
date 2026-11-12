@@ -68,7 +68,9 @@ def extract_text_tool_calls(text: str) -> tuple[str, list[ToolCallResult]]:
                         k = kv.group(1)
                         v = kv.group(2) or kv.group(3) or kv.group(4)
                         args[k] = v
-            tool_calls.append(ToolCallResult(id=f"tc_{uuid.uuid4().hex[:8]}", name=fn_name, arguments=args))
+            tool_calls.append(
+                ToolCallResult(id=f"tc_{uuid.uuid4().hex[:8]}", name=fn_name, arguments=args)
+            )
 
     return cleaned_text.strip(), tool_calls
 
@@ -180,14 +182,16 @@ class ApinexProvider(LLMProvider):
                     elif t.get("type") == "function" and "function" in t:
                         normalized_tools.append(t)
                     elif "name" in t:
-                        normalized_tools.append({
-                            "type": "function",
-                            "function": {
-                                "name": t["name"],
-                                "description": t.get("description", ""),
-                                "parameters": t.get("parameters", {}),
-                            },
-                        })
+                        normalized_tools.append(
+                            {
+                                "type": "function",
+                                "function": {
+                                    "name": t["name"],
+                                    "description": t.get("description", ""),
+                                    "parameters": t.get("parameters", {}),
+                                },
+                            }
+                        )
                     else:
                         normalized_tools.append(t)
                 kwargs["tools"] = normalized_tools
@@ -281,7 +285,11 @@ class GoogleGeminiProvider(LLMProvider):
             if getattr(response, "function_calls", None):
                 for fc in response.function_calls:
                     args = dict(fc.args) if fc.args else {}
-                    tool_calls.append(ToolCallResult(id=f"gem_{uuid.uuid4().hex[:8]}", name=fc.name, arguments=args))
+                    tool_calls.append(
+                        ToolCallResult(
+                            id=f"gem_{uuid.uuid4().hex[:8]}", name=fc.name, arguments=args
+                        )
+                    )
 
             raw_text = response.text or ""
             cleaned_text, text_calls = extract_text_tool_calls(raw_text)
@@ -292,7 +300,9 @@ class GoogleGeminiProvider(LLMProvider):
                 return LLMResponse(content=cleaned_text, tool_calls=tool_calls)
             return cleaned_text
         except Exception as exc:
-            logger.warning("Google Gemini SDK direct generation unavailable with %s: %s", target_model, exc)
+            logger.warning(
+                "Google Gemini SDK direct generation unavailable with %s: %s", target_model, exc
+            )
             if target_model != "gemini-3.8-flash":
                 try:
                     from google import genai
@@ -327,7 +337,11 @@ class LLMFactory:
 
         # If user requests gemini models
         if "gemini" in m:
-            target_model = "gemini-3.8-flash" if ("2.5" in m or "2.0" in m or "3.5" in m) else (model_id or "gemini-3.8-flash")
+            target_model = (
+                "gemini-3.8-flash"
+                if ("2.5" in m or "2.0" in m or "3.5" in m)
+                else (model_id or "gemini-3.8-flash")
+            )
             provider = GoogleGeminiProvider(default_model=target_model)
             return provider, target_model
 

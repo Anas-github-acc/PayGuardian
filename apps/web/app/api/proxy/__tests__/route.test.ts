@@ -26,9 +26,12 @@ describe("Next.js API Proxy Route Handler", () => {
       });
     }) as typeof fetch;
 
-    const request = new NextRequest("http://localhost:3000/api/proxy/v1/environments?status=active", {
-      method: "GET",
-    });
+    const request = new NextRequest(
+      "http://localhost:3000/api/proxy/v1/environments?status=active",
+      {
+        method: "GET",
+      },
+    );
 
     const ctx = {
       params: Promise.resolve({ path: ["v1", "environments"] }),

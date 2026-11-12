@@ -185,9 +185,7 @@ export function PdfViewer({ source, title, className = "" }: PdfViewerProps) {
       <div className="flex min-h-[300px] max-h-[650px] overflow-auto items-center justify-center bg-zinc-950 p-4">
         {error ? (
           <div className="p-6 text-center">
-            <p className="text-xs font-semibold text-rose-400 mb-1">
-              Unable to display PDF
-            </p>
+            <p className="text-xs font-semibold text-rose-400 mb-1">Unable to display PDF</p>
             <p className="text-[11px] text-zinc-500 max-w-sm mb-3">{error}</p>
             {fileUrl && (
               <a

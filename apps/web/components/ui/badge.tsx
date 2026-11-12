@@ -54,18 +54,11 @@ export function Badge({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium tracking-tight select-none",
         badgeVariants[variant],
-        className
+        className,
       )}
       {...props}
     >
-      {showDot && (
-        <span
-          className={cn(
-            "h-1.5 w-1.5 rounded-full shrink-0",
-            dotColors[variant]
-          )}
-        />
-      )}
+      {showDot && <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotColors[variant])} />}
       <span>{children}</span>
     </div>
   );

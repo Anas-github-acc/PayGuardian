@@ -127,17 +127,19 @@ export function PipelineSvg({
   // STRICT REQUIREMENT: Only current active agents should be displayed
   const activeNodes = useMemo(
     () => effectiveNodes.filter((n) => n.status === "active"),
-    [effectiveNodes]
+    [effectiveNodes],
   );
 
   const rootNode = useMemo(
-    () => activeNodes.find((n) => n.role === "orchestrator" || n.id === "orchestrator-root") || activeNodes[0],
-    [activeNodes]
+    () =>
+      activeNodes.find((n) => n.role === "orchestrator" || n.id === "orchestrator-root") ||
+      activeNodes[0],
+    [activeNodes],
   );
 
   const activeChildren = useMemo(
     () => activeNodes.filter((n) => n.id !== (rootNode?.id ?? "orchestrator-root")),
-    [activeNodes, rootNode]
+    [activeNodes, rootNode],
   );
 
   const activeEdges = useMemo(() => {
@@ -162,7 +164,7 @@ export function PipelineSvg({
       }
       return rootId;
     },
-    [activeEdges, activeNodes, rootId]
+    [activeEdges, activeNodes, rootId],
   );
 
   const { tier1Agents, tier2ByParent } = useMemo(() => {
@@ -376,8 +378,8 @@ export function PipelineSvg({
           const strokeColor = conn.isUnfunded
             ? "rgba(245,158,11,0.4)"
             : conn.isSelected
-            ? "rgba(0,82,255,0.8)"
-            : "rgba(0,82,255,0.25)";
+              ? "rgba(0,82,255,0.8)"
+              : "rgba(0,82,255,0.25)";
           return (
             <React.Fragment key={conn.id}>
               <path
@@ -405,8 +407,8 @@ export function PipelineSvg({
           const strokeColor = conn.isUnfunded
             ? "rgba(245,158,11,0.4)"
             : conn.isSelected
-            ? "rgba(0,82,255,0.8)"
-            : "rgba(0,82,255,0.25)";
+              ? "rgba(0,82,255,0.8)"
+              : "rgba(0,82,255,0.25)";
           return (
             <React.Fragment key={conn.id}>
               <path
@@ -430,10 +432,7 @@ export function PipelineSvg({
         })}
 
         {/* ─── NODE 1: Trigger / Operator Mandate ─── */}
-        <g
-          onClick={() => handleNodeClick(rootId)}
-          className="cursor-pointer group"
-        >
+        <g onClick={() => handleNodeClick(rootId)} className="cursor-pointer group">
           <rect
             x="24"
             y={centerY - 25}
@@ -526,10 +525,7 @@ export function PipelineSvg({
         </g>
 
         {/* ─── NODE 3: Main Orchestrator (Root Agent) ─── */}
-        <g
-          onClick={() => handleNodeClick(rootId)}
-          className="cursor-pointer group"
-        >
+        <g onClick={() => handleNodeClick(rootId)} className="cursor-pointer group">
           <rect
             x="346"
             y={centerY - 38}
@@ -541,7 +537,14 @@ export function PipelineSvg({
             strokeWidth={activeId === rootId ? "1.8" : "1"}
             className="transition-all group-hover:stroke-blue-400"
           />
-          <rect x="378" y={centerY - 37.5} width="80" height="1" rx="0.5" fill="rgba(51,117,255,0.6)" />
+          <rect
+            x="378"
+            y={centerY - 37.5}
+            width="80"
+            height="1"
+            rx="0.5"
+            fill="rgba(51,117,255,0.6)"
+          />
           <text
             x="418"
             y={centerY - 18}
@@ -573,7 +576,10 @@ export function PipelineSvg({
             fontFamily="monospace"
             fontWeight="500"
           >
-            {formatMinorUnits(rootNode?.subDelegatedMinor || rootNode?.allocatedMinor || env?.budgetLimitMinor || 0, currency)}
+            {formatMinorUnits(
+              rootNode?.subDelegatedMinor || rootNode?.allocatedMinor || env?.budgetLimitMinor || 0,
+              currency,
+            )}
           </text>
           <PulsingDot cx={406} cy={centerY + 26} color="#0052FF" duration={1.2} delay={0} />
           <PulsingDot cx={418} cy={centerY + 26} color="#0052FF" duration={1.2} delay={0.4} />
@@ -626,8 +632,8 @@ export function PipelineSvg({
                 ? "#f59e0b"
                 : "#3b82f6"
               : isUnfunded
-              ? "rgba(245,158,11,0.3)"
-              : "rgba(255,255,255,0.1)";
+                ? "rgba(245,158,11,0.3)"
+                : "rgba(255,255,255,0.1)";
 
             const displayName =
               agent.name.length > 17 ? `${agent.name.slice(0, 16)}...` : agent.name;
@@ -702,7 +708,9 @@ export function PipelineTicker({
   const currency = propCurrency ?? env?.currency ?? "USD";
   const nodes = propNodes ?? store.graphNodes;
   const subagentsCount = nodes.filter((n) => n.role === "subagent").length;
-  const activeSubagentsCount = nodes.filter((n) => n.role === "subagent" && n.status === "active").length;
+  const activeSubagentsCount = nodes.filter(
+    (n) => n.role === "subagent" && n.status === "active",
+  ).length;
   const limitMinor = env?.budgetLimitMinor ?? 0;
 
   const currentMessage = useMemo(() => {
@@ -717,15 +725,15 @@ export function PipelineTicker({
   }, [env, limitMinor, currency, subagentsCount, activeSubagentsCount]);
 
   return (
-    <div className={`border-t border-zinc-800/80 px-4 py-2.5 h-[48px] w-full bg-zinc-950/60 ${className}`}>
+    <div
+      className={`border-t border-zinc-800/80 px-4 py-2.5 h-[48px] w-full bg-zinc-950/60 ${className}`}
+    >
       <div className="flex gap-2.5 items-center h-full">
         <span className="text-[#0052FF]/80 font-mono text-sm leading-none shrink-0 font-bold">
           ›
         </span>
         <div className="relative flex-1 overflow-hidden h-full flex items-center">
-          <div className="font-mono text-[11px] text-zinc-400 truncate">
-            {currentMessage}
-          </div>
+          <div className="font-mono text-[11px] text-zinc-400 truncate">{currentMessage}</div>
         </div>
       </div>
     </div>
@@ -759,7 +767,9 @@ export function PipelineStats({
   const workflows = nodes.length;
 
   return (
-    <div className={`border-t border-zinc-800/80 px-4 py-3 flex flex-wrap gap-8 items-center w-full bg-zinc-950/80 ${className}`}>
+    <div
+      className={`border-t border-zinc-800/80 px-4 py-3 flex flex-wrap gap-8 items-center w-full bg-zinc-950/80 ${className}`}
+    >
       <div>
         <div className="text-[9px] text-zinc-500 tracking-[0.09em] mb-[2px]">AGENTS / NODES</div>
         <div className="text-sm font-semibold text-zinc-200 font-mono">
@@ -780,7 +790,9 @@ export function PipelineStats({
       </div>
       <div className="ml-auto text-right">
         <div className="text-[9px] text-zinc-500 tracking-[0.09em] mb-[2px]">STACK</div>
-        <div className="text-[11px] text-blue-400 font-mono font-medium">PayPal Sandbox · Claude</div>
+        <div className="text-[11px] text-blue-400 font-mono font-medium">
+          PayPal Sandbox · Claude
+        </div>
       </div>
     </div>
   );

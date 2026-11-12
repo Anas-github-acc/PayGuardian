@@ -3,14 +3,7 @@
 import * as React from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import {
-  RotateCcw,
-  ZoomIn,
-  ZoomOut,
-  List,
-  ShieldCheck,
-  Link2,
-} from "lucide-react";
+import { RotateCcw, ZoomIn, ZoomOut, List, ShieldCheck, Link2 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import type { AgentNodeData, AgentEdgeData, CanvasViewFilter } from "./types";
@@ -70,12 +63,12 @@ export function AgentNetworkCanvas({
 
   const filteredNodeIds = React.useMemo(
     () => new Set(filteredNodes.map((n) => n.id)),
-    [filteredNodes]
+    [filteredNodes],
   );
 
   const filteredEdges = React.useMemo(() => {
     return effectiveEdges.filter(
-      (e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target)
+      (e) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target),
     );
   }, [effectiveEdges, filteredNodeIds]);
 
@@ -85,9 +78,21 @@ export function AgentNetworkCanvas({
   const rendererRef = React.useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = React.useRef<OrbitControls | null>(null);
   const nodeMeshesRef = React.useRef<Map<string, THREE.Group>>(new Map());
-  const pulseRingsRef = React.useRef<Array<{ mesh: THREE.Mesh; startTime: number; maxRadius: number }>>([]);
-  const flowParticlesRef = React.useRef<Array<{ mesh: THREE.Mesh; start: THREE.Vector3; end: THREE.Vector3; speed: number; progress: number }>>([]);
-  const strobeNodesRef = React.useRef<Map<string, { mesh: THREE.Mesh; baseColor: THREE.Color; intensity: number }>>(new Map());
+  const pulseRingsRef = React.useRef<
+    Array<{ mesh: THREE.Mesh; startTime: number; maxRadius: number }>
+  >([]);
+  const flowParticlesRef = React.useRef<
+    Array<{
+      mesh: THREE.Mesh;
+      start: THREE.Vector3;
+      end: THREE.Vector3;
+      speed: number;
+      progress: number;
+    }>
+  >([]);
+  const strobeNodesRef = React.useRef<
+    Map<string, { mesh: THREE.Mesh; baseColor: THREE.Color; intensity: number }>
+  >(new Map());
 
   // Helper to create crisp high-DPI text canvas sprite with Allocated, Spent, Available
   const createNodeSprite = (node: AgentNodeData, curr: string) => {
@@ -104,8 +109,8 @@ export function AgentNetworkCanvas({
     ctx.strokeStyle = node.isSimulation
       ? "rgba(255, 255, 255, 0.55)"
       : node.isFunded
-      ? "rgba(59, 130, 246, 0.5)"
-      : "rgba(255, 255, 255, 0.15)";
+        ? "rgba(59, 130, 246, 0.5)"
+        : "rgba(255, 255, 255, 0.15)";
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.roundRect(14, 14, 484, 228, 24);
@@ -139,7 +144,8 @@ export function AgentNetworkCanvas({
     // Subtitle Role & Status
     ctx.fillStyle = "#a1a1aa";
     ctx.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-    const roleText = node.role === "orchestrator" ? "Orchestrator Root" : `Subagent · ${node.status}`;
+    const roleText =
+      node.role === "orchestrator" ? "Orchestrator Root" : `Subagent · ${node.status}`;
     ctx.fillText(roleText, 256, node.isSimulation ? 94 : 86);
 
     // Subtle divider
@@ -154,7 +160,13 @@ export function AgentNetworkCanvas({
     const availMinor =
       node.availableMinor !== undefined
         ? node.availableMinor
-        : Math.max(0, node.allocatedMinor - (node.subDelegatedMinor || 0) - node.spentMinor - node.reservedMinor);
+        : Math.max(
+            0,
+            node.allocatedMinor -
+              (node.subDelegatedMinor || 0) -
+              node.spentMinor -
+              node.reservedMinor,
+          );
 
     const allocText = formatMinorUnits(node.allocatedMinor, curr);
     const spentText = formatMinorUnits(node.spentMinor, curr);
@@ -243,8 +255,8 @@ export function AgentNetworkCanvas({
         const baseColor = isRevoked
           ? new THREE.Color(0x3f3f46)
           : isFunded
-          ? new THREE.Color(0x141414)
-          : new THREE.Color(0x18181b);
+            ? new THREE.Color(0x141414)
+            : new THREE.Color(0x18181b);
 
         const boxMat = new THREE.MeshStandardMaterial({
           color: baseColor,
@@ -260,11 +272,7 @@ export function AgentNetworkCanvas({
         // Top Face Specular Rim Plate — green tint when funded
         const topGeo = new THREE.PlaneGeometry(42, 26);
         const topMat = new THREE.MeshBasicMaterial({
-          color: isRevoked
-            ? 0x71717a
-            : isFunded
-            ? 0x0cce6b
-            : 0x3f3f46,
+          color: isRevoked ? 0x71717a : isFunded ? 0x0cce6b : 0x3f3f46,
           transparent: true,
           opacity: isFunded ? 0.35 : 0.15,
         });
@@ -391,7 +399,11 @@ export function AgentNetworkCanvas({
             });
             const ringMesh = new THREE.Mesh(ringGeo, ringMat);
             ringMesh.rotation.x = -Math.PI / 2;
-            ringMesh.position.set(targetNode.position[0], targetNode.position[1] - 8, targetNode.position[2]);
+            ringMesh.position.set(
+              targetNode.position[0],
+              targetNode.position[1] - 8,
+              targetNode.position[2],
+            );
             ringMesh.userData = { isGraphElement: true };
             scene.add(ringMesh);
 
@@ -416,7 +428,11 @@ export function AgentNetworkCanvas({
             });
             const ringMesh = new THREE.Mesh(ringGeo, ringMat);
             ringMesh.rotation.x = -Math.PI / 2;
-            ringMesh.position.set(targetNode.position[0], targetNode.position[1] - 8, targetNode.position[2]);
+            ringMesh.position.set(
+              targetNode.position[0],
+              targetNode.position[1] - 8,
+              targetNode.position[2],
+            );
             ringMesh.userData = { isGraphElement: true };
             scene.add(ringMesh);
 
@@ -429,7 +445,7 @@ export function AgentNetworkCanvas({
         }
       });
     },
-    [filteredNodes, filteredEdges, currency]
+    [filteredNodes, filteredEdges, currency],
   );
 
   // Initialize Three.js WebGL Scene
@@ -639,32 +655,32 @@ export function AgentNetworkCanvas({
         {/* Left: View Filter Tabs */}
         {!hideFilterControls && (
           <div className="flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900/90 p-1 backdrop-blur-md pointer-events-auto top-shade shadow-lg">
-          <Button
-            variant={activeFilter === "all" ? "primary" : "ghost"}
-            size="sm"
-            onClick={() => handleFilterSelect("all")}
-            className="h-7 px-2.5 text-xs text-zinc-300 hover:text-white"
-          >
-            All Nodes ({effectiveNodes.length})
-          </Button>
-          <Button
-            variant={activeFilter === "funded" ? "primary" : "ghost"}
-            size="sm"
-            onClick={() => handleFilterSelect("funded")}
-            className="h-7 px-2.5 text-xs flex items-center gap-1.5 text-zinc-300 hover:text-white"
-          >
-            <ShieldCheck className="h-3 w-3 text-blue-400" />
-            Funded
-          </Button>
-          <Button
-            variant={activeFilter === "unfunded" ? "primary" : "ghost"}
-            size="sm"
-            onClick={() => handleFilterSelect("unfunded")}
-            className="h-7 px-2.5 text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white"
-          >
-            <Link2 className="h-3 w-3 text-zinc-500" />
-            Unfunded
-          </Button>
+            <Button
+              variant={activeFilter === "all" ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => handleFilterSelect("all")}
+              className="h-7 px-2.5 text-xs text-zinc-300 hover:text-white"
+            >
+              All Nodes ({effectiveNodes.length})
+            </Button>
+            <Button
+              variant={activeFilter === "funded" ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => handleFilterSelect("funded")}
+              className="h-7 px-2.5 text-xs flex items-center gap-1.5 text-zinc-300 hover:text-white"
+            >
+              <ShieldCheck className="h-3 w-3 text-blue-400" />
+              Funded
+            </Button>
+            <Button
+              variant={activeFilter === "unfunded" ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => handleFilterSelect("unfunded")}
+              className="h-7 px-2.5 text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white"
+            >
+              <Link2 className="h-3 w-3 text-zinc-500" />
+              Unfunded
+            </Button>
           </div>
         )}
 

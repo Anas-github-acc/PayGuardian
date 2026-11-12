@@ -1,1585 +1,1439 @@
 {
- "url": "http://localhost:3000",
- "at": "2026-10-31T18:20:56.489Z",
- "allow": [],
- "viewports": [
-  {
-   "width": 1440,
-   "height": 900,
-   "load": "load",
-   "screens": 1,
-   "filled": [
-    0.89
-   ],
-   "motion": {
-    "elements": 3,
-    "css": 3,
-    "transitions": 0,
-    "scripted": 0,
-    "videos": 0,
-    "playingVideos": 0
-   },
-   "metrics": {
-    "viewport": {
-     "w": 1440,
-     "h": 900
-    },
-    "page": {
-     "height": 900,
-     "screens": 1,
-     "words": 390,
-     "img": 0,
-     "video": 0,
-     "canvas": 1,
-     "svg": 49,
-     "sections": 0,
-     "horizontalOverflow": 261,
-     "overflowCulprits": [
-      "button.relative.inline-flex (+13px)",
-      "circle (+57px)",
-      "span (+90px)"
-     ],
-     "uiFragments": 0,
-     "uiAbuse": false,
-     "realPictures": 0,
-     "videoCount": 0,
-     "uiPictures": 0,
-     "pictureSamples": [],
-     "blendText": 0,
-     "sideScrollers": 0,
-     "brokenImages": [],
-     "emoji": [],
-     "videosNoPoster": 0
-    },
-    "hero": {
-     "text": "$245.00",
-     "words": 1,
-     "chars": 7,
-     "lines": 1,
-     "size": 16,
-     "vw": 1.1,
-     "font": "Times New Roman",
-     "weight": 600,
-     "tracking": 0,
-     "leading": 1.5,
-     "top": 470,
-     "tag": "div",
-     "kind": "heading",
-     "align": "left",
-     "position": "left"
-    },
-    "h1": null,
-    "headings": [],
-    "headingSummary": {
-     "count": 0,
-     "maxLines": 0,
-     "over2Lines": 0,
-     "statements": 0,
-     "centered": 0,
-     "medianWords": null,
-     "mixedFontHeadings": 0
-    },
-    "type": {
-     "families": [
-      {
-       "family": "Times New Roman",
-       "share": 1,
-       "mono": false
-      }
-     ],
-     "familyCount": 1,
-     "sizes": [
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      16
-     ],
-     "sizeCount": 7,
-     "notLoaded": [],
-     "body": {
-      "font": "Times New Roman",
-      "size": 12,
-      "leading": 1.63,
-      "weight": 400,
-      "tracking": 0,
-      "contrast": 15.6
-     },
-     "measureChars": 47,
-     "max": {
-      "size": 16,
-      "vw": 1.1,
-      "font": "Times New Roman",
-      "text": "$245.00"
-     },
-     "monoShare": 0,
-     "monoProseShare": 0,
-     "monoFamilies": [],
-     "monoSamples": [],
-     "microLabels": 10,
-     "microLabelShare": 0.058,
-     "microSamples": [
-      "Gateway",
-      "Sessions (3)",
-      "Memory Vault",
-      "Requested Total",
-      "Merchant / Recipient",
-      "Amount Paid"
-     ],
-     "upperShare": 0.12,
-     "centerShare": 0.09,
-     "smallText": 75
-    },
-    "eyebrows": [],
-    "numbered": [],
-    "color": {
-     "bodyBg": "#000000",
-     "bodyBgHsl": {
-      "h": 0,
-      "s": 0,
-      "l": 0
-     },
-     "dark": true,
-     "sectionBgs": [
-      {
-       "color": "#000000",
-       "top": 0,
-       "hsl": {
-        "h": 0,
-        "s": 0,
-        "l": 0
-       }
-      }
-     ],
-     "textColors": [
-      {
-       "color": "#71717a",
-       "share": 0.23
+  "url": "http://localhost:3000",
+  "at": "2026-10-31T18:20:56.489Z",
+  "allow": [],
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "load": "load",
+      "screens": 1,
+      "filled": [0.89],
+      "motion": {
+        "elements": 3,
+        "css": 3,
+        "transitions": 0,
+        "scripted": 0,
+        "videos": 0,
+        "playingVideos": 0
       },
-      {
-       "color": "#ececed",
-       "share": 0.22
+      "metrics": {
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        },
+        "page": {
+          "height": 900,
+          "screens": 1,
+          "words": 390,
+          "img": 0,
+          "video": 0,
+          "canvas": 1,
+          "svg": 49,
+          "sections": 0,
+          "horizontalOverflow": 261,
+          "overflowCulprits": [
+            "button.relative.inline-flex (+13px)",
+            "circle (+57px)",
+            "span (+90px)"
+          ],
+          "uiFragments": 0,
+          "uiAbuse": false,
+          "realPictures": 0,
+          "videoCount": 0,
+          "uiPictures": 0,
+          "pictureSamples": [],
+          "blendText": 0,
+          "sideScrollers": 0,
+          "brokenImages": [],
+          "emoji": [],
+          "videosNoPoster": 0
+        },
+        "hero": {
+          "text": "$245.00",
+          "words": 1,
+          "chars": 7,
+          "lines": 1,
+          "size": 16,
+          "vw": 1.1,
+          "font": "Times New Roman",
+          "weight": 600,
+          "tracking": 0,
+          "leading": 1.5,
+          "top": 470,
+          "tag": "div",
+          "kind": "heading",
+          "align": "left",
+          "position": "left"
+        },
+        "h1": null,
+        "headings": [],
+        "headingSummary": {
+          "count": 0,
+          "maxLines": 0,
+          "over2Lines": 0,
+          "statements": 0,
+          "centered": 0,
+          "medianWords": null,
+          "mixedFontHeadings": 0
+        },
+        "type": {
+          "families": [
+            {
+              "family": "Times New Roman",
+              "share": 1,
+              "mono": false
+            }
+          ],
+          "familyCount": 1,
+          "sizes": [8, 9, 10, 11, 12, 14, 16],
+          "sizeCount": 7,
+          "notLoaded": [],
+          "body": {
+            "font": "Times New Roman",
+            "size": 12,
+            "leading": 1.63,
+            "weight": 400,
+            "tracking": 0,
+            "contrast": 15.6
+          },
+          "measureChars": 47,
+          "max": {
+            "size": 16,
+            "vw": 1.1,
+            "font": "Times New Roman",
+            "text": "$245.00"
+          },
+          "monoShare": 0,
+          "monoProseShare": 0,
+          "monoFamilies": [],
+          "monoSamples": [],
+          "microLabels": 10,
+          "microLabelShare": 0.058,
+          "microSamples": [
+            "Gateway",
+            "Sessions (3)",
+            "Memory Vault",
+            "Requested Total",
+            "Merchant / Recipient",
+            "Amount Paid"
+          ],
+          "upperShare": 0.12,
+          "centerShare": 0.09,
+          "smallText": 75
+        },
+        "eyebrows": [],
+        "numbered": [],
+        "color": {
+          "bodyBg": "#000000",
+          "bodyBgHsl": {
+            "h": 0,
+            "s": 0,
+            "l": 0
+          },
+          "dark": true,
+          "sectionBgs": [
+            {
+              "color": "#000000",
+              "top": 0,
+              "hsl": {
+                "h": 0,
+                "s": 0,
+                "l": 0
+              }
+            }
+          ],
+          "textColors": [
+            {
+              "color": "#71717a",
+              "share": 0.23
+            },
+            {
+              "color": "#ececed",
+              "share": 0.22
+            },
+            {
+              "color": "#a1a1aa",
+              "share": 0.2
+            },
+            {
+              "color": "#fcfcfc",
+              "share": 0.2
+            },
+            {
+              "color": "#3fdec9",
+              "share": 0.08
+            }
+          ],
+          "button": {
+            "bg": "#fcfcfc",
+            "hsl": {
+              "h": 0,
+              "s": 0,
+              "l": 0.99
+            },
+            "fg": "#a1a1aa"
+          },
+          "lowContrast": [
+            {
+              "text": "Approvals",
+              "ratio": 2.5,
+              "need": 4.5,
+              "size": 12,
+              "fg": "#a1a1aa",
+              "bg": "#fcfcfc"
+            },
+            {
+              "text": "Traces",
+              "ratio": 2.5,
+              "need": 4.5,
+              "size": 12,
+              "fg": "#a1a1aa",
+              "bg": "#fcfcfc"
+            },
+            {
+              "text": "Tables",
+              "ratio": 2.5,
+              "need": 4.5,
+              "size": 12,
+              "fg": "#a1a1aa",
+              "bg": "#fcfcfc"
+            },
+            {
+              "text": "2 mins ago",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "waiting for you",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "14:02:18",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            }
+          ]
+        },
+        "buttons": {
+          "count": 19,
+          "inHero": 19,
+          "radius": 6,
+          "height": 30,
+          "withShadow": 2,
+          "withGradient": 0,
+          "mono": 0,
+          "upper": 0,
+          "heroLabels": [
+            "Travel & Hospitality SANDBOX $10,000.00",
+            "Workspace",
+            "Approvals 1",
+            "Traces",
+            "Tables"
+          ]
+        },
+        "surfaces": {
+          "shadowStatic": 11,
+          "shadowOverlay": 2,
+          "shadowSamples": [
+            "div.group.rounded-md → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.relative.flex → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.flex-1.relative → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.flex.items-center → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
+          ],
+          "gradients": 2,
+          "scrims": 0,
+          "gradientSamples": [
+            "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
+            "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)"
+          ],
+          "gradientText": 0,
+          "hairlines": 16,
+          "hairlineSamples": [
+            "header.sticky.top-0 1440px",
+            "div.flex.flex-col 240px",
+            "div.flex.items-center 766px",
+            "div.flex.flex-col 380px",
+            "div.flex.items-center 379px"
+          ],
+          "outlinedBoxes": 8,
+          "dashed": 0,
+          "blurred": 3,
+          "roundedBoxes": 8,
+          "boxRadius": 8,
+          "squareMedia": 0,
+          "roundedMedia": 1,
+          "mediaRadius": 8,
+          "textShadow": 0,
+          "cardRows": []
+        },
+        "heroMedia": [
+          {
+            "type": "canvas",
+            "ratio": 0.36
+          }
+        ],
+        "nav": {
+          "links": 0,
+          "fixed": true,
+          "height": 56,
+          "floatingPill": false,
+          "blur": false
+        },
+        "fontsLoaded": []
       },
-      {
-       "color": "#a1a1aa",
-       "share": 0.2
+      "layout": {
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        },
+        "pageH": 900,
+        "margins": {
+          "left": 12,
+          "right": 12
+        },
+        "sections": [],
+        "gaps": [],
+        "h1s": [],
+        "edgeText": [
+          {
+            "text": "SBX",
+            "side": "right",
+            "px": 4
+          },
+          {
+            "text": "Sessions (",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Memory Vault",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Active Subagents",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Pending Sign-offs",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Gateway Rail",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Enter to send",
+            "side": "right",
+            "px": 12
+          }
+        ],
+        "edges": [],
+        "leftBlocks": 0,
+        "bodySize": 11,
+        "stage": false,
+        "explains": false,
+        "slivers": [],
+        "voidShare": 0.01,
+        "voidBox": {
+          "x": 0,
+          "y": 720,
+          "w": 240,
+          "h": 60
+        }
       },
-      {
-       "color": "#fcfcfc",
-       "share": 0.2
+      "app": {
+        "viewport": {
+          "w": 1440,
+          "h": 900
+        },
+        "dark": true,
+        "ground": "#000000",
+        "sidebar": {
+          "w": 240,
+          "tag": "div",
+          "links": 8,
+          "share": 0.17
+        },
+        "topbar": {
+          "h": 56
+        },
+        "canvas": {
+          "left": 30,
+          "right": -135
+        },
+        "hero": {
+          "text": "$245.00",
+          "words": 1,
+          "chars": 7,
+          "lines": 1,
+          "size": 16,
+          "vw": 1.1,
+          "font": "Times New Roman",
+          "weight": 600,
+          "tracking": 0,
+          "leading": 1.5,
+          "top": 470,
+          "tag": "div",
+          "kind": "heading",
+          "align": "left",
+          "position": "left"
+        },
+        "charts": 0,
+        "layout": {
+          "panels": 5,
+          "firstScreen": 5,
+          "ragged": [],
+          "voids": []
+        },
+        "tiles": 0,
+        "panels": {
+          "count": 22,
+          "radii": [
+            [4, 7],
+            [8, 7],
+            [0, 6],
+            [6, 2]
+          ],
+          "heavyBorders": 20,
+          "borderSamples": [
+            "#ffffff on #09090b (19.9:1)",
+            "#ffffff on #141414 (18.42:1)",
+            "#ffffff on #141414 (18.42:1)"
+          ],
+          "heavyShadows": 7,
+          "softShadows": 0,
+          "shadowSamples": [
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
+          ],
+          "glass": 0
+        },
+        "chips": {
+          "count": 1,
+          "hues": 1,
+          "samples": [
+            {
+              "hue": 172,
+              "size": 28,
+              "radius": "8px"
+            }
+          ]
+        },
+        "numbers": {
+          "cells": 0,
+          "leftAligned": 0,
+          "figures": 15,
+          "tabularShare": 1,
+          "kpiMax": 16
+        },
+        "rows": null,
+        "chartHues": 0,
+        "placeholders": [],
+        "type": {
+          "under13": 0.98,
+          "tiny": 60,
+          "tinySamples": ["Gateway 9px", "Sandbox 9px", "SBX 8px", "FIDO2 8px"],
+          "sizes": [8, 9, 10, 11, 12, 14, 16]
+        },
+        "title": null,
+        "colourShare": 0.01
       },
-      {
-       "color": "#3fdec9",
-       "share": 0.08
-      }
-     ],
-     "button": {
-      "bg": "#fcfcfc",
-      "hsl": {
-       "h": 0,
-       "s": 0,
-       "l": 0.99
-      },
-      "fg": "#a1a1aa"
-     },
-     "lowContrast": [
-      {
-       "text": "Approvals",
-       "ratio": 2.5,
-       "need": 4.5,
-       "size": 12,
-       "fg": "#a1a1aa",
-       "bg": "#fcfcfc"
-      },
-      {
-       "text": "Traces",
-       "ratio": 2.5,
-       "need": 4.5,
-       "size": 12,
-       "fg": "#a1a1aa",
-       "bg": "#fcfcfc"
-      },
-      {
-       "text": "Tables",
-       "ratio": 2.5,
-       "need": 4.5,
-       "size": 12,
-       "fg": "#a1a1aa",
-       "bg": "#fcfcfc"
-      },
-      {
-       "text": "2 mins ago",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "waiting for you",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "14:02:18",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      }
-     ]
+      "consoleErrors": []
     },
-    "buttons": {
-     "count": 19,
-     "inHero": 19,
-     "radius": 6,
-     "height": 30,
-     "withShadow": 2,
-     "withGradient": 0,
-     "mono": 0,
-     "upper": 0,
-     "heroLabels": [
-      "Travel & Hospitality SANDBOX $10,000.00",
-      "Workspace",
-      "Approvals 1",
-      "Traces",
-      "Tables"
-     ]
+    {
+      "width": 768,
+      "height": 1024,
+      "load": "load",
+      "screens": 1,
+      "filled": [0.95],
+      "motion": {
+        "elements": 3,
+        "css": 3,
+        "transitions": 0,
+        "scripted": 0,
+        "videos": 0,
+        "playingVideos": 0
+      },
+      "metrics": {
+        "viewport": {
+          "w": 768,
+          "h": 1024
+        },
+        "page": {
+          "height": 1024,
+          "screens": 1,
+          "words": 380,
+          "img": 0,
+          "video": 0,
+          "canvas": 1,
+          "svg": 49,
+          "sections": 0,
+          "horizontalOverflow": 160,
+          "overflowCulprits": [
+            "span.hidden.sm:inline-block (+69px)",
+            "span.rounded.bg-[#1daf9c]/10 (+109px)",
+            "path (+145px)"
+          ],
+          "uiFragments": 0,
+          "uiAbuse": false,
+          "realPictures": 0,
+          "videoCount": 0,
+          "uiPictures": 0,
+          "pictureSamples": [],
+          "blendText": 0,
+          "sideScrollers": 0,
+          "brokenImages": [],
+          "emoji": [],
+          "videosNoPoster": 0
+        },
+        "hero": {
+          "text": "$245.00",
+          "words": 1,
+          "chars": 7,
+          "lines": 1,
+          "size": 16,
+          "vw": 2.1,
+          "font": "Times New Roman",
+          "weight": 600,
+          "tracking": 0,
+          "leading": 1.5,
+          "top": 594,
+          "tag": "div",
+          "kind": "heading",
+          "align": "left",
+          "position": "left"
+        },
+        "h1": null,
+        "headings": [],
+        "headingSummary": {
+          "count": 0,
+          "maxLines": 0,
+          "over2Lines": 0,
+          "statements": 0,
+          "centered": 0,
+          "medianWords": null,
+          "mixedFontHeadings": 0
+        },
+        "type": {
+          "families": [
+            {
+              "family": "Times New Roman",
+              "share": 1,
+              "mono": false
+            }
+          ],
+          "familyCount": 1,
+          "sizes": [8, 9, 10, 11, 12, 14, 16],
+          "sizeCount": 7,
+          "notLoaded": [],
+          "body": {
+            "font": "Times New Roman",
+            "size": 12,
+            "leading": 1.63,
+            "weight": 400,
+            "tracking": 0,
+            "contrast": 15.6
+          },
+          "measureChars": 47,
+          "max": {
+            "size": 16,
+            "vw": 2.1,
+            "font": "Times New Roman",
+            "text": "$245.00"
+          },
+          "monoShare": 0,
+          "monoProseShare": 0,
+          "monoFamilies": [],
+          "monoSamples": [],
+          "microLabels": 10,
+          "microLabelShare": 0.063,
+          "microSamples": [
+            "Gateway",
+            "Sessions (3)",
+            "Memory Vault",
+            "Requested Total",
+            "Merchant / Recipient",
+            "Amount Paid"
+          ],
+          "upperShare": 0.13,
+          "centerShare": 0.07,
+          "smallText": 69
+        },
+        "eyebrows": [],
+        "numbered": [],
+        "color": {
+          "bodyBg": "#000000",
+          "bodyBgHsl": {
+            "h": 0,
+            "s": 0,
+            "l": 0
+          },
+          "dark": true,
+          "sectionBgs": [
+            {
+              "color": "#000000",
+              "top": 0,
+              "hsl": {
+                "h": 0,
+                "s": 0,
+                "l": 0
+              }
+            },
+            {
+              "color": "#09090b",
+              "top": 56,
+              "hsl": {
+                "h": 240,
+                "s": 0.1,
+                "l": 0.04
+              }
+            }
+          ],
+          "textColors": [
+            {
+              "color": "#71717a",
+              "share": 0.26
+            },
+            {
+              "color": "#ececed",
+              "share": 0.24
+            },
+            {
+              "color": "#fcfcfc",
+              "share": 0.2
+            },
+            {
+              "color": "#a1a1aa",
+              "share": 0.15
+            },
+            {
+              "color": "#3fdec9",
+              "share": 0.09
+            }
+          ],
+          "button": {
+            "bg": "#fcfcfc",
+            "hsl": {
+              "h": 0,
+              "s": 0,
+              "l": 0.99
+            },
+            "fg": "#000000"
+          },
+          "lowContrast": [
+            {
+              "text": "2 mins ago",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "waiting for you",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "14:02:18",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "13:58:45",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "13:40:10",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "Active Subagents",
+              "ratio": 4,
+              "need": 4.5,
+              "size": 11,
+              "fg": "#71717a",
+              "bg": "#0d0d0d"
+            }
+          ]
+        },
+        "buttons": {
+          "count": 11,
+          "inHero": 11,
+          "radius": 6,
+          "height": 28,
+          "withShadow": 1,
+          "withGradient": 0,
+          "mono": 0,
+          "upper": 0,
+          "heroLabels": [
+            "Travel & Hospitality SANDBOX $10,000.00",
+            "Pause",
+            "Lead Operator FIDO2",
+            "New",
+            "All Nodes (5)"
+          ]
+        },
+        "surfaces": {
+          "shadowStatic": 11,
+          "shadowOverlay": 1,
+          "shadowSamples": [
+            "div.group.rounded-md → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.relative.flex → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.flex-1.relative → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.flex.items-center → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
+          ],
+          "gradients": 2,
+          "scrims": 0,
+          "gradientSamples": [
+            "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
+            "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)"
+          ],
+          "gradientText": 0,
+          "hairlines": 15,
+          "hairlineSamples": [
+            "header.sticky.top-0 768px",
+            "div.flex.flex-col 240px",
+            "div.flex.flex-col 380px",
+            "div.flex.items-center 379px",
+            "div.flex.items-center 379px"
+          ],
+          "outlinedBoxes": 7,
+          "dashed": 0,
+          "blurred": 3,
+          "roundedBoxes": 7,
+          "boxRadius": 8,
+          "squareMedia": 0,
+          "roundedMedia": 0,
+          "mediaRadius": 0,
+          "textShadow": 0,
+          "cardRows": []
+        },
+        "heroMedia": [],
+        "nav": {
+          "links": 0,
+          "fixed": true,
+          "height": 56,
+          "floatingPill": false,
+          "blur": false
+        },
+        "fontsLoaded": []
+      },
+      "layout": {
+        "viewport": {
+          "w": 768,
+          "h": 1024
+        },
+        "pageH": 1024,
+        "margins": {
+          "left": 12,
+          "right": 12
+        },
+        "sections": [],
+        "gaps": [],
+        "h1s": [],
+        "edgeText": [
+          {
+            "text": "Sessions (",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Memory Vault",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Active Subagents",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Pending Sign-offs",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Gateway Rail",
+            "side": "left",
+            "px": 12
+          },
+          {
+            "text": "Enter to send",
+            "side": "right",
+            "px": 12
+          }
+        ],
+        "edges": [],
+        "leftBlocks": 0,
+        "bodySize": 11,
+        "stage": false,
+        "explains": false,
+        "slivers": [],
+        "voidShare": 0,
+        "voidBox": null
+      },
+      "app": {
+        "viewport": {
+          "w": 768,
+          "h": 1024
+        },
+        "dark": true,
+        "ground": "#000000",
+        "sidebar": {
+          "w": 240,
+          "tag": "div",
+          "links": 8,
+          "share": 0.31
+        },
+        "topbar": {
+          "h": 56
+        },
+        "canvas": {
+          "left": 30,
+          "right": -69
+        },
+        "hero": {
+          "text": "$245.00",
+          "words": 1,
+          "chars": 7,
+          "lines": 1,
+          "size": 16,
+          "vw": 2.1,
+          "font": "Times New Roman",
+          "weight": 600,
+          "tracking": 0,
+          "leading": 1.5,
+          "top": 594,
+          "tag": "div",
+          "kind": "heading",
+          "align": "left",
+          "position": "left"
+        },
+        "charts": 0,
+        "layout": {
+          "panels": 3,
+          "firstScreen": 3,
+          "ragged": [],
+          "voids": []
+        },
+        "tiles": 0,
+        "panels": {
+          "count": 16,
+          "radii": [
+            [0, 6],
+            [8, 4],
+            [4, 3],
+            [6, 3]
+          ],
+          "heavyBorders": 14,
+          "borderSamples": [
+            "#ffffff on #09090b (19.9:1)",
+            "#ffffff on #141414 (18.42:1)",
+            "#ffffff on #141414 (18.42:1)"
+          ],
+          "heavyShadows": 4,
+          "softShadows": 0,
+          "shadowSamples": [
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
+          ],
+          "glass": 1
+        },
+        "chips": {
+          "count": 1,
+          "hues": 1,
+          "samples": [
+            {
+              "hue": 172,
+              "size": 28,
+              "radius": "8px"
+            }
+          ]
+        },
+        "numbers": {
+          "cells": 0,
+          "leftAligned": 0,
+          "figures": 15,
+          "tabularShare": 1,
+          "kpiMax": 16
+        },
+        "rows": null,
+        "chartHues": 0,
+        "placeholders": [],
+        "type": {
+          "under13": 0.98,
+          "tiny": 60,
+          "tinySamples": ["Gateway 9px", "Sandbox 9px", "SBX 8px", "FIDO2 8px"],
+          "sizes": [8, 9, 10, 11, 12, 14, 16]
+        },
+        "title": null,
+        "colourShare": 0.01
+      },
+      "consoleErrors": []
     },
-    "surfaces": {
-     "shadowStatic": 11,
-     "shadowOverlay": 2,
-     "shadowSamples": [
-      "div.group.rounded-md → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.relative.flex → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.flex-1.relative → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.flex.items-center → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
-     ],
-     "gradients": 2,
-     "scrims": 0,
-     "gradientSamples": [
-      "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
-      "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)"
-     ],
-     "gradientText": 0,
-     "hairlines": 16,
-     "hairlineSamples": [
-      "header.sticky.top-0 1440px",
-      "div.flex.flex-col 240px",
-      "div.flex.items-center 766px",
-      "div.flex.flex-col 380px",
-      "div.flex.items-center 379px"
-     ],
-     "outlinedBoxes": 8,
-     "dashed": 0,
-     "blurred": 3,
-     "roundedBoxes": 8,
-     "boxRadius": 8,
-     "squareMedia": 0,
-     "roundedMedia": 1,
-     "mediaRadius": 8,
-     "textShadow": 0,
-     "cardRows": []
-    },
-    "heroMedia": [
-     {
-      "type": "canvas",
-      "ratio": 0.36
-     }
-    ],
-    "nav": {
-     "links": 0,
-     "fixed": true,
-     "height": 56,
-     "floatingPill": false,
-     "blur": false
-    },
-    "fontsLoaded": []
-   },
-   "layout": {
-    "viewport": {
-     "w": 1440,
-     "h": 900
-    },
-    "pageH": 900,
-    "margins": {
-     "left": 12,
-     "right": 12
-    },
-    "sections": [],
-    "gaps": [],
-    "h1s": [],
-    "edgeText": [
-     {
-      "text": "SBX",
-      "side": "right",
-      "px": 4
-     },
-     {
-      "text": "Sessions (",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Memory Vault",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Active Subagents",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Pending Sign-offs",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Gateway Rail",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Enter to send",
-      "side": "right",
-      "px": 12
-     }
-    ],
-    "edges": [],
-    "leftBlocks": 0,
-    "bodySize": 11,
-    "stage": false,
-    "explains": false,
-    "slivers": [],
-    "voidShare": 0.01,
-    "voidBox": {
-     "x": 0,
-     "y": 720,
-     "w": 240,
-     "h": 60
+    {
+      "width": 390,
+      "height": 844,
+      "load": "load",
+      "screens": 2,
+      "filled": [0.42, 0.42],
+      "motion": {
+        "elements": 3,
+        "css": 3,
+        "transitions": 0,
+        "scripted": 0,
+        "videos": 0,
+        "playingVideos": 0
+      },
+      "metrics": {
+        "viewport": {
+          "w": 584,
+          "h": 1264
+        },
+        "page": {
+          "height": 1264,
+          "screens": 1,
+          "words": 373,
+          "img": 0,
+          "video": 0,
+          "canvas": 1,
+          "svg": 49,
+          "sections": 0,
+          "horizontalOverflow": 0,
+          "overflowCulprits": [],
+          "uiFragments": 0,
+          "uiAbuse": false,
+          "realPictures": 0,
+          "videoCount": 0,
+          "uiPictures": 0,
+          "pictureSamples": [],
+          "blendText": 0,
+          "sideScrollers": 0,
+          "brokenImages": [],
+          "emoji": [],
+          "videosNoPoster": 0
+        },
+        "hero": {
+          "text": "$245.00",
+          "words": 1,
+          "chars": 7,
+          "lines": 1,
+          "size": 16,
+          "vw": 2.7,
+          "font": "Times New Roman",
+          "weight": 600,
+          "tracking": 0,
+          "leading": 1.5,
+          "top": 414,
+          "tag": "div",
+          "kind": "heading",
+          "align": "left",
+          "position": "left"
+        },
+        "h1": null,
+        "headings": [],
+        "headingSummary": {
+          "count": 0,
+          "maxLines": 0,
+          "over2Lines": 0,
+          "statements": 0,
+          "centered": 0,
+          "medianWords": null,
+          "mixedFontHeadings": 0
+        },
+        "type": {
+          "families": [
+            {
+              "family": "Times New Roman",
+              "share": 1,
+              "mono": false
+            }
+          ],
+          "familyCount": 1,
+          "sizes": [8, 9, 10, 11, 12, 14, 16],
+          "sizeCount": 7,
+          "notLoaded": [],
+          "body": {
+            "font": "Times New Roman",
+            "size": 12,
+            "leading": 1.63,
+            "weight": 400,
+            "tracking": 0,
+            "contrast": 15.6
+          },
+          "measureChars": 47,
+          "max": {
+            "size": 16,
+            "vw": 2.7,
+            "font": "Times New Roman",
+            "text": "$245.00"
+          },
+          "monoShare": 0,
+          "monoProseShare": 0,
+          "monoFamilies": [],
+          "monoSamples": [],
+          "microLabels": 9,
+          "microLabelShare": 0.063,
+          "microSamples": [
+            "Sessions (3)",
+            "Memory Vault",
+            "Requested Total",
+            "Merchant / Recipient",
+            "Amount Paid",
+            "Gateway Lifecycle Verification"
+          ],
+          "upperShare": 0.13,
+          "centerShare": 0.06,
+          "smallText": 65
+        },
+        "eyebrows": [],
+        "numbered": [],
+        "color": {
+          "bodyBg": "#000000",
+          "bodyBgHsl": {
+            "h": 0,
+            "s": 0,
+            "l": 0
+          },
+          "dark": true,
+          "sectionBgs": [
+            {
+              "color": "#000000",
+              "top": 0,
+              "hsl": {
+                "h": 0,
+                "s": 0,
+                "l": 0
+              }
+            },
+            {
+              "color": "#09090b",
+              "top": 56,
+              "hsl": {
+                "h": 240,
+                "s": 0.1,
+                "l": 0.04
+              }
+            }
+          ],
+          "textColors": [
+            {
+              "color": "#71717a",
+              "share": 0.26
+            },
+            {
+              "color": "#ececed",
+              "share": 0.25
+            },
+            {
+              "color": "#fcfcfc",
+              "share": 0.2
+            },
+            {
+              "color": "#a1a1aa",
+              "share": 0.13
+            },
+            {
+              "color": "#3fdec9",
+              "share": 0.09
+            }
+          ],
+          "button": {
+            "bg": "#fcfcfc",
+            "hsl": {
+              "h": 0,
+              "s": 0,
+              "l": 0.99
+            },
+            "fg": "#000000"
+          },
+          "lowContrast": [
+            {
+              "text": "2 mins ago",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "waiting for you",
+              "ratio": 3.8,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#141414"
+            },
+            {
+              "text": "Active Subagents",
+              "ratio": 4,
+              "need": 4.5,
+              "size": 11,
+              "fg": "#71717a",
+              "bg": "#0d0d0d"
+            },
+            {
+              "text": "Pending Sign-offs",
+              "ratio": 4,
+              "need": 4.5,
+              "size": 11,
+              "fg": "#71717a",
+              "bg": "#0d0d0d"
+            },
+            {
+              "text": "Gateway Rail",
+              "ratio": 4,
+              "need": 4.5,
+              "size": 11,
+              "fg": "#71717a",
+              "bg": "#0d0d0d"
+            },
+            {
+              "text": "13:12:05",
+              "ratio": 4,
+              "need": 4.5,
+              "size": 10,
+              "fg": "#71717a",
+              "bg": "#0d0d0d"
+            }
+          ]
+        },
+        "buttons": {
+          "count": 10,
+          "inHero": 10,
+          "radius": 6,
+          "height": 28,
+          "withShadow": 1,
+          "withGradient": 0,
+          "mono": 0,
+          "upper": 0,
+          "heroLabels": ["Travel & Hospitality SANDBOX", "FIDO2", "New", "All Nodes (5)", "Funded"]
+        },
+        "surfaces": {
+          "shadowStatic": 10,
+          "shadowOverlay": 1,
+          "shadowSamples": [
+            "div.group.rounded-md → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.relative.flex → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "div.flex.items-center → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+          ],
+          "gradients": 2,
+          "scrims": 0,
+          "gradientSamples": [
+            "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
+            "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)"
+          ],
+          "gradientText": 0,
+          "hairlines": 15,
+          "hairlineSamples": [
+            "header.sticky.top-0 390px",
+            "div.flex.flex-col 240px",
+            "div.flex.flex-col 380px",
+            "div.flex.items-center 379px",
+            "div.flex.items-center 379px"
+          ],
+          "outlinedBoxes": 7,
+          "dashed": 0,
+          "blurred": 3,
+          "roundedBoxes": 7,
+          "boxRadius": 8,
+          "squareMedia": 0,
+          "roundedMedia": 1,
+          "mediaRadius": 8,
+          "textShadow": 0,
+          "cardRows": []
+        },
+        "heroMedia": [
+          {
+            "type": "canvas",
+            "ratio": 0.32
+          }
+        ],
+        "nav": {
+          "links": 0,
+          "fixed": true,
+          "height": 56,
+          "floatingPill": false,
+          "blur": false
+        },
+        "fontsLoaded": []
+      },
+      "layout": {
+        "viewport": {
+          "w": 584,
+          "h": 1264
+        },
+        "pageH": 1264,
+        "margins": {
+          "left": 39,
+          "right": 40
+        },
+        "sections": [],
+        "gaps": [],
+        "h1s": [],
+        "edgeText": [],
+        "edges": [],
+        "leftBlocks": 0,
+        "bodySize": 12,
+        "stage": false,
+        "explains": false,
+        "slivers": [],
+        "voidShare": 0,
+        "voidBox": null
+      },
+      "app": {
+        "viewport": {
+          "w": 584,
+          "h": 1264
+        },
+        "dark": true,
+        "ground": "#000000",
+        "sidebar": null,
+        "topbar": {
+          "h": 56
+        },
+        "canvas": {
+          "left": 32,
+          "right": 49
+        },
+        "hero": {
+          "text": "$245.00",
+          "words": 1,
+          "chars": 7,
+          "lines": 1,
+          "size": 16,
+          "vw": 2.7,
+          "font": "Times New Roman",
+          "weight": 600,
+          "tracking": 0,
+          "leading": 1.5,
+          "top": 414,
+          "tag": "div",
+          "kind": "heading",
+          "align": "left",
+          "position": "left"
+        },
+        "charts": 0,
+        "layout": {
+          "panels": 3,
+          "firstScreen": 3,
+          "ragged": [],
+          "voids": []
+        },
+        "tiles": 0,
+        "panels": {
+          "count": 16,
+          "radii": [
+            [0, 6],
+            [8, 4],
+            [4, 3],
+            [6, 3]
+          ],
+          "heavyBorders": 14,
+          "borderSamples": [
+            "#ffffff on #09090b (19.9:1)",
+            "#ffffff on #141414 (18.42:1)",
+            "#ffffff on #141414 (18.42:1)"
+          ],
+          "heavyShadows": 4,
+          "softShadows": 0,
+          "shadowSamples": [
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+            "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
+          ],
+          "glass": 1
+        },
+        "chips": {
+          "count": 1,
+          "hues": 1,
+          "samples": [
+            {
+              "hue": 172,
+              "size": 28,
+              "radius": "8px"
+            }
+          ]
+        },
+        "numbers": {
+          "cells": 0,
+          "leftAligned": 0,
+          "figures": 14,
+          "tabularShare": 1,
+          "kpiMax": 16
+        },
+        "rows": null,
+        "chartHues": 0,
+        "placeholders": [],
+        "type": {
+          "under13": 0.98,
+          "tiny": 59,
+          "tinySamples": ["Sandbox 9px", "SBX 8px", "FIDO2 8px", "Sessions ( 10px"],
+          "sizes": [8, 9, 10, 11, 12, 14, 16]
+        },
+        "title": null,
+        "colourShare": 0.006
+      },
+      "consoleErrors": []
     }
-   },
-   "app": {
-    "viewport": {
-     "w": 1440,
-     "h": 900
+  ],
+  "findings": [
+    {
+      "level": "FAIL",
+      "id": "micro-label",
+      "width": 1440,
+      "message": "10 tiny uppercase letter-spaced labels (e.g. \"Gateway\", \"Sessions (3)\", \"Memory Vault\", \"Requested Total\").",
+      "fix": "Use sentence-case text at a readable size, or delete the label.",
+      "alsoAt": [768, 390]
     },
-    "dark": true,
-    "ground": "#000000",
-    "sidebar": {
-     "w": 240,
-     "tag": "div",
-     "links": 8,
-     "share": 0.17
+    {
+      "level": "FAIL",
+      "id": "gradient",
+      "width": 1440,
+      "message": "2 gradient fill(s): div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%) | div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
+      "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+      "alsoAt": [768, 390]
     },
-    "topbar": {
-     "h": 56
+    {
+      "level": "FAIL",
+      "id": "button-fx",
+      "width": 1440,
+      "message": "Buttons with shadow/glow.",
+      "fix": "Flat fill, one colour.",
+      "alsoAt": [768, 390]
     },
-    "canvas": {
-     "left": 30,
-     "right": -135
+    {
+      "level": "FAIL",
+      "id": "contrast",
+      "width": 1440,
+      "message": "Unreadable text: \"Approvals\" 2.5:1 (#a1a1aa on #fcfcfc); \"Traces\" 2.5:1 (#a1a1aa on #fcfcfc); \"Tables\" 2.5:1 (#a1a1aa on #fcfcfc)",
+      "fix": "Raise contrast to at least 4.5:1 for text, 3:1 for large display."
     },
-    "hero": {
-     "text": "$245.00",
-     "words": 1,
-     "chars": 7,
-     "lines": 1,
-     "size": 16,
-     "vw": 1.1,
-     "font": "Times New Roman",
-     "weight": 600,
-     "tracking": 0,
-     "leading": 1.5,
-     "top": 470,
-     "tag": "div",
-     "kind": "heading",
-     "align": "left",
-     "position": "left"
+    {
+      "level": "FAIL",
+      "id": "overflow",
+      "width": 1440,
+      "message": "Page scrolls sideways by 261px at 1440px. Widest offenders: button.relative.inline-flex (+13px), circle (+57px), span (+90px).",
+      "fix": "Constrain the element that is wider than the viewport (max-width: 100%, or overflow: clip on its section)."
     },
-    "charts": 0,
-    "layout": {
-     "panels": 5,
-     "firstScreen": 5,
-     "ragged": [],
-     "voids": []
+    {
+      "level": "FAIL",
+      "id": "edge-text",
+      "width": 1440,
+      "message": "7 text block(s) sit within 16px of the screen edge: \"SBX\" (4px from the right); \"Sessions (\" (12px from the left); \"Memory Vault\" (12px from the left); \"Active Subagents\" (12px from the left)",
+      "fix": "Keep text inside the page margin (16–32px or more). Only display type deliberately bled past the edge may touch it.",
+      "alsoAt": [768]
     },
-    "tiles": 0,
-    "panels": {
-     "count": 22,
-     "radii": [
-      [
-       4,
-       7
-      ],
-      [
-       8,
-       7
-      ],
-      [
-       0,
-       6
-      ],
-      [
-       6,
-       2
-      ]
-     ],
-     "heavyBorders": 20,
-     "borderSamples": [
-      "#ffffff on #09090b (19.9:1)",
-      "#ffffff on #141414 (18.42:1)",
-      "#ffffff on #141414 (18.42:1)"
-     ],
-     "heavyShadows": 7,
-     "softShadows": 0,
-     "shadowSamples": [
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
-     ],
-     "glass": 0
+    {
+      "level": "FAIL",
+      "id": "heavy-shadow",
+      "width": 1440,
+      "message": "7 panel shadow(s) heavy enough to read as floating: oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px | oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px | oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
+      "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float.",
+      "alsoAt": [768, 390]
     },
-    "chips": {
-     "count": 1,
-     "hues": 1,
-     "samples": [
-      {
-       "hue": 172,
-       "size": 28,
-       "radius": "8px"
-      }
-     ]
+    {
+      "level": "WARN",
+      "id": "heavy-borders",
+      "width": 1440,
+      "message": "20 panel borders are dark against their ground: #ffffff on #09090b (19.9:1) | #ffffff on #141414 (18.42:1) | #ffffff on #141414 (18.42:1)",
+      "fix": "A panel border is a whisper: about 1.1–1.3:1 against its ground on a light screen (#e5e7eb–#ededed on white), and about 1.2–1.5:1 on a dark one (#1a1a1a on #000, #2e2e2e on #111). Darker lines turn the screen into a grid of boxes; keep the stronger line for controls.",
+      "alsoAt": [768, 390]
     },
-    "numbers": {
-     "cells": 0,
-     "leftAligned": 0,
-     "figures": 15,
-     "tabularShare": 1,
-     "kpiMax": 16
+    {
+      "level": "WARN",
+      "id": "radius-mix",
+      "width": 1440,
+      "message": "Panels use 4 corner radii (4, 8, 0, 6px).",
+      "fix": "One radius for panels, one for controls, full round only for pills and avatars.",
+      "alsoAt": [768, 390]
     },
-    "rows": null,
-    "chartHues": 0,
-    "placeholders": [],
-    "type": {
-     "under13": 0.98,
-     "tiny": 60,
-     "tinySamples": [
-      "Gateway 9px",
-      "Sandbox 9px",
-      "SBX 8px",
-      "FIDO2 8px"
-     ],
-     "sizes": [
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      16
-     ]
+    {
+      "level": "FAIL",
+      "id": "tiny-text",
+      "width": 1440,
+      "message": "60 text blocks under 11px: Gateway 9px, Sandbox 9px, SBX 8px, FIDO2 8px.",
+      "fix": "Nothing below 11px; secondary text 12px, data 13–14px.",
+      "alsoAt": [768, 390]
     },
-    "title": null,
-    "colourShare": 0.01
-   },
-   "consoleErrors": []
-  },
-  {
-   "width": 768,
-   "height": 1024,
-   "load": "load",
-   "screens": 1,
-   "filled": [
-    0.95
-   ],
-   "motion": {
-    "elements": 3,
-    "css": 3,
-    "transitions": 0,
-    "scripted": 0,
-    "videos": 0,
-    "playingVideos": 0
-   },
-   "metrics": {
-    "viewport": {
-     "w": 768,
-     "h": 1024
+    {
+      "level": "FAIL",
+      "id": "no-title",
+      "width": 1440,
+      "message": "The screen has no h1.",
+      "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name.",
+      "alsoAt": [768, 390]
     },
-    "page": {
-     "height": 1024,
-     "screens": 1,
-     "words": 380,
-     "img": 0,
-     "video": 0,
-     "canvas": 1,
-     "svg": 49,
-     "sections": 0,
-     "horizontalOverflow": 160,
-     "overflowCulprits": [
-      "span.hidden.sm:inline-block (+69px)",
-      "span.rounded.bg-[#1daf9c]/10 (+109px)",
-      "path (+145px)"
-     ],
-     "uiFragments": 0,
-     "uiAbuse": false,
-     "realPictures": 0,
-     "videoCount": 0,
-     "uiPictures": 0,
-     "pictureSamples": [],
-     "blendText": 0,
-     "sideScrollers": 0,
-     "brokenImages": [],
-     "emoji": [],
-     "videosNoPoster": 0
+    {
+      "level": "WARN",
+      "id": "contrast",
+      "width": 768,
+      "message": "Low-contrast text: \"2 mins ago\" 3.8:1 needs 4.5:1; \"waiting for you\" 3.8:1 needs 4.5:1; \"14:02:18\" 3.8:1 needs 4.5:1; \"13:58:45\" 3.8:1 needs 4.5:1",
+      "fix": "Darken or lighten the text colour.",
+      "alsoAt": [390]
     },
-    "hero": {
-     "text": "$245.00",
-     "words": 1,
-     "chars": 7,
-     "lines": 1,
-     "size": 16,
-     "vw": 2.1,
-     "font": "Times New Roman",
-     "weight": 600,
-     "tracking": 0,
-     "leading": 1.5,
-     "top": 594,
-     "tag": "div",
-     "kind": "heading",
-     "align": "left",
-     "position": "left"
+    {
+      "level": "FAIL",
+      "id": "overflow",
+      "width": 768,
+      "message": "Page scrolls sideways by 160px at 768px. Widest offenders: span.hidden.sm:inline-block (+69px), span.rounded.bg-[#1daf9c]/10 (+109px), path (+145px).",
+      "fix": "Constrain the element that is wider than the viewport (max-width: 100%, or overflow: clip on its section)."
+    }
+  ],
+  "images": [
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "fold": "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/desktop-fold.jpg",
+      "pages": ["/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/desktop-page-01.jpg"],
+      "film": []
     },
-    "h1": null,
-    "headings": [],
-    "headingSummary": {
-     "count": 0,
-     "maxLines": 0,
-     "over2Lines": 0,
-     "statements": 0,
-     "centered": 0,
-     "medianWords": null,
-     "mixedFontHeadings": 0
+    {
+      "viewport": "tablet",
+      "width": 768,
+      "fold": "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/tablet-fold.jpg",
+      "pages": ["/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/tablet-page-01.jpg"],
+      "film": []
     },
-    "type": {
-     "families": [
-      {
-       "family": "Times New Roman",
-       "share": 1,
-       "mono": false
-      }
-     ],
-     "familyCount": 1,
-     "sizes": [
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      16
-     ],
-     "sizeCount": 7,
-     "notLoaded": [],
-     "body": {
-      "font": "Times New Roman",
-      "size": 12,
-      "leading": 1.63,
-      "weight": 400,
-      "tracking": 0,
-      "contrast": 15.6
-     },
-     "measureChars": 47,
-     "max": {
-      "size": 16,
-      "vw": 2.1,
-      "font": "Times New Roman",
-      "text": "$245.00"
-     },
-     "monoShare": 0,
-     "monoProseShare": 0,
-     "monoFamilies": [],
-     "monoSamples": [],
-     "microLabels": 10,
-     "microLabelShare": 0.063,
-     "microSamples": [
-      "Gateway",
-      "Sessions (3)",
-      "Memory Vault",
-      "Requested Total",
-      "Merchant / Recipient",
-      "Amount Paid"
-     ],
-     "upperShare": 0.13,
-     "centerShare": 0.07,
-     "smallText": 69
-    },
-    "eyebrows": [],
-    "numbered": [],
-    "color": {
-     "bodyBg": "#000000",
-     "bodyBgHsl": {
-      "h": 0,
-      "s": 0,
-      "l": 0
-     },
-     "dark": true,
-     "sectionBgs": [
-      {
-       "color": "#000000",
-       "top": 0,
-       "hsl": {
-        "h": 0,
-        "s": 0,
-        "l": 0
-       }
-      },
-      {
-       "color": "#09090b",
-       "top": 56,
-       "hsl": {
-        "h": 240,
-        "s": 0.1,
-        "l": 0.04
-       }
-      }
-     ],
-     "textColors": [
-      {
-       "color": "#71717a",
-       "share": 0.26
-      },
-      {
-       "color": "#ececed",
-       "share": 0.24
-      },
-      {
-       "color": "#fcfcfc",
-       "share": 0.2
-      },
-      {
-       "color": "#a1a1aa",
-       "share": 0.15
-      },
-      {
-       "color": "#3fdec9",
-       "share": 0.09
-      }
-     ],
-     "button": {
-      "bg": "#fcfcfc",
-      "hsl": {
-       "h": 0,
-       "s": 0,
-       "l": 0.99
-      },
-      "fg": "#000000"
-     },
-     "lowContrast": [
-      {
-       "text": "2 mins ago",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "waiting for you",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "14:02:18",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "13:58:45",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "13:40:10",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "Active Subagents",
-       "ratio": 4,
-       "need": 4.5,
-       "size": 11,
-       "fg": "#71717a",
-       "bg": "#0d0d0d"
-      }
-     ]
-    },
-    "buttons": {
-     "count": 11,
-     "inHero": 11,
-     "radius": 6,
-     "height": 28,
-     "withShadow": 1,
-     "withGradient": 0,
-     "mono": 0,
-     "upper": 0,
-     "heroLabels": [
-      "Travel & Hospitality SANDBOX $10,000.00",
-      "Pause",
-      "Lead Operator FIDO2",
-      "New",
-      "All Nodes (5)"
-     ]
-    },
-    "surfaces": {
-     "shadowStatic": 11,
-     "shadowOverlay": 1,
-     "shadowSamples": [
-      "div.group.rounded-md → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.relative.flex → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.flex-1.relative → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.flex.items-center → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
-     ],
-     "gradients": 2,
-     "scrims": 0,
-     "gradientSamples": [
-      "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
-      "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)"
-     ],
-     "gradientText": 0,
-     "hairlines": 15,
-     "hairlineSamples": [
-      "header.sticky.top-0 768px",
-      "div.flex.flex-col 240px",
-      "div.flex.flex-col 380px",
-      "div.flex.items-center 379px",
-      "div.flex.items-center 379px"
-     ],
-     "outlinedBoxes": 7,
-     "dashed": 0,
-     "blurred": 3,
-     "roundedBoxes": 7,
-     "boxRadius": 8,
-     "squareMedia": 0,
-     "roundedMedia": 0,
-     "mediaRadius": 0,
-     "textShadow": 0,
-     "cardRows": []
-    },
-    "heroMedia": [],
-    "nav": {
-     "links": 0,
-     "fixed": true,
-     "height": 56,
-     "floatingPill": false,
-     "blur": false
-    },
-    "fontsLoaded": []
-   },
-   "layout": {
-    "viewport": {
-     "w": 768,
-     "h": 1024
-    },
-    "pageH": 1024,
-    "margins": {
-     "left": 12,
-     "right": 12
-    },
-    "sections": [],
-    "gaps": [],
-    "h1s": [],
-    "edgeText": [
-     {
-      "text": "Sessions (",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Memory Vault",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Active Subagents",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Pending Sign-offs",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Gateway Rail",
-      "side": "left",
-      "px": 12
-     },
-     {
-      "text": "Enter to send",
-      "side": "right",
-      "px": 12
-     }
-    ],
-    "edges": [],
-    "leftBlocks": 0,
-    "bodySize": 11,
-    "stage": false,
-    "explains": false,
-    "slivers": [],
-    "voidShare": 0,
-    "voidBox": null
-   },
-   "app": {
-    "viewport": {
-     "w": 768,
-     "h": 1024
-    },
-    "dark": true,
-    "ground": "#000000",
-    "sidebar": {
-     "w": 240,
-     "tag": "div",
-     "links": 8,
-     "share": 0.31
-    },
-    "topbar": {
-     "h": 56
-    },
-    "canvas": {
-     "left": 30,
-     "right": -69
-    },
-    "hero": {
-     "text": "$245.00",
-     "words": 1,
-     "chars": 7,
-     "lines": 1,
-     "size": 16,
-     "vw": 2.1,
-     "font": "Times New Roman",
-     "weight": 600,
-     "tracking": 0,
-     "leading": 1.5,
-     "top": 594,
-     "tag": "div",
-     "kind": "heading",
-     "align": "left",
-     "position": "left"
-    },
-    "charts": 0,
-    "layout": {
-     "panels": 3,
-     "firstScreen": 3,
-     "ragged": [],
-     "voids": []
-    },
-    "tiles": 0,
-    "panels": {
-     "count": 16,
-     "radii": [
-      [
-       0,
-       6
-      ],
-      [
-       8,
-       4
-      ],
-      [
-       4,
-       3
-      ],
-      [
-       6,
-       3
-      ]
-     ],
-     "heavyBorders": 14,
-     "borderSamples": [
-      "#ffffff on #09090b (19.9:1)",
-      "#ffffff on #141414 (18.42:1)",
-      "#ffffff on #141414 (18.42:1)"
-     ],
-     "heavyShadows": 4,
-     "softShadows": 0,
-     "shadowSamples": [
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
-     ],
-     "glass": 1
-    },
-    "chips": {
-     "count": 1,
-     "hues": 1,
-     "samples": [
-      {
-       "hue": 172,
-       "size": 28,
-       "radius": "8px"
-      }
-     ]
-    },
-    "numbers": {
-     "cells": 0,
-     "leftAligned": 0,
-     "figures": 15,
-     "tabularShare": 1,
-     "kpiMax": 16
-    },
-    "rows": null,
-    "chartHues": 0,
-    "placeholders": [],
-    "type": {
-     "under13": 0.98,
-     "tiny": 60,
-     "tinySamples": [
-      "Gateway 9px",
-      "Sandbox 9px",
-      "SBX 8px",
-      "FIDO2 8px"
-     ],
-     "sizes": [
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      16
-     ]
-    },
-    "title": null,
-    "colourShare": 0.01
-   },
-   "consoleErrors": []
-  },
-  {
-   "width": 390,
-   "height": 844,
-   "load": "load",
-   "screens": 2,
-   "filled": [
-    0.42,
-    0.42
-   ],
-   "motion": {
-    "elements": 3,
-    "css": 3,
-    "transitions": 0,
-    "scripted": 0,
-    "videos": 0,
-    "playingVideos": 0
-   },
-   "metrics": {
-    "viewport": {
-     "w": 584,
-     "h": 1264
-    },
-    "page": {
-     "height": 1264,
-     "screens": 1,
-     "words": 373,
-     "img": 0,
-     "video": 0,
-     "canvas": 1,
-     "svg": 49,
-     "sections": 0,
-     "horizontalOverflow": 0,
-     "overflowCulprits": [],
-     "uiFragments": 0,
-     "uiAbuse": false,
-     "realPictures": 0,
-     "videoCount": 0,
-     "uiPictures": 0,
-     "pictureSamples": [],
-     "blendText": 0,
-     "sideScrollers": 0,
-     "brokenImages": [],
-     "emoji": [],
-     "videosNoPoster": 0
-    },
-    "hero": {
-     "text": "$245.00",
-     "words": 1,
-     "chars": 7,
-     "lines": 1,
-     "size": 16,
-     "vw": 2.7,
-     "font": "Times New Roman",
-     "weight": 600,
-     "tracking": 0,
-     "leading": 1.5,
-     "top": 414,
-     "tag": "div",
-     "kind": "heading",
-     "align": "left",
-     "position": "left"
-    },
-    "h1": null,
-    "headings": [],
-    "headingSummary": {
-     "count": 0,
-     "maxLines": 0,
-     "over2Lines": 0,
-     "statements": 0,
-     "centered": 0,
-     "medianWords": null,
-     "mixedFontHeadings": 0
-    },
-    "type": {
-     "families": [
-      {
-       "family": "Times New Roman",
-       "share": 1,
-       "mono": false
-      }
-     ],
-     "familyCount": 1,
-     "sizes": [
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      16
-     ],
-     "sizeCount": 7,
-     "notLoaded": [],
-     "body": {
-      "font": "Times New Roman",
-      "size": 12,
-      "leading": 1.63,
-      "weight": 400,
-      "tracking": 0,
-      "contrast": 15.6
-     },
-     "measureChars": 47,
-     "max": {
-      "size": 16,
-      "vw": 2.7,
-      "font": "Times New Roman",
-      "text": "$245.00"
-     },
-     "monoShare": 0,
-     "monoProseShare": 0,
-     "monoFamilies": [],
-     "monoSamples": [],
-     "microLabels": 9,
-     "microLabelShare": 0.063,
-     "microSamples": [
-      "Sessions (3)",
-      "Memory Vault",
-      "Requested Total",
-      "Merchant / Recipient",
-      "Amount Paid",
-      "Gateway Lifecycle Verification"
-     ],
-     "upperShare": 0.13,
-     "centerShare": 0.06,
-     "smallText": 65
-    },
-    "eyebrows": [],
-    "numbered": [],
-    "color": {
-     "bodyBg": "#000000",
-     "bodyBgHsl": {
-      "h": 0,
-      "s": 0,
-      "l": 0
-     },
-     "dark": true,
-     "sectionBgs": [
-      {
-       "color": "#000000",
-       "top": 0,
-       "hsl": {
-        "h": 0,
-        "s": 0,
-        "l": 0
-       }
-      },
-      {
-       "color": "#09090b",
-       "top": 56,
-       "hsl": {
-        "h": 240,
-        "s": 0.1,
-        "l": 0.04
-       }
-      }
-     ],
-     "textColors": [
-      {
-       "color": "#71717a",
-       "share": 0.26
-      },
-      {
-       "color": "#ececed",
-       "share": 0.25
-      },
-      {
-       "color": "#fcfcfc",
-       "share": 0.2
-      },
-      {
-       "color": "#a1a1aa",
-       "share": 0.13
-      },
-      {
-       "color": "#3fdec9",
-       "share": 0.09
-      }
-     ],
-     "button": {
-      "bg": "#fcfcfc",
-      "hsl": {
-       "h": 0,
-       "s": 0,
-       "l": 0.99
-      },
-      "fg": "#000000"
-     },
-     "lowContrast": [
-      {
-       "text": "2 mins ago",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "waiting for you",
-       "ratio": 3.8,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#141414"
-      },
-      {
-       "text": "Active Subagents",
-       "ratio": 4,
-       "need": 4.5,
-       "size": 11,
-       "fg": "#71717a",
-       "bg": "#0d0d0d"
-      },
-      {
-       "text": "Pending Sign-offs",
-       "ratio": 4,
-       "need": 4.5,
-       "size": 11,
-       "fg": "#71717a",
-       "bg": "#0d0d0d"
-      },
-      {
-       "text": "Gateway Rail",
-       "ratio": 4,
-       "need": 4.5,
-       "size": 11,
-       "fg": "#71717a",
-       "bg": "#0d0d0d"
-      },
-      {
-       "text": "13:12:05",
-       "ratio": 4,
-       "need": 4.5,
-       "size": 10,
-       "fg": "#71717a",
-       "bg": "#0d0d0d"
-      }
-     ]
-    },
-    "buttons": {
-     "count": 10,
-     "inHero": 10,
-     "radius": 6,
-     "height": 28,
-     "withShadow": 1,
-     "withGradient": 0,
-     "mono": 0,
-     "upper": 0,
-     "heroLabels": [
-      "Travel & Hospitality SANDBOX",
-      "FIDO2",
-      "New",
-      "All Nodes (5)",
-      "Funded"
-     ]
-    },
-    "surfaces": {
-     "shadowStatic": 10,
-     "shadowOverlay": 1,
-     "shadowSamples": [
-      "div.group.rounded-md → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.relative.flex → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "div.flex.items-center → oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "button.inline-flex.items-center → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
-     ],
-     "gradients": 2,
-     "scrims": 0,
-     "gradientSamples": [
-      "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
-      "div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)"
-     ],
-     "gradientText": 0,
-     "hairlines": 15,
-     "hairlineSamples": [
-      "header.sticky.top-0 390px",
-      "div.flex.flex-col 240px",
-      "div.flex.flex-col 380px",
-      "div.flex.items-center 379px",
-      "div.flex.items-center 379px"
-     ],
-     "outlinedBoxes": 7,
-     "dashed": 0,
-     "blurred": 3,
-     "roundedBoxes": 7,
-     "boxRadius": 8,
-     "squareMedia": 0,
-     "roundedMedia": 1,
-     "mediaRadius": 8,
-     "textShadow": 0,
-     "cardRows": []
-    },
-    "heroMedia": [
-     {
-      "type": "canvas",
-      "ratio": 0.32
-     }
-    ],
-    "nav": {
-     "links": 0,
-     "fixed": true,
-     "height": 56,
-     "floatingPill": false,
-     "blur": false
-    },
-    "fontsLoaded": []
-   },
-   "layout": {
-    "viewport": {
-     "w": 584,
-     "h": 1264
-    },
-    "pageH": 1264,
-    "margins": {
-     "left": 39,
-     "right": 40
-    },
-    "sections": [],
-    "gaps": [],
-    "h1s": [],
-    "edgeText": [],
-    "edges": [],
-    "leftBlocks": 0,
-    "bodySize": 12,
-    "stage": false,
-    "explains": false,
-    "slivers": [],
-    "voidShare": 0,
-    "voidBox": null
-   },
-   "app": {
-    "viewport": {
-     "w": 584,
-     "h": 1264
-    },
-    "dark": true,
-    "ground": "#000000",
-    "sidebar": null,
-    "topbar": {
-     "h": 56
-    },
-    "canvas": {
-     "left": 32,
-     "right": 49
-    },
-    "hero": {
-     "text": "$245.00",
-     "words": 1,
-     "chars": 7,
-     "lines": 1,
-     "size": 16,
-     "vw": 2.7,
-     "font": "Times New Roman",
-     "weight": 600,
-     "tracking": 0,
-     "leading": 1.5,
-     "top": 414,
-     "tag": "div",
-     "kind": "heading",
-     "align": "left",
-     "position": "left"
-    },
-    "charts": 0,
-    "layout": {
-     "panels": 3,
-     "firstScreen": 3,
-     "ragged": [],
-     "voids": []
-    },
-    "tiles": 0,
-    "panels": {
-     "count": 16,
-     "radii": [
-      [
-       0,
-       6
-      ],
-      [
-       8,
-       4
-      ],
-      [
-       4,
-       3
-      ],
-      [
-       6,
-       3
-      ]
-     ],
-     "heavyBorders": 14,
-     "borderSamples": [
-      "#ffffff on #09090b (19.9:1)",
-      "#ffffff on #141414 (18.42:1)",
-      "#ffffff on #141414 (18.42:1)"
-     ],
-     "heavyShadows": 4,
-     "softShadows": 0,
-     "shadowSamples": [
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-      "oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px"
-     ],
-     "glass": 1
-    },
-    "chips": {
-     "count": 1,
-     "hues": 1,
-     "samples": [
-      {
-       "hue": 172,
-       "size": 28,
-       "radius": "8px"
-      }
-     ]
-    },
-    "numbers": {
-     "cells": 0,
-     "leftAligned": 0,
-     "figures": 14,
-     "tabularShare": 1,
-     "kpiMax": 16
-    },
-    "rows": null,
-    "chartHues": 0,
-    "placeholders": [],
-    "type": {
-     "under13": 0.98,
-     "tiny": 59,
-     "tinySamples": [
-      "Sandbox 9px",
-      "SBX 8px",
-      "FIDO2 8px",
-      "Sessions ( 10px"
-     ],
-     "sizes": [
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      16
-     ]
-    },
-    "title": null,
-    "colourShare": 0.006
-   },
-   "consoleErrors": []
-  }
- ],
- "findings": [
-  {
-   "level": "FAIL",
-   "id": "micro-label",
-   "width": 1440,
-   "message": "10 tiny uppercase letter-spaced labels (e.g. \"Gateway\", \"Sessions (3)\", \"Memory Vault\", \"Requested Total\").",
-   "fix": "Use sentence-case text at a readable size, or delete the label.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "gradient",
-   "width": 1440,
-   "message": "2 gradient fill(s): div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%) | div.relative.rounded-lg → radial-gradient(90% 120% at 50% 0px, rgba(29, 175, 156, 0.06), rgba(0, 0, 0, 0) 80%)",
-   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "button-fx",
-   "width": 1440,
-   "message": "Buttons with shadow/glow.",
-   "fix": "Flat fill, one colour.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "contrast",
-   "width": 1440,
-   "message": "Unreadable text: \"Approvals\" 2.5:1 (#a1a1aa on #fcfcfc); \"Traces\" 2.5:1 (#a1a1aa on #fcfcfc); \"Tables\" 2.5:1 (#a1a1aa on #fcfcfc)",
-   "fix": "Raise contrast to at least 4.5:1 for text, 3:1 for large display."
-  },
-  {
-   "level": "FAIL",
-   "id": "overflow",
-   "width": 1440,
-   "message": "Page scrolls sideways by 261px at 1440px. Widest offenders: button.relative.inline-flex (+13px), circle (+57px), span (+90px).",
-   "fix": "Constrain the element that is wider than the viewport (max-width: 100%, or overflow: clip on its section)."
-  },
-  {
-   "level": "FAIL",
-   "id": "edge-text",
-   "width": 1440,
-   "message": "7 text block(s) sit within 16px of the screen edge: \"SBX\" (4px from the right); \"Sessions (\" (12px from the left); \"Memory Vault\" (12px from the left); \"Active Subagents\" (12px from the left)",
-   "fix": "Keep text inside the page margin (16–32px or more). Only display type deliberately bled past the edge may touch it.",
-   "alsoAt": [
-    768
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "heavy-shadow",
-   "width": 1440,
-   "message": "7 panel shadow(s) heavy enough to read as floating: oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px | oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px | oklab(0.991063 0.0000452101 0.0000197887 / 0.08) 0px -1px 0px 0px",
-   "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "WARN",
-   "id": "heavy-borders",
-   "width": 1440,
-   "message": "20 panel borders are dark against their ground: #ffffff on #09090b (19.9:1) | #ffffff on #141414 (18.42:1) | #ffffff on #141414 (18.42:1)",
-   "fix": "A panel border is a whisper: about 1.1–1.3:1 against its ground on a light screen (#e5e7eb–#ededed on white), and about 1.2–1.5:1 on a dark one (#1a1a1a on #000, #2e2e2e on #111). Darker lines turn the screen into a grid of boxes; keep the stronger line for controls.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "WARN",
-   "id": "radius-mix",
-   "width": 1440,
-   "message": "Panels use 4 corner radii (4, 8, 0, 6px).",
-   "fix": "One radius for panels, one for controls, full round only for pills and avatars.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "tiny-text",
-   "width": 1440,
-   "message": "60 text blocks under 11px: Gateway 9px, Sandbox 9px, SBX 8px, FIDO2 8px.",
-   "fix": "Nothing below 11px; secondary text 12px, data 13–14px.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "no-title",
-   "width": 1440,
-   "message": "The screen has no h1.",
-   "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name.",
-   "alsoAt": [
-    768,
-    390
-   ]
-  },
-  {
-   "level": "WARN",
-   "id": "contrast",
-   "width": 768,
-   "message": "Low-contrast text: \"2 mins ago\" 3.8:1 needs 4.5:1; \"waiting for you\" 3.8:1 needs 4.5:1; \"14:02:18\" 3.8:1 needs 4.5:1; \"13:58:45\" 3.8:1 needs 4.5:1",
-   "fix": "Darken or lighten the text colour.",
-   "alsoAt": [
-    390
-   ]
-  },
-  {
-   "level": "FAIL",
-   "id": "overflow",
-   "width": 768,
-   "message": "Page scrolls sideways by 160px at 768px. Widest offenders: span.hidden.sm:inline-block (+69px), span.rounded.bg-[#1daf9c]/10 (+109px), path (+145px).",
-   "fix": "Constrain the element that is wider than the viewport (max-width: 100%, or overflow: clip on its section)."
-  }
- ],
- "images": [
-  {
-   "viewport": "desktop",
-   "width": 1440,
-   "fold": "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/desktop-fold.jpg",
-   "pages": [
-    "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/desktop-page-01.jpg"
-   ],
-   "film": []
-  },
-  {
-   "viewport": "tablet",
-   "width": 768,
-   "fold": "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/tablet-fold.jpg",
-   "pages": [
-    "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/tablet-page-01.jpg"
-   ],
-   "film": []
-  },
-  {
-   "viewport": "mobile",
-   "width": 390,
-   "fold": "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/mobile-fold.jpg",
-   "pages": [
-    "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/mobile-page-01.jpg"
-   ],
-   "film": []
-  }
- ]
+    {
+      "viewport": "mobile",
+      "width": 390,
+      "fold": "/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/mobile-fold.jpg",
+      "pages": ["/home/anas/myspace/AI/PayGuardian/.taste-skill/inspect/mobile-page-01.jpg"],
+      "film": []
+    }
+  ]
 }

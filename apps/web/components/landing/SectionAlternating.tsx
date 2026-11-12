@@ -21,7 +21,8 @@ export function SectionAlternating() {
         </h2>
         <p className="mt-[17px] text-[13.6px] leading-[24px] text-muted-foreground">
           Observe delegation chains and authority grants across every agent, and let the gateway
-          <br className="max-md:hidden" /> enforce strict mathematical headroom before any transaction settles.
+          <br className="max-md:hidden" /> enforce strict mathematical headroom before any
+          transaction settles.
         </p>
       </motion.div>
 
@@ -39,7 +40,8 @@ export function SectionAlternating() {
               <span className="text-foreground">Approve</span> transactions in milliseconds
             </h3>
             <p className="mt-[14px] max-w-[460px] text-[14.5px] leading-[23px] text-muted-foreground">
-              Ask for an authorization and the gateway validates it against parent headroom and live policies, then issues a cryptographic signature.
+              Ask for an authorization and the gateway validates it against parent headroom and live
+              policies, then issues a cryptographic signature.
             </p>
             <ul className="mt-[22px] space-y-[11px] text-[14.5px] leading-[22px] text-foreground/80">
               <li className="flex gap-[10px]">
@@ -79,7 +81,10 @@ export function SectionAlternating() {
               }
             >
               <span className="absolute -top-[40px] left-[120px] h-[200px] w-[300px] rounded-full bg-[#dbe6ff]/35 blur-[70px] dark:bg-[#1e2a4a]/20" />
-              <div aria-hidden={true} className="pointer-events-none relative size-full select-none">
+              <div
+                aria-hidden={true}
+                className="pointer-events-none relative size-full select-none"
+              >
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-full max-w-[360px] space-y-4">
                     <div className="flex justify-end">
@@ -94,7 +99,9 @@ export function SectionAlternating() {
                     </p>
                     <div className="max-w-[90%] px-3.5 py-2.5 rounded-xl border border-border bg-card shadow-sm">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[12px] text-muted-foreground">Travel Specialist Mandate</span>
+                        <span className="text-[12px] text-muted-foreground">
+                          Travel Specialist Mandate
+                        </span>
                         <div className="flex items-center -space-x-1.5">
                           <img
                             alt=""
@@ -130,7 +137,9 @@ export function SectionAlternating() {
                       </p>
                     </div>
                     <div className="space-y-1.5">
-                      <span className="text-[12px] font-medium text-muted-foreground">Enforcement status</span>
+                      <span className="text-[12px] font-medium text-muted-foreground">
+                        Enforcement status
+                      </span>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <CornerDownRight className="size-3.5 shrink-0" />
                         <span className="text-[14px] font-medium text-emerald-500">
@@ -158,7 +167,8 @@ export function SectionAlternating() {
               <span className="text-foreground">Govern</span> what requires human approval
             </h3>
             <p className="mt-[14px] max-w-[460px] text-[14.5px] leading-[23px] text-muted-foreground">
-              Ask what needs review and get high-risk delegations ranked by spending tier, threshold alerts, and compliance impact.
+              Ask what needs review and get high-risk delegations ranked by spending tier, threshold
+              alerts, and compliance impact.
             </p>
             <ul className="mt-[22px] space-y-[11px] text-[14.5px] leading-[22px] text-foreground/80">
               <li className="flex gap-[10px]">
@@ -198,7 +208,10 @@ export function SectionAlternating() {
               }
             >
               <span className="absolute -top-[40px] left-[120px] h-[200px] w-[300px] rounded-full bg-[#dbe6ff]/35 blur-[70px] dark:bg-[#1e2a4a]/20" />
-              <div aria-hidden={true} className="pointer-events-none relative size-full select-none">
+              <div
+                aria-hidden={true}
+                className="pointer-events-none relative size-full select-none"
+              >
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-full max-w-[360px] space-y-4">
                     <div className="flex justify-end">
@@ -215,21 +228,29 @@ export function SectionAlternating() {
                         <p className="flex-1 truncate text-[14px] leading-5 font-semibold text-foreground">
                           Travel & Hospitality Agent ($250 remaining)
                         </p>
-                        <span className="shrink-0 text-[12px] font-medium text-amber-500">Active</span>
+                        <span className="shrink-0 text-[12px] font-medium text-amber-500">
+                          Active
+                        </span>
                       </div>
                       <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-card shadow-sm">
                         <span className="size-4 shrink-0 rounded-full border border-black/30 dark:border-white/30" />
                         <p className="flex-1 truncate text-[14px] leading-5 font-semibold text-foreground">
                           E-Commerce Agent ($120 remaining)
                         </p>
-                        <span className="shrink-0 text-[12px] font-medium text-muted-foreground/70">Review</span>
+                        <span className="shrink-0 text-[12px] font-medium text-muted-foreground/70">
+                          Review
+                        </span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <span className="text-[12px] font-medium text-muted-foreground">Enforcement status</span>
+                      <span className="text-[12px] font-medium text-muted-foreground">
+                        Enforcement status
+                      </span>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <CornerDownRight className="size-3.5 shrink-0" />
-                        <span className="text-[14px] font-medium">Adjust Travel allocation cap</span>
+                        <span className="text-[14px] font-medium">
+                          Adjust Travel allocation cap
+                        </span>
                       </div>
                     </div>
                   </div>

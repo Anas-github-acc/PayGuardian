@@ -113,7 +113,8 @@ async function setup(options: { workerOrder?: PayPalWorkerOrderStore } = {}) {
     },
   });
   const agentA = agentARes.json().agent;
-  const tokenA = (agentARes.json().credential.secret ?? agentARes.json().credential.token) as string;
+  const tokenA = (agentARes.json().credential.secret ??
+    agentARes.json().credential.token) as string;
 
   // 3. Create Agent B (Child Agent)
   const agentBRes = await app.inject({
@@ -128,7 +129,8 @@ async function setup(options: { workerOrder?: PayPalWorkerOrderStore } = {}) {
     },
   });
   const agentB = agentBRes.json().agent;
-  const tokenB = (agentBRes.json().credential.secret ?? agentBRes.json().credential.token) as string;
+  const tokenB = (agentBRes.json().credential.secret ??
+    agentBRes.json().credential.token) as string;
 
   // 4. Create root mandate for Agent A
   const rootMandateRes = await app.inject({

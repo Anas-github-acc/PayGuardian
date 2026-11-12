@@ -64,7 +64,8 @@ async function setup() {
     },
   });
   const agentA = agentARes.json().agent;
-  const tokenA = (agentARes.json().credential.secret ?? agentARes.json().credential.token) as string;
+  const tokenA = (agentARes.json().credential.secret ??
+    agentARes.json().credential.token) as string;
 
   // 3. Create Child Agent B
   const agentBRes = await app.inject({
@@ -79,7 +80,8 @@ async function setup() {
     },
   });
   const agentB = agentBRes.json().agent;
-  const tokenB = (agentBRes.json().credential.secret ?? agentBRes.json().credential.token) as string;
+  const tokenB = (agentBRes.json().credential.secret ??
+    agentBRes.json().credential.token) as string;
 
   // 4. Create Root Mandate for Agent A
   const rootMandateRes = await app.inject({

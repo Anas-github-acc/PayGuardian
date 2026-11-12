@@ -27,16 +27,25 @@ export function SecurityCenter({
   const currentEnv = store.currentEnvironment;
   const activeEnvId = environmentId ?? currentEnv?.id ?? "env-sandbox-travel-01";
 
-  const [activeRevocationImpact, setActiveRevocationImpact] = React.useState<RevocationSubtreeImpact | null>(null);
+  const [activeRevocationImpact, setActiveRevocationImpact] =
+    React.useState<RevocationSubtreeImpact | null>(null);
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = React.useState<boolean>(false);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
 
   // Authority Revocation branches
-  const agents = store.graphNodes.length > 0 ? store.graphNodes : [
-    { id: "orchestrator-root", name: "Main Orchestrator", role: "orchestrator", allocatedMinor: 1000000 },
-    { id: "agent-travel", name: "Travel Subagent", role: "subagent", allocatedMinor: 400000 },
-    { id: "agent-hotel", name: "Hotel Subagent", role: "subagent", allocatedMinor: 400000 },
-  ];
+  const agents =
+    store.graphNodes.length > 0
+      ? store.graphNodes
+      : [
+          {
+            id: "orchestrator-root",
+            name: "Main Orchestrator",
+            role: "orchestrator",
+            allocatedMinor: 1000000,
+          },
+          { id: "agent-travel", name: "Travel Subagent", role: "subagent", allocatedMinor: 400000 },
+          { id: "agent-hotel", name: "Hotel Subagent", role: "subagent", allocatedMinor: 400000 },
+        ];
 
   const handleOpenRevokeRoot = () => {
     setActiveRevocationImpact({
@@ -60,7 +69,9 @@ export function SecurityCenter({
       cascadeMandatesCount: isRoot ? 4 : 2,
       heldReservationsMinor: 50000,
       currency: currentEnv?.currency ?? "USD",
-      childAgentNames: isRoot ? agents.map((a) => a.name) : [`${agentName} Child Scraper`, "Booking Gateway"],
+      childAgentNames: isRoot
+        ? agents.map((a) => a.name)
+        : [`${agentName} Child Scraper`, "Booking Gateway"],
     });
     setIsRevokeDialogOpen(true);
   };
@@ -87,27 +98,29 @@ export function SecurityCenter({
   };
 
   return (
-    <div className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-6 ${className}`}>
+    <div
+      className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-6 ${className}`}
+    >
       {/* Top Banner / Breadcrumb */}
       <div>
         <h2 className="text-lg font-bold tracking-tight text-foreground">
           Security Center & Fail-Safe Interventions
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Environment-wide emergency halts, cryptographic authority revocation, and real-time policy violation telemetry.
+          Environment-wide emergency halts, cryptographic authority revocation, and real-time policy
+          violation telemetry.
         </p>
       </div>
 
       {/* Emergency Controls Section */}
-      <EmergencyControls
-        environmentId={activeEnvId}
-        onRevokeAll={handleOpenRevokeRoot}
-      />
+      <EmergencyControls environmentId={activeEnvId} onRevokeAll={handleOpenRevokeRoot} />
 
       {/* Key Security Telemetry Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
         <div className="rounded-lg border border-border bg-card p-3.5 top-shade">
-          <span className="text-[10px] uppercase font-mono text-muted-foreground block">Active Mandates</span>
+          <span className="text-[10px] uppercase font-mono text-muted-foreground block">
+            Active Mandates
+          </span>
           <div className="text-xl font-bold font-mono text-foreground mt-1">
             {agents.length} active
           </div>
@@ -115,26 +128,30 @@ export function SecurityCenter({
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3.5 top-shade">
-          <span className="text-[10px] uppercase font-mono text-muted-foreground block">Emergency Halt State</span>
+          <span className="text-[10px] uppercase font-mono text-muted-foreground block">
+            Emergency Halt State
+          </span>
           <div className="text-xl font-bold font-mono text-foreground mt-1 capitalize">
             {currentEnv?.status ?? "active"}
           </div>
-          <span className="text-[11px] text-muted-foreground mt-0.5 block">Fail-safe standing by</span>
+          <span className="text-[11px] text-muted-foreground mt-0.5 block">
+            Fail-safe standing by
+          </span>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3.5 top-shade">
-          <span className="text-[10px] uppercase font-mono text-muted-foreground block">Blocked Incidents (24h)</span>
-          <div className="text-xl font-bold font-mono text-warning mt-1">
-            4 prevented
-          </div>
+          <span className="text-[10px] uppercase font-mono text-muted-foreground block">
+            Blocked Incidents (24h)
+          </span>
+          <div className="text-xl font-bold font-mono text-warning mt-1">4 prevented</div>
           <span className="text-[11px] text-warning/80 mt-0.5 block">2 simulation vectors</span>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3.5 top-shade">
-          <span className="text-[10px] uppercase font-mono text-muted-foreground block">Cryptographic Rail Integrity</span>
-          <div className="text-xl font-bold font-mono text-success mt-1">
-            100% Valid
-          </div>
+          <span className="text-[10px] uppercase font-mono text-muted-foreground block">
+            Cryptographic Rail Integrity
+          </span>
+          <div className="text-xl font-bold font-mono text-success mt-1">100% Valid</div>
           <span className="text-[11px] text-success mt-0.5 block">Secp256k1 & Double-entry</span>
         </div>
       </div>
@@ -143,11 +160,10 @@ export function SecurityCenter({
       <div className="rounded-lg border border-border bg-card p-4 top-shade space-y-3">
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              Authority Revocation Center
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">Authority Revocation Center</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Select any agent branch to preview downstream subtree impact and trigger immediate cryptographic invalidation.
+              Select any agent branch to preview downstream subtree impact and trigger immediate
+              cryptographic invalidation.
             </p>
           </div>
         </div>
@@ -161,7 +177,10 @@ export function SecurityCenter({
               <div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">{agent.name}</span>
-                  <Badge variant={agent.role === "orchestrator" ? "default" : "secondary"} className="text-[9px]">
+                  <Badge
+                    variant={agent.role === "orchestrator" ? "default" : "secondary"}
+                    className="text-[9px]"
+                  >
                     {agent.role}
                   </Badge>
                 </div>

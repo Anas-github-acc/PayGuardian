@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ShieldCheck,
-  Link2,
-  Box,
-  ChevronRight,
-  Search,
-} from "lucide-react";
+import { ShieldCheck, Link2, Box, ChevronRight, Search } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import type { AgentNodeData } from "./types";
@@ -66,7 +60,7 @@ export function AgentNetworkListView({
     if (!searchQuery.trim()) return rawNodes;
     const q = searchQuery.toLowerCase();
     return rawNodes.filter(
-      (n) => n.name.toLowerCase().includes(q) || n.role.toLowerCase().includes(q)
+      (n) => n.name.toLowerCase().includes(q) || n.role.toLowerCase().includes(q),
     );
   }, [rawNodes, searchQuery]);
 
@@ -146,7 +140,8 @@ export function AgentNetworkListView({
       {/* Keyboard instructions banner */}
       <div className="px-3.5 py-1.5 bg-zinc-900/40 border-b border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-400">
         <span>
-          Use <strong className="text-zinc-300 font-mono">↑ / ↓</strong> to navigate rows, <strong className="text-zinc-300 font-mono">Enter</strong> to inspect node details drawer
+          Use <strong className="text-zinc-300 font-mono">↑ / ↓</strong> to navigate rows,{" "}
+          <strong className="text-zinc-300 font-mono">Enter</strong> to inspect node details drawer
         </span>
         <span className="font-mono text-[10px] text-zinc-500">1:1 Accessible Equivalent</span>
       </div>
@@ -181,7 +176,11 @@ export function AgentNetworkListView({
                 const availableMinor =
                   node.availableMinor !== undefined
                     ? node.availableMinor
-                    : calculateAvailableMinor(node.allocatedMinor, node.spentMinor, node.reservedMinor);
+                    : calculateAvailableMinor(
+                        node.allocatedMinor,
+                        node.spentMinor,
+                        node.reservedMinor,
+                      );
 
                 return (
                   <tr
@@ -191,8 +190,8 @@ export function AgentNetworkListView({
                       isSelected
                         ? "bg-blue-950/30 text-white"
                         : isFocused
-                        ? "bg-zinc-900 text-white"
-                        : "hover:bg-zinc-900/50 text-zinc-300"
+                          ? "bg-zinc-900 text-white"
+                          : "hover:bg-zinc-900/50 text-zinc-300"
                     }`}
                   >
                     {/* Name & Role */}
@@ -212,9 +211,7 @@ export function AgentNetworkListView({
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-zinc-100">{node.name}</span>
-                            {node.isSimulation && (
-                              <Badge variant="warning">[SIMULATION]</Badge>
-                            )}
+                            {node.isSimulation && <Badge variant="warning">[SIMULATION]</Badge>}
                           </div>
                           <div className="text-[10px] text-zinc-500 font-mono">
                             {node.id} · {node.role}
@@ -230,10 +227,10 @@ export function AgentNetworkListView({
                           node.status === "active"
                             ? "active"
                             : node.status === "revoked"
-                            ? "revoked"
-                            : node.status === "paused"
-                            ? "pending"
-                            : "unfunded"
+                              ? "revoked"
+                              : node.status === "paused"
+                                ? "pending"
+                                : "unfunded"
                         }
                         showDot
                       >

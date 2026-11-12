@@ -46,7 +46,7 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
 
   const toggleScope = (scopeId: string) => {
     setNewKeyScopes((prev) =>
-      prev.includes(scopeId) ? prev.filter((s) => s !== scopeId) : [...prev, scopeId]
+      prev.includes(scopeId) ? prev.filter((s) => s !== scopeId) : [...prev, scopeId],
     );
   };
 
@@ -54,7 +54,8 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
     if (!newKeyName.trim()) return;
 
     const prefix = newKeyEnv === "production" ? "pg_live_" : "pg_test_";
-    const randomHex = Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
+    const randomHex =
+      Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
     const fullSecret = `${prefix}${randomHex}`;
 
     const newKey: ApiKey = {
@@ -80,7 +81,8 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
     if (!key) return;
 
     const prefix = key.environment === "production" ? "pg_live_" : "pg_test_";
-    const randomHex = Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
+    const randomHex =
+      Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
     const fullSecret = `${prefix}${randomHex}`;
 
     setKeys((prev) =>
@@ -92,20 +94,21 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
               secretMasked: `${fullSecret.slice(0, 12)}••••••••••••••••••••${fullSecret.slice(-4)}`,
               createdAt: new Date().toISOString(),
             }
-          : k
-      )
+          : k,
+      ),
     );
 
     setRevealedKeySecret(fullSecret);
   };
 
   const handleRevokeKey = (keyId: string) => {
-    if (typeof window !== "undefined" && !window.confirm("Revoke this API Key? Any agents using it will immediately be denied.")) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Revoke this API Key? Any agents using it will immediately be denied.")
+    ) {
       return;
     }
-    setKeys((prev) =>
-      prev.map((k) => (k.id === keyId ? { ...k, status: "revoked" as const } : k))
-    );
+    setKeys((prev) => prev.map((k) => (k.id === keyId ? { ...k, status: "revoked" as const } : k)));
   };
 
   const handleCopyMasked = (key: ApiKey) => {
@@ -163,7 +166,7 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
                   key={key.id}
                   className={cn(
                     "flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5",
-                    isRevoked && "opacity-60"
+                    isRevoked && "opacity-60",
                   )}
                 >
                   <div className="min-w-0 space-y-1.5">
@@ -175,7 +178,7 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
                           "font-mono text-[9px] uppercase tracking-wider",
                           key.environment === "production"
                             ? "bg-chart-2/10 text-chart-2 border-chart-2/30"
-                            : "bg-warning/10 text-warning border-warning/30"
+                            : "bg-warning/10 text-warning border-warning/30",
                         )}
                       >
                         {key.environment}
@@ -393,12 +396,17 @@ export function KeyManager({ className = "" }: KeyManagerProps) {
                 aria-label={copiedKey ? "Secret copied" : "Copy secret to clipboard"}
                 className="ml-3 shrink-0 h-8 px-2.5 text-xs border-warning/30 text-warning hover:bg-warning/10"
               >
-                {copiedKey ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                {copiedKey ? (
+                  <Check className="h-3.5 w-3.5 text-success" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
               </Button>
             </div>
 
             <div className="rounded-md border border-border bg-secondary p-2.5 text-[11px] text-muted-foreground">
-              If compromised, immediately use the Rotate action to invalidate this credential and issue a new secret.
+              If compromised, immediately use the Rotate action to invalidate this credential and
+              issue a new secret.
             </div>
           </div>
 

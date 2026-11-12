@@ -117,9 +117,7 @@ export const AGENT_CATALOG: CatalogAgent[] = [
       "Book verified boutique hotels within mandate ceiling",
       "Validate cancellation policies and security standards",
     ],
-    samplePrompts: [
-      "Book a 3-night hotel near city center under $150/night.",
-    ],
+    samplePrompts: ["Book a 3-night hotel near city center under $150/night."],
     securityAudit: {
       auditedBy: "PayGuardian Security Labs",
       auditDate: "2026-10-20",
@@ -149,9 +147,7 @@ export const AGENT_CATALOG: CatalogAgent[] = [
       "Reserve culinary dining spots",
       "Process restaurant reservations up to mandate limit",
     ],
-    samplePrompts: [
-      "Find top-rated ramen spots and reserve dinner for two under $50.",
-    ],
+    samplePrompts: ["Find top-rated ramen spots and reserve dinner for two under $50."],
     securityAudit: {
       auditedBy: "PayGuardian Security Engine",
       auditDate: "2026-10-22",
@@ -181,9 +177,7 @@ export const AGENT_CATALOG: CatalogAgent[] = [
       "Purchase transit passes and express rail tickets",
       "Coordinate local transit transfers",
     ],
-    samplePrompts: [
-      "Reserve Narita Express airport transfer and 72-hour subway pass.",
-    ],
+    samplePrompts: ["Reserve Narita Express airport transfer and 72-hour subway pass."],
     securityAudit: {
       auditedBy: "PayGuardian Security Engine",
       auditDate: "2026-10-23",
@@ -209,12 +203,8 @@ export const AGENT_CATALOG: CatalogAgent[] = [
     supportedRails: ["PayPal", "Simulation"],
     publisher: "Official PayGuardian",
     avatarIcon: "shield-check",
-    permissions: [
-      "Book verified museum and cultural admissions",
-    ],
-    samplePrompts: [
-      "Book art museum passes and historic quarter walking tour.",
-    ],
+    permissions: ["Book verified museum and cultural admissions"],
+    samplePrompts: ["Book art museum passes and historic quarter walking tour."],
     securityAudit: {
       auditedBy: "PayGuardian Security Engine",
       auditDate: "2026-10-24",
@@ -227,7 +217,8 @@ export const AGENT_CATALOG: CatalogAgent[] = [
   {
     id: "agent-cloud-optimizer",
     name: "Cloud Cost Optimizer",
-    tagline: "Autonomous spot instance scaling, reserved capacity purchasing, and invoice settlement",
+    tagline:
+      "Autonomous spot instance scaling, reserved capacity purchasing, and invoice settlement",
     description:
       "Monitors real-time cloud infrastructure compute metrics across AWS, GCP, and Kubernetes clusters. Disburses reserved capacity payments and terminates idle workloads.",
     specialty: "custom",
@@ -278,9 +269,7 @@ export const AGENT_CATALOG: CatalogAgent[] = [
       "Create bounded purchase orders with verified corporate merchants",
       "Disburse single-transaction software license fees under $800",
     ],
-    samplePrompts: [
-      "Order 5 ergonomic monitors for the new design team members.",
-    ],
+    samplePrompts: ["Order 5 ergonomic monitors for the new design team members."],
     securityAudit: {
       auditedBy: "PayGuardian Security Labs",
       auditDate: "2026-10-02",

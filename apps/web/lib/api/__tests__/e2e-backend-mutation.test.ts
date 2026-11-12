@@ -347,10 +347,7 @@ describe("E2E Integration: Backend Mutation -> Next.js Proxy -> ApiClient -> UI 
           const envId = activityMatch[1];
           const events = state.auditEvents
             .filter((e) => e.environmentId === envId)
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            );
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           res.writeHead(200, { "content-type": "application/json" });
           res.end(JSON.stringify(events));
           return;
@@ -384,7 +381,9 @@ describe("E2E Integration: Backend Mutation -> Next.js Proxy -> ApiClient -> UI 
 
         // Default 404
         res.writeHead(404, { "content-type": "application/json" });
-        res.end(JSON.stringify({ code: "NOT_FOUND", message: `No route for ${method} ${pathname}` }));
+        res.end(
+          JSON.stringify({ code: "NOT_FOUND", message: `No route for ${method} ${pathname}` }),
+        );
       });
     });
 
@@ -416,12 +415,17 @@ describe("E2E Integration: Backend Mutation -> Next.js Proxy -> ApiClient -> UI 
     // Hook global fetch to execute through the real Next.js proxy route handler
     // when calling /api/proxy/*, preserving exact request/response flow.
     globalThis.fetch = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      const urlStr =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
       if (urlStr.includes("/api/proxy/")) {
-        const urlObj = new URL(urlStr.startsWith("http") ? urlStr : `http://localhost:3000${urlStr}`);
+        const urlObj = new URL(
+          urlStr.startsWith("http") ? urlStr : `http://localhost:3000${urlStr}`,
+        );
         const proxyPrefix = "/api/proxy/";
-        const subPath = urlObj.pathname.slice(urlObj.pathname.indexOf(proxyPrefix) + proxyPrefix.length);
+        const subPath = urlObj.pathname.slice(
+          urlObj.pathname.indexOf(proxyPrefix) + proxyPrefix.length,
+        );
         const pathSegments = subPath.split("/").filter(Boolean);
 
         const method = init?.method?.toUpperCase() ?? "GET";
@@ -620,9 +624,7 @@ describe("E2E Integration: Backend Mutation -> Next.js Proxy -> ApiClient -> UI 
     const client = new ApiClient("/api/proxy");
 
     // Attempting to revoke an agent that does not exist
-    await expect(client.agents.revoke(ENV_ID, "agent_phantom_99")).rejects.toThrow(
-      ApiClientError,
-    );
+    await expect(client.agents.revoke(ENV_ID, "agent_phantom_99")).rejects.toThrow(ApiClientError);
 
     try {
       await client.agents.revoke(ENV_ID, "agent_phantom_99");

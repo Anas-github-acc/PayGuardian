@@ -1,14 +1,14 @@
-import { Badge } from '@/components/ui/badge-2';
-import { Button } from '@/components/ui/button-1';
-import { Card, CardContent, CardHeader, CardTitle, CardToolbar } from '@/components/ui/card';
+import { Badge } from "@/components/ui/badge-2";
+import { Button } from "@/components/ui/button-1";
+import { Card, CardContent, CardHeader, CardTitle, CardToolbar } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { BarChart2, MoreHorizontal } from 'lucide-react';
+} from "@/components/ui/dropdown-menu";
+import { BarChart2, MoreHorizontal } from "lucide-react";
 
 export default function StatisticCard10() {
   return (
@@ -47,7 +47,13 @@ export default function StatisticCard10() {
             {/* Revenue trend */}
             <div className="flex items-center gap-2 mb-4">
               <Badge variant="success" appearance="light">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="inline-block">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  className="inline-block"
+                >
                   <path
                     d="M3 5.5L7 9.5L11 5.5"
                     stroke="currentColor"

@@ -72,7 +72,7 @@ function StatCard({
               "inline-flex items-center gap-0.5 font-medium",
               deltaTone === "positive" && "text-success",
               deltaTone === "negative" && "text-destructive",
-              deltaTone === "neutral" && "text-muted-foreground"
+              deltaTone === "neutral" && "text-muted-foreground",
             )}
           >
             {toneIcon}
@@ -93,7 +93,8 @@ function SpendChart() {
       </div>
       <p className="text-xs font-medium text-foreground">Spend velocity analytics unavailable</p>
       <p className="mt-1 max-w-[320px] text-[11px] text-muted-foreground">
-        7-day historical spend velocity endpoint is pending backend implementation (Contract Gap GAP-SPEND-01).
+        7-day historical spend velocity endpoint is pending backend implementation (Contract Gap
+        GAP-SPEND-01).
       </p>
     </div>
   );
@@ -120,7 +121,9 @@ function AuthorityBars({ nodes, currency }: { nodes: AgentNodeData[]; currency: 
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
             <div
               className="h-full rounded-full bg-chart-1"
-              style={{ width: `${Math.min(100, Math.round((agent.allocatedMinor / maxBar) * 100))}%` }}
+              style={{
+                width: `${Math.min(100, Math.round((agent.allocatedMinor / maxBar) * 100))}%`,
+              }}
             />
           </div>
           <span className="w-20 shrink-0 text-right text-xs tabular-nums text-foreground">
@@ -166,7 +169,8 @@ export function Overview({ className = "" }: OverviewProps) {
   const reserved = currentEnvironment?.reservedMinor ?? 0;
   const available = Math.max(0, limit - spent - reserved);
   const pending = currentEnvironment?.pendingApprovalsCount ?? 0;
-  const activeAgentCount = nodes.filter((n) => n.status === "active").length || currentEnvironment?.agentCount || 0;
+  const activeAgentCount =
+    nodes.filter((n) => n.status === "active").length || currentEnvironment?.agentCount || 0;
 
   const spentPct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
   const reservedPct = limit > 0 ? Math.round((reserved / limit) * 100) : 0;
@@ -212,7 +216,8 @@ export function Overview({ className = "" }: OverviewProps) {
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {currentEnvironment?.purpose || "Autonomous Delegation & Financial Authority Boundary"}
+              {currentEnvironment?.purpose ||
+                "Autonomous Delegation & Financial Authority Boundary"}
             </p>
           </div>
 
@@ -287,7 +292,9 @@ export function Overview({ className = "" }: OverviewProps) {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Authority by agent</CardTitle>
-              <CardDescription>Allocated budget per agent, in environment currency.</CardDescription>
+              <CardDescription>
+                Allocated budget per agent, in environment currency.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <AuthorityBars nodes={nodes} currency={currency} />
@@ -333,11 +340,19 @@ export function Overview({ className = "" }: OverviewProps) {
                             {action.action}
                           </td>
                           <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-foreground">
-                            {action.amountMinor ? formatMinorUnits(action.amountMinor, action.currency ?? currency) : "—"}
+                            {action.amountMinor
+                              ? formatMinorUnits(action.amountMinor, action.currency ?? currency)
+                              : "—"}
                           </td>
                           <td className="px-5 py-3">
                             <Badge
-                              variant={action.outcome === "denied" ? "rejected" : action.outcome === "pending" ? "pending" : "success"}
+                              variant={
+                                action.outcome === "denied"
+                                  ? "rejected"
+                                  : action.outcome === "pending"
+                                    ? "pending"
+                                    : "success"
+                              }
                             >
                               {action.outcome}
                             </Badge>
@@ -379,7 +394,11 @@ export function Overview({ className = "" }: OverviewProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex h-2 overflow-hidden rounded-full bg-secondary" role="img" aria-label={`Spent ${spentPct}%, reserved ${reservedPct}%, available ${availablePct}%`}>
+                <div
+                  className="flex h-2 overflow-hidden rounded-full bg-secondary"
+                  role="img"
+                  aria-label={`Spent ${spentPct}%, reserved ${reservedPct}%, available ${availablePct}%`}
+                >
                   <div className="bg-chart-3" style={{ width: `${spentPct}%` }} />
                   <div className="bg-chart-2/80" style={{ width: `${reservedPct}%` }} />
                   <div className="bg-success/70" style={{ width: `${availablePct}%` }} />
@@ -418,7 +437,7 @@ export function Overview({ className = "" }: OverviewProps) {
                           "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
                           item.outcome === "denied"
                             ? "border-destructive/30 bg-destructive/10 text-destructive"
-                            : "border-border bg-secondary text-muted-foreground"
+                            : "border-border bg-secondary text-muted-foreground",
                         )}
                       >
                         {item.outcome === "denied" ? (
@@ -430,7 +449,9 @@ export function Overview({ className = "" }: OverviewProps) {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-foreground">{item.action}</p>
+                        <p className="truncate text-xs font-medium text-foreground">
+                          {item.action}
+                        </p>
                         <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {item.actorName} · {item.timestamp}
@@ -462,8 +483,8 @@ export function Overview({ className = "" }: OverviewProps) {
               Delete Environment
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              This will permanently delete the environment and related resources like
-              Credentials, Child Mandates, and Ledger Allocations.
+              This will permanently delete the environment and related resources like Credentials,
+              Child Mandates, and Ledger Allocations.
             </DialogDescription>
           </DialogHeader>
 
@@ -482,7 +503,9 @@ export function Overview({ className = "" }: OverviewProps) {
                 disabled={isDeleting}
                 className={cn(
                   "h-9 text-xs font-mono bg-background border-border",
-                  deleteConfirmationInput && !isDeleteMatch && "border-destructive/60 focus-visible:ring-destructive"
+                  deleteConfirmationInput &&
+                    !isDeleteMatch &&
+                    "border-destructive/60 focus-visible:ring-destructive",
                 )}
                 autoFocus
               />

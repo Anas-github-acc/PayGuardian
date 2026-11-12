@@ -11,7 +11,17 @@ import {
   themeQuartz,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { Search, RefreshCw, ExternalLink, Shield, AlertCircle, History, CheckCircle2, Clock, GitCommit } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  ExternalLink,
+  Shield,
+  AlertCircle,
+  History,
+  CheckCircle2,
+  Clock,
+  GitCommit,
+} from "lucide-react";
 import type { AgentDto, MandateDto, LedgerAccountDto } from "@payguardian/contracts";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { cn } from "../../lib/utils";
@@ -91,9 +101,20 @@ export function MandatesTable({
 
         const budgetLimitMinor = typeof m.budgetLimitMinor === "number" ? m.budgetLimitMinor : 0;
         const allocatedMinor = typeof m.allocatedMinor === "number" ? m.allocatedMinor : 0;
-        const spentMinor = account ? account.capturedMinor : typeof m.spentMinor === "number" ? m.spentMinor : 0;
-        const reservedMinor = account ? account.reservedMinor : typeof m.reservedMinor === "number" ? m.reservedMinor : 0;
-        const availableMinor = Math.max(0, budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor);
+        const spentMinor = account
+          ? account.capturedMinor
+          : typeof m.spentMinor === "number"
+            ? m.spentMinor
+            : 0;
+        const reservedMinor = account
+          ? account.reservedMinor
+          : typeof m.reservedMinor === "number"
+            ? m.reservedMinor
+            : 0;
+        const availableMinor = Math.max(
+          0,
+          budgetLimitMinor - allocatedMinor - spentMinor - reservedMinor,
+        );
 
         const isRoot = !m.parentMandateId || !agent?.parentAgentId || agent?.kind === "root";
         const agentName =
@@ -104,7 +125,8 @@ export function MandatesTable({
               : "Main Orchestrator"
             : "Specialist Subagent");
         const role: "orchestrator" | "subagent" = isRoot ? "orchestrator" : "subagent";
-        const parentAgentName = parentAgent?.name || (isRoot ? "Lead Operator (You)" : "Main Orchestrator");
+        const parentAgentName =
+          parentAgent?.name || (isRoot ? "Lead Operator (You)" : "Main Orchestrator");
 
         rows.push({
           id: String(m.id),
@@ -149,8 +171,10 @@ export function MandatesTable({
             holderAgentId: agent.id,
             agentName: agent.name,
             role: isRoot ? "orchestrator" : "subagent",
-            parentMandateId: isRoot ? null : rootMandate?.id ?? null,
-            parentAgentName: isRoot ? "Lead Operator (You)" : rootAgent?.name ?? "Main Orchestrator",
+            parentMandateId: isRoot ? null : (rootMandate?.id ?? null),
+            parentAgentName: isRoot
+              ? "Lead Operator (You)"
+              : (rootAgent?.name ?? "Main Orchestrator"),
             budgetLimitMinor: 0,
             allocatedMinor: 0,
             spentMinor: 0,
@@ -256,7 +280,12 @@ export function MandatesTable({
                   ? "text-amber-500/90"
                   : "text-muted-foreground";
           return (
-            <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium capitalize", tone)}>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 text-xs font-medium capitalize",
+                tone,
+              )}
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {state}
             </span>
@@ -286,7 +315,7 @@ export function MandatesTable({
                   "font-mono text-xs cursor-pointer transition-colors",
                   item.state === "superseded"
                     ? "text-muted-foreground/50 line-through"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
                 title={`Version ${versionNum}. Click to view history.`}
               >
@@ -449,7 +478,8 @@ export function MandatesTable({
         <div>
           <h2 className="text-sm font-semibold text-foreground">Mandates</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Delegated spending authority held by each agent, with versioned lineage, live limits, and audit tracking.
+            Delegated spending authority held by each agent, with versioned lineage, live limits,
+            and audit tracking.
           </p>
         </div>
 
@@ -505,7 +535,8 @@ export function MandatesTable({
           <Shield className="h-9 w-9 text-muted-foreground/60 mb-2" />
           <p className="text-sm font-medium text-foreground">No mandates configured</p>
           <p className="text-xs text-muted-foreground max-w-sm mt-1">
-            This environment has no spending mandates issued yet. Attach an agent or initialize a root mandate in the Workspace to establish authority.
+            This environment has no spending mandates issued yet. Attach an agent or initialize a
+            root mandate in the Workspace to establish authority.
           </p>
         </div>
       ) : (
@@ -534,7 +565,10 @@ export function MandatesTable({
 
       {/* Mandate Version Lineage & History Drawer */}
       <Sheet open={!!selectedSeriesId} onOpenChange={(open) => !open && setSelectedSeriesId(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-lg bg-card border-border overflow-y-auto p-6 text-foreground">
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg bg-card border-border overflow-y-auto p-6 text-foreground"
+        >
           {selectedSeriesMandates.length > 0 && (
             <div className="space-y-6">
               <SheetHeader className="text-left space-y-1">
@@ -547,8 +581,11 @@ export function MandatesTable({
                   </SheetTitle>
                 </div>
                 <SheetDescription className="text-xs text-muted-foreground">
-                  Audit trail of spending authority versions and top-up allocations for this mandate series:
-                  <span className="font-mono ml-1 text-foreground/80">{selectedSeriesId?.slice(0, 8)}...</span>
+                  Audit trail of spending authority versions and top-up allocations for this mandate
+                  series:
+                  <span className="font-mono ml-1 text-foreground/80">
+                    {selectedSeriesId?.slice(0, 8)}...
+                  </span>
                 </SheetDescription>
               </SheetHeader>
 
@@ -557,29 +594,48 @@ export function MandatesTable({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Role / Authority</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-foreground capitalize">{activeSeriesMandate?.role}</span>
+                    <span className="font-medium text-foreground capitalize">
+                      {activeSeriesMandate?.role}
+                    </span>
                     <span className="text-muted-foreground">via</span>
-                    <span className="font-medium text-foreground">{activeSeriesMandate?.parentAgentName}</span>
+                    <span className="font-medium text-foreground">
+                      {activeSeriesMandate?.parentAgentName}
+                    </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-3">
                   <div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Active Limit</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      Active Limit
+                    </div>
                     <div className="font-mono text-xs font-semibold text-foreground">
-                      {formatMinorUnits(activeSeriesMandate?.budgetLimitMinor ?? 0, activeSeriesMandate?.currency ?? "USD")}
+                      {formatMinorUnits(
+                        activeSeriesMandate?.budgetLimitMinor ?? 0,
+                        activeSeriesMandate?.currency ?? "USD",
+                      )}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Spent</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      Spent
+                    </div>
                     <div className="font-mono text-xs font-semibold text-muted-foreground">
-                      {formatMinorUnits(activeSeriesMandate?.spentMinor ?? 0, activeSeriesMandate?.currency ?? "USD")}
+                      {formatMinorUnits(
+                        activeSeriesMandate?.spentMinor ?? 0,
+                        activeSeriesMandate?.currency ?? "USD",
+                      )}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Available</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      Available
+                    </div>
                     <div className="font-mono text-xs font-semibold text-success">
-                      {formatMinorUnits(activeSeriesMandate?.availableMinor ?? 0, activeSeriesMandate?.currency ?? "USD")}
+                      {formatMinorUnits(
+                        activeSeriesMandate?.availableMinor ?? 0,
+                        activeSeriesMandate?.currency ?? "USD",
+                      )}
                     </div>
                   </div>
                 </div>
@@ -589,7 +645,8 @@ export function MandatesTable({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Version Lineage ({selectedSeriesMandates.length} {selectedSeriesMandates.length === 1 ? "Version" : "Versions"})
+                    Version Lineage ({selectedSeriesMandates.length}{" "}
+                    {selectedSeriesMandates.length === 1 ? "Version" : "Versions"})
                   </h4>
                 </div>
 
@@ -597,7 +654,9 @@ export function MandatesTable({
                   {selectedSeriesMandates.map((item, idx) => {
                     const isCurrent = item.state === "active";
                     const prevItem = selectedSeriesMandates[idx + 1];
-                    const incrementalDelta = prevItem ? item.budgetLimitMinor - prevItem.budgetLimitMinor : 0;
+                    const incrementalDelta = prevItem
+                      ? item.budgetLimitMinor - prevItem.budgetLimitMinor
+                      : 0;
 
                     return (
                       <div key={item.id} className="relative group">
@@ -605,7 +664,9 @@ export function MandatesTable({
                         <div
                           className={cn(
                             "absolute -left-[27px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-background",
-                            isCurrent ? "bg-success ring-2 ring-success/20" : "bg-muted-foreground/60"
+                            isCurrent
+                              ? "bg-success ring-2 ring-success/20"
+                              : "bg-muted-foreground/60",
                           )}
                         />
 
@@ -615,12 +676,14 @@ export function MandatesTable({
                             "rounded-lg border p-3 text-xs space-y-2.5 transition-colors",
                             isCurrent
                               ? "border-primary/40 bg-primary/5 shadow-sm"
-                              : "border-border/70 bg-card/60 opacity-80 hover:opacity-100"
+                              : "border-border/70 bg-card/60 opacity-80 hover:opacity-100",
                           )}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-foreground">v{item.version ?? 1}</span>
+                              <span className="font-mono font-bold text-foreground">
+                                v{item.version ?? 1}
+                              </span>
                               <span
                                 className={cn(
                                   "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
@@ -628,7 +691,7 @@ export function MandatesTable({
                                     ? "bg-success/15 text-success"
                                     : item.state === "revoked"
                                       ? "bg-destructive/15 text-destructive"
-                                      : "bg-muted text-muted-foreground"
+                                      : "bg-muted text-muted-foreground",
                                 )}
                               >
                                 {item.state}
@@ -642,7 +705,9 @@ export function MandatesTable({
 
                           <div className="flex items-baseline justify-between border-t border-border/40 pt-2">
                             <div>
-                              <span className="text-muted-foreground text-[11px]">Cumulative Limit: </span>
+                              <span className="text-muted-foreground text-[11px]">
+                                Cumulative Limit:{" "}
+                              </span>
                               <span className="font-mono font-semibold text-foreground">
                                 {formatMinorUnits(item.budgetLimitMinor, item.currency)}
                               </span>
@@ -657,7 +722,9 @@ export function MandatesTable({
                           {item.previousMandateId && (
                             <div className="text-[10px] text-muted-foreground font-mono">
                               <span>Predecessor: </span>
-                              <span className="truncate">{item.previousMandateId.slice(0, 8)}...</span>
+                              <span className="truncate">
+                                {item.previousMandateId.slice(0, 8)}...
+                              </span>
                             </div>
                           )}
 

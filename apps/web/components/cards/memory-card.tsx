@@ -48,7 +48,11 @@ export function MemoryCard({
       {/* Header with Category & Timestamp */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2">
-          <Badge variant="authorized" showDot className="bg-success/10 text-success border-success/30">
+          <Badge
+            variant="authorized"
+            showDot
+            className="bg-success/10 text-success border-success/30"
+          >
             <Bookmark className="h-3 w-3 mr-1" />
             DURABLE MEMORY SAVED
           </Badge>
@@ -59,15 +63,21 @@ export function MemoryCard({
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
           <Clock className="h-3 w-3" />
           <span>
-            {savedAt ? new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+            {savedAt
+              ? new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              : "—"}
           </span>
         </div>
       </div>
 
       {/* Memory Content */}
       <div className="mt-3">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Memory Key</div>
-        <div className="font-mono text-xs font-semibold text-foreground">{keyName || "unnamed_key"}</div>
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+          Memory Key
+        </div>
+        <div className="font-mono text-xs font-semibold text-foreground">
+          {keyName || "unnamed_key"}
+        </div>
 
         <div className="mt-1.5 rounded-md border border-border bg-secondary p-2.5 text-xs text-foreground leading-relaxed">
           {value || "No value recorded"}
@@ -84,7 +94,8 @@ export function MemoryCard({
       <div className="mt-3 flex items-start gap-1.5 rounded border border-border bg-secondary/50 p-2 text-[11px] text-muted-foreground">
         <Info className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
         <span>
-          <strong className="text-foreground">Security Notice:</strong> Memory never grants spending permission. Authority can only be granted via signed cryptographic mandates.
+          <strong className="text-foreground">Security Notice:</strong> Memory never grants spending
+          permission. Authority can only be granted via signed cryptographic mandates.
         </span>
       </div>
 

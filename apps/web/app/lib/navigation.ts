@@ -26,7 +26,7 @@ export const VALID_TABLES_SUBTABS: TablesSubTab[] = ["mandates", "activity", "po
  * Defaults strictly to "overview" when no valid tab is specified.
  */
 export function getTabFromSearchParams(
-  searchParams: URLSearchParams | { get: (key: string) => string | null }
+  searchParams: URLSearchParams | { get: (key: string) => string | null },
 ): NavTab {
   const tab = searchParams.get("tab") as NavTab | null;
   return tab && VALID_NAV_TABS.includes(tab) ? tab : "overview";
@@ -37,7 +37,7 @@ export function getTabFromSearchParams(
  * Defaults to "mandates".
  */
 export function getSubTabFromSearchParams(
-  searchParams: URLSearchParams | { get: (key: string) => string | null }
+  searchParams: URLSearchParams | { get: (key: string) => string | null },
 ): TablesSubTab {
   const sub = searchParams.get("sub") as TablesSubTab | null;
   return sub && VALID_TABLES_SUBTABS.includes(sub) ? sub : "mandates";
@@ -71,7 +71,7 @@ export function useDashboardNavigation() {
       const path = qs ? `/dashboard?${qs}` : "/dashboard";
       router.push(path);
     },
-    [router]
+    [router],
   );
 
   return {

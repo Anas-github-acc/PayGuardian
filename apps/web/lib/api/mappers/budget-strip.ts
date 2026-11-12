@@ -30,11 +30,7 @@ export function mapBudgetStrip(
   }
 
   const mappedStatus: EnvironmentStatus =
-    dto.status === "active"
-      ? "active"
-      : dto.status === "paused"
-      ? "paused"
-      : "revoked";
+    dto.status === "active" ? "active" : dto.status === "paused" ? "paused" : "revoked";
 
   return {
     id: dto.id,

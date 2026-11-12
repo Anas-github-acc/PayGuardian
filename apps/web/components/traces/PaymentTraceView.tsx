@@ -27,11 +27,7 @@ export interface PaymentTraceViewProps {
   className?: string;
 }
 
-export function PaymentTraceView({
-  traceId,
-  onClose,
-  className = "",
-}: PaymentTraceViewProps) {
+export function PaymentTraceView({ traceId, onClose, className = "" }: PaymentTraceViewProps) {
   const store = useWorkspaceStore();
   const effectiveTraceId = traceId ?? store.selectedTraceId ?? null;
 
@@ -55,12 +51,16 @@ export function PaymentTraceView({
   // Empty state: no trace selected
   if (!effectiveTraceId) {
     return (
-      <div className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}>
+      <div
+        className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}
+      >
         <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-12 text-center min-h-[380px] flex flex-col items-center justify-center">
           <Layers className="h-10 w-10 text-zinc-600 mb-3" />
           <h3 className="text-base font-semibold text-white">No payment trace selected</h3>
           <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
-            Select any transaction or audit event from the Activity Feed or Approvals queue to inspect its cryptographic authorization chain, mandate policy decisions, and settlement record.
+            Select any transaction or audit event from the Activity Feed or Approvals queue to
+            inspect its cryptographic authorization chain, mandate policy decisions, and settlement
+            record.
           </p>
           {onClose && (
             <Button
@@ -80,7 +80,9 @@ export function PaymentTraceView({
   // Loading skeleton matching container dimensions without layout shift
   if (isLoading && !trace) {
     return (
-      <div className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-4 text-foreground ${className}`}>
+      <div
+        className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-4 text-foreground ${className}`}
+      >
         <div className="h-36 rounded-lg border border-border bg-card/60 animate-pulse" />
         <div className="h-10 w-72 rounded-lg border border-border bg-card/60 animate-pulse" />
         <div className="h-[360px] rounded-lg border border-border bg-card/60 animate-pulse" />
@@ -91,7 +93,9 @@ export function PaymentTraceView({
   // Error state with retry
   if (error && !trace) {
     return (
-      <div className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}>
+      <div
+        className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}
+      >
         <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-8 text-center min-h-[320px] flex flex-col items-center justify-center">
           <AlertTriangle className="h-8 w-8 text-red-400 mb-2" />
           <h3 className="text-sm font-semibold text-white">Failed to load payment trace</h3>
@@ -125,12 +129,15 @@ export function PaymentTraceView({
   // Unavailable state: actionId not found in backend
   if (isUnavailable || !trace) {
     return (
-      <div className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}>
+      <div
+        className={`mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 text-foreground ${className}`}
+      >
         <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950 p-8 text-center min-h-[320px] flex flex-col items-center justify-center">
           <ShieldAlert className="h-8 w-8 text-amber-500/60 mb-2" />
           <h3 className="text-sm font-semibold text-white">Payment Trace Unavailable</h3>
           <p className="mt-1.5 max-w-md text-xs text-zinc-400 leading-relaxed">
-            No action record or payment trace exists for &quot;{effectiveTraceId}&quot; in environment &quot;{store.currentEnvironmentId || "default"}&quot;.
+            No action record or payment trace exists for &quot;{effectiveTraceId}&quot; in
+            environment &quot;{store.currentEnvironmentId || "default"}&quot;.
           </p>
           <div className="mt-4 flex items-center gap-2">
             <Button
@@ -163,7 +170,9 @@ export function PaymentTraceView({
   const isPending = trace.status === "pending_capture" || trace.status === "authorized";
 
   return (
-    <div className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-4 text-foreground ${className}`}>
+    <div
+      className={`mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 space-y-4 text-foreground ${className}`}
+    >
       {/* Top Headline Banner */}
       <div className="rounded-lg border border-border bg-card p-4 top-shade">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
@@ -176,10 +185,10 @@ export function PaymentTraceView({
               {trace.status === "completed"
                 ? "SETTLED & VERIFIED"
                 : trace.status === "rejected"
-                ? "GATEWAY REJECTED"
-                : isPending
-                ? "PENDING CONFIRMATION"
-                : "EXECUTION FAILED"}
+                  ? "GATEWAY REJECTED"
+                  : isPending
+                    ? "PENDING CONFIRMATION"
+                    : "EXECUTION FAILED"}
             </Badge>
             <span className="font-mono text-xs text-muted-foreground bg-white/[0.04] px-2 py-0.5 rounded border border-border">
               Rail: {trace.rail}
@@ -188,7 +197,8 @@ export function PaymentTraceView({
 
           <div className="flex items-center gap-3 font-mono text-xs text-muted-foreground">
             <span>
-              Latency: {trace.totalLatencyMs > 0 ? `${trace.totalLatencyMs}ms` : "Unavailable (GAP-TRC-01)"}
+              Latency:{" "}
+              {trace.totalLatencyMs > 0 ? `${trace.totalLatencyMs}ms` : "Unavailable (GAP-TRC-01)"}
             </span>
             {onClose && (
               <Button

@@ -46,7 +46,9 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
     setMandateOverlayOpen,
   } = useChat();
 
-  const activeChatId = activeConversationId ?? (typeof params?.chatId === "string" && params.chatId !== "new" ? params.chatId : null);
+  const activeChatId =
+    activeConversationId ??
+    (typeof params?.chatId === "string" && params.chatId !== "new" ? params.chatId : null);
 
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -87,7 +89,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
         className={cn(
           "flex h-full shrink-0 flex-col overflow-hidden border-r border-zinc-900 bg-zinc-950 text-zinc-300 select-none",
           !sidebarOpen && "pointer-events-none border-r-0",
-          className
+          className,
         )}
       >
         <div className="flex h-full w-[260px] flex-col">
@@ -193,7 +195,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                           "group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors text-left cursor-pointer",
                           isActive
                             ? "bg-zinc-800 text-white font-medium"
-                            : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                            : "text-zinc-300 hover:bg-zinc-900 hover:text-white",
                         )}
                         onClick={() => selectConversation(c.id)}
                         onMouseEnter={() => prefetchConversationOnHover(c.id)}
@@ -240,7 +242,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                           "group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors text-left cursor-pointer",
                           isActive
                             ? "bg-zinc-800 text-white font-medium"
-                            : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                            : "text-zinc-300 hover:bg-zinc-900 hover:text-white",
                         )}
                         onClick={() => selectConversation(c.id)}
                         onMouseEnter={() => prefetchConversationOnHover(c.id)}
@@ -252,7 +254,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                         <div
                           className={cn(
                             "items-center gap-1 shrink-0 text-zinc-400",
-                            isMenuOpen ? "flex" : "hidden group-hover:flex"
+                            isMenuOpen ? "flex" : "hidden group-hover:flex",
                           )}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -265,16 +267,14 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                             <Pin
                               className={cn(
                                 "h-3.5 w-3.5",
-                                isPinned(c.id) && "fill-current text-zinc-200"
+                                isPinned(c.id) && "fill-current text-zinc-200",
                               )}
                             />
                           </button>
                           <button
                             type="button"
                             title="Chat options"
-                            onClick={() =>
-                              setActiveMenuId((prev) => (prev === c.id ? null : c.id))
-                            }
+                            onClick={() => setActiveMenuId((prev) => (prev === c.id ? null : c.id))}
                             className="hover:text-white p-1 transition-colors"
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" />
@@ -353,10 +353,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
       </motion.aside>
 
       {/* Mandate Overlay Modal */}
-      <MandateOverlay
-        open={mandateOverlayOpen}
-        onClose={() => setMandateOverlayOpen(false)}
-      />
+      <MandateOverlay open={mandateOverlayOpen} onClose={() => setMandateOverlayOpen(false)} />
     </>
   );
 }

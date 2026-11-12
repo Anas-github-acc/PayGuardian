@@ -45,14 +45,12 @@ export function StatusPill({ className, showLatency = true }: StatusPillProps) {
 
   return (
     <Tooltip>
-      <TooltipTrigger
-        className={cn("outline-none focus:outline-none", className)}
-      >
+      <TooltipTrigger className={cn("outline-none focus:outline-none", className)}>
         <div
           className={cn(
             "group inline-flex items-center gap-2 rounded-full border border-border bg-card px-2.5 py-1 text-xs transition-all duration-150 hover:border-border hover:bg-secondary select-none",
             connectionStatus === "reconnecting" && "border-warning/20 bg-warning/[0.03]",
-            connectionStatus === "offline" && "border-destructive/20 bg-destructive/[0.03]"
+            connectionStatus === "offline" && "border-destructive/20 bg-destructive/[0.03]",
           )}
           onClick={handleManualRetry}
           role="status"
@@ -64,14 +62,14 @@ export function StatusPill({ className, showLatency = true }: StatusPillProps) {
               <span
                 className={cn(
                   "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 duration-1000",
-                  statusConfig.pingColor
+                  statusConfig.pingColor,
                 )}
               />
             )}
             <span
               className={cn(
                 "relative inline-flex h-1.5 w-1.5 rounded-full transition-colors",
-                statusConfig.dotColor
+                statusConfig.dotColor,
               )}
             />
           </div>
