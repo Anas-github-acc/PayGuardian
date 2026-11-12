@@ -80,12 +80,19 @@ async function handleProxy(
   let bodyText: string | undefined;
   if (["POST", "PUT", "PATCH"].includes(request.method.toUpperCase())) {
     try {
-      bodyText = await request.text();
-      if (!forwardHeaders.has("content-type")) {
-        forwardHeaders.set("content-type", "application/json");
+      const text = await request.text();
+      if (text && text.trim().length > 0) {
+        bodyText = text;
+        if (!forwardHeaders.has("content-type")) {
+          forwardHeaders.set("content-type", "application/json");
+        }
+      } else {
+        bodyText = undefined;
+        forwardHeaders.delete("content-type");
       }
     } catch {
-      // Body may be empty
+      bodyText = undefined;
+      forwardHeaders.delete("content-type");
     }
   }
 

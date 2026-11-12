@@ -390,14 +390,32 @@ export function registerPhase4Routes(
         continue;
       }
 
-      const canDelegate = alloc.agent === "travel";
-      const maxDepth = alloc.agent === "travel" ? 1 : 0;
+      const directChildren = childAllocs.filter(
+        (c) => (c.parentAgent || SPECIALIST_SPECS[c.agent]?.parentAlias) === alloc.agent,
+      );
+      const hasChildren = directChildren.length > 0;
+      const canDelegate = (alloc as any).canDelegate ?? (hasChildren || alloc.agent === "travel");
+      const maxDepth = (alloc as any).maxDelegationDepth ?? (canDelegate ? 1 : 0);
       const idemKey = `${approvalId}:${alloc.agent}`;
 
       let actionsToPermit =
         alloc.capabilities && alloc.capabilities.length > 0
-          ? alloc.capabilities
-          : parentMandate.permittedActions;
+          ? [...alloc.capabilities]
+          : [...(SPECIALIST_SPECS[alloc.agent]?.capabilities || parentMandate.permittedActions)];
+
+      // Ensure coordinator holds capabilities required by direct child delegations
+      for (const child of directChildren) {
+        const childCaps =
+          child.capabilities && child.capabilities.length > 0
+            ? child.capabilities
+            : (SPECIALIST_SPECS[child.agent]?.capabilities || []);
+        for (const cap of childCaps) {
+          if (!actionsToPermit.includes(cap)) {
+            actionsToPermit.push(cap);
+          }
+        }
+      }
+
       if (!parentMandate.permittedActions.includes("*")) {
         const filtered = actionsToPermit.filter(
           (act: string) =>
@@ -419,6 +437,7 @@ export function registerPhase4Routes(
         approvalRequired: parentMandate.approvalRequired,
         idempotencyKey: idemKey,
         caller: scoped.owner,
+        supersedeExisting: true,
       });
 
       if (res.mandate) {
@@ -482,6 +501,7 @@ export function registerPhase4Routes(
         approvalRequired: parentCoordMandate.approvalRequired,
         idempotencyKey: idemKey,
         caller: { kind: "agent", agentId: parentCoordAgent.id, userId: scoped.owner.userId },
+        supersedeExisting: true,
       });
 
       if (childResult.mandate) {
@@ -514,6 +534,11 @@ export function registerPhase4Routes(
     } else {
       finalStatus = "FAILED";
     }
+
+    const totalDelegatedMinor = successes
+      .filter((s) => !s.parentMandateId)
+      .reduce((acc, s) => acc + s.amountMinor, 0);
+    const remainingReserveMinor = Math.max(0, parentMandate.budgetLimitMinor - totalDelegatedMinor);
 
     if (dependencies.approvals) {
       try {
@@ -568,11 +593,6 @@ export function registerPhase4Routes(
       },
     });
 
-    const totalDelegatedMinor = successes
-      .filter((s) => !s.parentMandateId)
-      .reduce((acc, s) => acc + s.amountMinor, 0);
-    const remainingReserveMinor = Math.max(0, parentMandate.budgetLimitMinor - totalDelegatedMinor);
-
     return reply.code(finalStatus === "FAILED" ? 400 : 200).send({
       status: finalStatus,
       approvalId,
@@ -582,6 +602,8 @@ export function registerPhase4Routes(
       failures,
       totalDelegatedMinor,
       remainingReserveMinor,
+      code: finalStatus === "FAILED" ? "DELEGATION_FAILED" : undefined,
+      message: finalStatus === "FAILED" ? (failures[0]?.reason || "Authority rejected delegation.") : undefined,
     });
   }
 

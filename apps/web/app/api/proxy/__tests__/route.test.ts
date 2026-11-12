@@ -136,4 +136,27 @@ describe("Next.js API Proxy Route Handler", () => {
     expect(capturedInit?.method).toBe("DELETE");
     expect(response.body).toBeNull();
   });
+
+  it("does not inject content-type application/json when POST body is empty", async () => {
+    globalThis.fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response(JSON.stringify({ status: "approved" }), { status: 200 });
+    }) as typeof fetch;
+
+    const request = new NextRequest("http://localhost:3000/api/proxy/v1/approvals/appr-1/approve", {
+      method: "POST",
+    });
+
+    const ctx = {
+      params: Promise.resolve({ path: ["v1", "approvals", "appr-1", "approve"] }),
+    };
+
+    const response = await POST(request, ctx);
+    expect(response.status).toBe(200);
+    expect(capturedInit?.method).toBe("POST");
+    expect(capturedInit?.body).toBeUndefined();
+
+    const forwardedHeaders = new Headers(capturedInit?.headers);
+    expect(forwardedHeaders.has("content-type")).toBe(false);
+  });
 });

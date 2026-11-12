@@ -184,11 +184,11 @@ export class ApiClient {
       return res as EnvironmentDto;
     },
     pause: (id: string, options?: RequestOptions) =>
-      this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/pause`, undefined, options),
+      this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/pause`, {}, options),
     resume: (id: string, options?: RequestOptions) =>
-      this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/resume`, undefined, options),
+      this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/resume`, {}, options),
     revoke: (id: string, options?: RequestOptions) =>
-      this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/revoke`, undefined, options),
+      this.post<EnvironmentDto>(`/v1/environments/${encodeURIComponent(id)}/revoke`, {}, options),
     delete: (id: string, options?: RequestOptions) =>
       this.delete<{ success: boolean; environmentId: string }>(`/v1/environments/${encodeURIComponent(id)}`, options),
   };
@@ -238,13 +238,13 @@ export class ApiClient {
     disable: (environmentId: string, agentId: string, options?: RequestOptions) =>
       this.post<AgentDto>(
         `/v1/environments/${encodeURIComponent(environmentId)}/agents/${encodeURIComponent(agentId)}/disable`,
-        undefined,
+        {},
         options,
       ),
     revoke: (environmentId: string, agentId: string, options?: RequestOptions) =>
       this.post<AgentDto>(
         `/v1/environments/${encodeURIComponent(environmentId)}/agents/${encodeURIComponent(agentId)}/revoke`,
-        undefined,
+        {},
         options,
       ),
   };
@@ -414,10 +414,15 @@ export class ApiClient {
         `/v1/environments/${encodeURIComponent(environmentId)}/approvals/${encodeURIComponent(approvalId)}`,
         options,
       ),
-    approve: (environmentId: string, approvalId: string, options?: RequestOptions) =>
+    approve: (
+      environmentId: string,
+      approvalId: string,
+      body?: Record<string, unknown>,
+      options?: RequestOptions,
+    ) =>
       this.post<ApprovalDto>(
         `/v1/environments/${encodeURIComponent(environmentId)}/approvals/${encodeURIComponent(approvalId)}/approve`,
-        undefined,
+        body ?? {},
         options,
       ),
     reject: (environmentId: string, approvalId: string, reason?: string, options?: RequestOptions) =>
@@ -523,7 +528,31 @@ export class ApiClient {
     capturePayPal: (environmentId: string, actionId: string, options?: RequestOptions) =>
       this.post<PayPalOperationSummaryDto>(
         `/v1/environments/${encodeURIComponent(environmentId)}/payments/paypal/${encodeURIComponent(actionId)}/capture`,
-        undefined,
+        {},
+        options,
+      ),
+    captureOrder: (
+      environmentId: string,
+      data: {
+        orderId: string;
+        actionId?: string;
+        approvalId?: string;
+        amountMinor?: number;
+        currency?: string;
+      },
+      options?: RequestOptions,
+    ) =>
+      this.post<{
+        success: boolean;
+        status: string;
+        orderId: string;
+        transactionId?: string | null;
+        captureId?: string | null;
+        amountMinor?: number;
+        currency?: string;
+      }>(
+        `/v1/environments/${encodeURIComponent(environmentId)}/payments/paypal/capture`,
+        data,
         options,
       ),
     listOperations: (

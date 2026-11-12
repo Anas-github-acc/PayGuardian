@@ -80,6 +80,7 @@ export type AuthorityStore = {
       idempotencyKey?: string;
       grantJti?: string;
       caller?: Principal;
+      supersedeExisting?: boolean;
     },
   ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }>;
   topup?(
@@ -288,6 +289,7 @@ export class InMemoryAuthorityStore implements AuthorityStore {
       idempotencyKey?: string;
       grantJti?: string;
       caller?: Principal;
+      supersedeExisting?: boolean;
     },
   ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }> {
     return this.withLock(`${parentId}:${input.holderAgentId}`, async () => {
@@ -454,7 +456,7 @@ export class InMemoryAuthorityStore implements AuthorityStore {
 
       let result: { mandate: Mandate | null; decision: PolicyDecision };
 
-      if (activeChild) {
+      if (activeChild && !input.supersedeExisting) {
         // TOP-UP VERSIONING: incremental allocation
         result = topupMandate(
           parent,
@@ -479,15 +481,63 @@ export class InMemoryAuthorityStore implements AuthorityStore {
           this.mandates.set(result.mandate.id, result.mandate);
         }
       } else {
-        // INITIAL DELEGATION: V1
+        // SUPERSEDE OR INITIAL DELEGATION
+        const prevParentAllocated = parent.allocatedMinor;
+        const prevChildState = activeChild?.state;
+        const prevChildSupersededAt = activeChild?.supersededAt;
+        const nowIso = new Date().toISOString();
+
+        if (activeChild && input.supersedeExisting) {
+          activeChild.state = "superseded";
+          activeChild.supersededAt = nowIso;
+          parent.allocatedMinor = Math.max(0, parent.allocatedMinor - activeChild.budgetLimitMinor);
+          this.mandates.set(activeChild.id, activeChild);
+
+          // Supersede any active descendants of this child
+          for (const candidate of this.mandates.values()) {
+            if (candidate.state === "active" && this.descendsFrom(candidate, activeChild.id)) {
+              candidate.state = "superseded";
+              candidate.supersededAt = nowIso;
+              this.mandates.set(candidate.id, candidate);
+            }
+          }
+        }
+
+        // Also clean up any other active mandate for this holder in the same environment if superseding
+        if (input.supersedeExisting) {
+          for (const candidate of this.mandates.values()) {
+            if (
+              candidate.id !== activeChild?.id &&
+              candidate.environmentId === parent.environmentId &&
+              candidate.holderAgentId === input.holderAgentId &&
+              candidate.state === "active"
+            ) {
+              candidate.state = "superseded";
+              candidate.supersededAt = nowIso;
+              this.mandates.set(candidate.id, candidate);
+            }
+          }
+        }
+
         result = delegateMandate(
           parent,
-          { ...input, id: randomUUID(), createdAt: new Date().toISOString() },
+          { ...input, id: randomUUID(), createdAt: nowIso },
           new Date(),
         );
 
         if (result.mandate) {
+          if (activeChild) {
+            result.mandate.mandateSeriesId = activeChild.mandateSeriesId || activeChild.id;
+            result.mandate.version = (activeChild.version || 1) + 1;
+            result.mandate.previousMandateId = activeChild.id;
+          }
           this.mandates.set(result.mandate.id, result.mandate);
+        } else if (activeChild && input.supersedeExisting) {
+          // Roll back state on delegation failure
+          parent.allocatedMinor = prevParentAllocated;
+          activeChild.state = prevChildState!;
+          activeChild.supersededAt = prevChildSupersededAt!;
+          this.mandates.set(activeChild.id, activeChild);
         }
       }
 
@@ -713,6 +763,7 @@ export class SupabaseAuthorityStore implements AuthorityStore {
       idempotencyKey?: string;
       grantJti?: string;
       caller?: Principal;
+      supersedeExisting?: boolean;
     },
   ): Promise<{ mandate: Mandate | null; decision: PolicyDecision }> {
     const parent = await this.get(parentId, input.issuerUserId);
@@ -747,6 +798,44 @@ export class SupabaseAuthorityStore implements AuthorityStore {
       };
     }
 
+    let existingActive: SupabaseMandateRow[] | null = null;
+    const nowIso = new Date().toISOString();
+    const prevParentAllocated = parent?.allocatedMinor ?? 0;
+
+    if (input.supersedeExisting) {
+      const { data: activeList } = await this.client
+        .from("mandates")
+        .select("*")
+        .eq("environment_id", parent?.environmentId ?? "")
+        .eq("holder_agent_id", input.holderAgentId)
+        .eq("state", "active");
+
+      if (activeList && activeList.length > 0) {
+        existingActive = activeList as SupabaseMandateRow[];
+        for (const prev of existingActive) {
+          await this.client
+            .from("mandates")
+            .update({ state: "superseded", superseded_at: nowIso })
+            .eq("id", prev.id as string);
+
+          if (prev.parent_mandate_id === parentId && parent) {
+            const newAllocated = Math.max(0, parent.allocatedMinor - Number(prev.budget_limit_minor));
+            await this.client
+              .from("mandates")
+              .update({ allocated_minor: newAllocated })
+              .eq("id", parentId);
+            parent.allocatedMinor = newAllocated;
+          }
+
+          await this.client
+            .from("mandates")
+            .update({ state: "superseded", superseded_at: nowIso })
+            .eq("parent_mandate_id", prev.id as string)
+            .eq("state", "active");
+        }
+      }
+    }
+
     const { data, error } = await this.client
       .rpc("delegate_mandate", {
         p_parent_mandate_id: parentId,
@@ -766,9 +855,65 @@ export class SupabaseAuthorityStore implements AuthorityStore {
         }),
       })
       .single<SupabaseDelegationResult>();
-    if (error) throw error;
+
+    if (error) {
+      if (existingActive && existingActive.length > 0) {
+        for (const prev of existingActive) {
+          await this.client
+            .from("mandates")
+            .update({ state: "active", superseded_at: null })
+            .eq("id", prev.id as string);
+        }
+        if (parent) {
+          await this.client
+            .from("mandates")
+            .update({ allocated_minor: prevParentAllocated })
+            .eq("id", parentId);
+        }
+      }
+      throw error;
+    }
+
+    if (!data.mandate) {
+      if (existingActive && existingActive.length > 0) {
+        for (const prev of existingActive) {
+          await this.client
+            .from("mandates")
+            .update({ state: "active", superseded_at: null })
+            .eq("id", prev.id as string);
+        }
+        if (parent) {
+          await this.client
+            .from("mandates")
+            .update({ allocated_minor: prevParentAllocated })
+            .eq("id", parentId);
+        }
+      }
+      return {
+        mandate: null,
+        decision: data.decision,
+      };
+    }
+
+    if (existingActive && existingActive.length > 0) {
+      const prev = existingActive[0];
+      const seriesId = (prev.mandate_series_id as string) || (prev.id as string);
+      const nextVersion = ((prev.version as number) || 1) + 1;
+      await this.client
+        .from("mandates")
+        .update({
+          mandate_series_id: seriesId,
+          version: nextVersion,
+          previous_mandate_id: prev.id as string,
+        })
+        .eq("id", (data.mandate as any).id);
+      (data.mandate as any).mandate_series_id = seriesId;
+      (data.mandate as any).version = nextVersion;
+      (data.mandate as any).previous_mandate_id = prev.id;
+    }
+
     return {
-      mandate: data.mandate ? mapMandate(data.mandate) : null,
+      mandate: mapMandate(data.mandate),
       decision: data.decision,
     };
   }

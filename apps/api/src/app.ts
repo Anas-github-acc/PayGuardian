@@ -54,6 +54,19 @@ export function buildApp(
   const config = options.config ?? loadRuntimeConfig();
   const app = Fastify({ logger: options.logger ?? false });
 
+  app.removeContentTypeParser("application/json");
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body: string, done) => {
+    try {
+      if (!body || body.trim() === "") {
+        done(null, {});
+        return;
+      }
+      done(null, JSON.parse(body));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
+
   app.register(cors, { origin: process.env.CORS_ORIGIN ?? "http://localhost:3000" });
 
   app.register(swagger, {
@@ -258,6 +271,7 @@ export function buildApp(
     providerJobs,
     resolvePrincipal,
     approvals,
+    audit,
   });
   registerPhase6Routes(app, { registry, authority, resolvePrincipal, audit });
   registerChatbotRoutes(app, { registry, authority, chatbot, providerJobs, resolvePrincipal, audit, approvals });

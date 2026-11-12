@@ -9,6 +9,7 @@ import {
   type OAuthConsentDecision,
 } from "@/components/ui/oauth-consent-react-utils/use-oauth-consent";
 import { Button } from "@/components/ui/button";
+import { PayPalCheckoutButton } from "./paypal-checkout-button";
 import {
   Card,
   CardContent,
@@ -90,6 +91,9 @@ function ConsentCardShell({
 }
 
 export interface OAuthConsentCardProps extends React.ComponentPropsWithoutRef<"div"> {
+  environmentId?: string;
+  approvalId?: string;
+  actionId?: string;
   clientName: string;
   productName?: string;
   redirectUri: string;
@@ -100,13 +104,18 @@ export interface OAuthConsentCardProps extends React.ComponentPropsWithoutRef<"d
   recipient?: string;
   action?: string;
   mandateId?: string;
+  approvalUrl?: string;
   error?: string | null;
   decision?: OAuthConsentDecision | null;
   onApprove?: () => void;
+  onPaymentSuccess?: (captureResult: any) => void | Promise<void>;
   onDeny?: () => void;
 }
 
 export function OAuthConsentCard({
+  environmentId,
+  approvalId,
+  actionId,
   clientName,
   productName = "PayGuardian Gateway",
   redirectUri,
@@ -117,13 +126,21 @@ export function OAuthConsentCard({
   recipient,
   action,
   mandateId,
+  approvalUrl,
   error = null,
   decision = null,
   onApprove,
+  onPaymentSuccess,
   onDeny,
   ...props
 }: OAuthConsentCardProps) {
   const formattedAmount = formatMoney(amountMinor, currency);
+  const isRealPayPalUrl = (url?: string | null): boolean => {
+    if (!url) return false;
+    if (url.includes("ORDER-") || url.includes("simulated")) return false;
+    return url.startsWith("https://www.sandbox.paypal.com") || url.startsWith("https://www.paypal.com");
+  };
+  const effectiveApprovalUrl = isRealPayPalUrl(approvalUrl) ? approvalUrl : null;
 
   return (
     <ConsentCardShell
@@ -197,33 +214,51 @@ export function OAuthConsentCard({
           <span>{error}</span>
         </div>
       )}
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end pt-2">
         <Button
           type="button"
           variant="outline"
           disabled={decision !== null}
           onClick={onDeny}
-          className="border-border text-foreground hover:bg-muted font-medium"
+          className="border-border text-foreground hover:bg-muted font-medium h-10"
         >
           {decision === "deny" ? "Denying..." : "Deny"}
         </Button>
-        {/* PayPal Hero Color CTA */}
-        <button
-          type="button"
-          disabled={decision !== null}
-          onClick={onApprove}
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-[#0070BA] hover:bg-[#003087] text-white px-5 py-2 text-sm font-semibold shadow-md transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-        >
-          <Image
-            src="/paypal.svg"
-            alt="PayPal"
-            width={16}
-            height={16}
-            className="size-4 object-contain brightness-0 invert"
+        <div className="w-full sm:w-auto min-w-[200px]">
+          <PayPalCheckoutButton
+            environmentId={environmentId || "default"}
+            mandateId={mandateId}
+            approvalId={approvalId}
+            actionId={actionId}
+            action={action}
+            amountMinor={amountMinor || 15000}
+            currency={currency}
+            recipient={recipient}
+            clientName={clientName}
+            onSuccess={async (captureResult) => {
+              if (onPaymentSuccess) {
+                await onPaymentSuccess(captureResult);
+              } else if (onApprove) {
+                onApprove();
+              }
+            }}
+            onCancel={onDeny}
           />
-          <span>{decision === "approve" ? "Authorizing on PayPal..." : "Authorize & Pay with PayPal"}</span>
-        </button>
+        </div>
       </div>
+      {effectiveApprovalUrl && (
+        <div className="pt-2 text-center border-t border-border/40">
+          <a
+            href={effectiveApprovalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-400 hover:text-blue-300 underline font-medium inline-flex items-center gap-1.5"
+          >
+            <span>Proceed directly to PayPal Checkout</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
+      )}
     </ConsentCardShell>
   );
 }

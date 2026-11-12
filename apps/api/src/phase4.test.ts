@@ -390,4 +390,34 @@ describe("Phase 4 Approvals, Protected Actions, and Sessions", () => {
 
     expect(body.failures).toHaveLength(0);
   });
+
+  it("approves request when payload is empty string with content-type application/json", async () => {
+    const { app, environmentId, mandateId, agentId } = await setup();
+    const headers = { "x-local-user-id": "alice" };
+
+    const reqRes = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${environmentId}/approvals`,
+      headers,
+      payload: {
+        mandateId,
+        agentId,
+        action: "action.book",
+        amountMinor: 500,
+        currency: "USD",
+        requestHash: "hash-empty-body-test",
+      },
+    });
+    const approvalId = reqRes.json().approval.id as string;
+
+    const approveRes = await app.inject({
+      method: "POST",
+      url: `/v1/environments/${environmentId}/approvals/${approvalId}/approve`,
+      headers: { ...headers, "content-type": "application/json" },
+      body: "",
+    });
+
+    expect(approveRes.statusCode).toBe(200);
+    expect(approveRes.json().approval.status).toBe("approved");
+  });
 });

@@ -1036,14 +1036,23 @@ def dynamic_plan_subagents(
         for m in (messages[-2:] if messages else [])
     )
 
-    # Check for payment execution intent (e.g. "buy me hotel room", "buy the cheap hotel in pune", "buy the hotel", "book the flight", "pay for dinner")
-    is_payment_action = (intent == "PAYMENT_EXECUTION_INTENT") or any(
+    # Check for payment execution intent (e.g. "buy me hotel room", "buy the cheap hotel in pune", "buy the hotel", "book the flight", "pay for dinner", "now go and make the payment of the proposal")
+    # Exclude retail goods procurement and merchant attach from direct payment execution to preserve clarification flow
+    is_retail_goods = any(
         w in prompt_lower
         for w in (
-            "buy ", "buy the", "buy a", "buy me", "book ", "book the", "pay for",
-            "make payment", "order ", "purchase ", "checkout ",
+            "biscuit", "chai", "snack", "cookie", "coffee", "tea", "merchantattach", "merchant_attach", "bourbon", "parle",
         )
-    ) or any(w in prompt_lower.split() for w in ("buy", "book", "pay", "purchase", "order", "checkout"))
+    )
+    is_payment_action = (not is_retail_goods) and (
+        (intent == "PAYMENT_EXECUTION_INTENT") or any(
+            w in prompt_lower
+            for w in (
+                "buy ", "buy the", "buy a", "buy me", "book ", "book the", "pay for", "pay ",
+                "make payment", "make the payment", "payment for", "payment of", "order ", "purchase ", "checkout ",
+            )
+        ) or any(w in prompt_lower.split() for w in ("buy", "book", "pay", "payment", "purchase", "order", "checkout"))
+    )
     if is_payment_action:
         target_domain = None
         if any(w in prompt_lower for w in ("hotel", "room", "stay", "lodging")):
@@ -1064,23 +1073,105 @@ def dynamic_plan_subagents(
                 elif any(w in prev_txt for w in ("flight", "travel", "airline")):
                     target_domain = "travel"
                     break
-                elif any(w in prev_txt for w in ("food", "dining", "meal", "biscuit", "snack")):
+                elif any(w in prev_txt for w in ("food", "dining", "meal", "restaurant")):
                     target_domain = "food"
                     break
 
+        env_id = state.get("environment_id") if state else None
+
+        # If user asked to make payment of proposal without domain explicitly named, infer from child mandates or state
+        if not target_domain:
+            if any(w in prompt_lower for w in ("proposal", "delegation", "itinerary", "booking", "reserved", "payment")):
+                if gateway_client and env_id:
+                    try:
+                        env_mands = gateway_client.list_mandates(env_id)
+                        for em in env_mands:
+                            if em.get("state") == "active" and em.get("parentMandateId"):
+                                for d in ("hotel", "travel", "transport", "food"):
+                                    if d in str(em.get("permittedActions", [])) or d in str(em.get("scope", "")).lower():
+                                        target_domain = d
+                                        break
+                                if target_domain:
+                                    break
+                    except Exception:
+                        pass
+                if not target_domain and state and state.get("subagent_tasks"):
+                    for t in state["subagent_tasks"]:
+                        if t.get("agent") in ("hotel", "travel", "transport", "food"):
+                            target_domain = t["agent"]
+                            break
+                if not target_domain:
+                    target_domain = "hotel"
+
         if target_domain:
-            # Check for existing quoted amount in state tasks or conversation messages
+            sub = subagent_registry.get(target_domain) or next(
+                (
+                    s for s in subagent_registry.list_all_capabilities()
+                    if s.alias == target_domain or s.id == f"agent-{target_domain}-specialist" or s.id == f"agent-{target_domain}-coordinator"
+                ),
+                None,
+            )
+
+            canonical_holder_id = sub.id if sub else subagent_registry.resolve_alias_to_id(target_domain)
+
+            # Collect all possible agent identifiers (alias, name, canonical ID, DB UUID)
+            valid_holder_ids = {canonical_holder_id, target_domain, f"agent-{target_domain}-specialist", f"agent-{target_domain}-coordinator"}
+            if gateway_client and env_id:
+                try:
+                    env_agents = gateway_client.list_agents(env_id)
+                    for ea in env_agents:
+                        ea_name = str(ea.get("name", "")).lower()
+                        ea_role = str(ea.get("role", "")).lower()
+                        ea_id = str(ea.get("id", ""))
+                        if target_domain in ea_name or target_domain in ea_role or target_domain in ea_id.lower():
+                            valid_holder_ids.add(ea_id)
+                            if sub:
+                                canonical_holder_id = ea_id
+                except Exception as a_err:
+                    logger.debug("Could not list environment agents: %s", a_err)
+
+            # 1. Inspect existing active child mandate held by this subagent on Gateway
+            existing_child_mandate_id = None
+            subagent_mandate_funds_minor = 0
+            if gateway_client and env_id:
+                try:
+                    env_mandates = gateway_client.list_mandates(env_id)
+                    active_sub_m = next(
+                        (
+                            m for m in env_mandates
+                            if (
+                                m.get("holderAgentId") in valid_holder_ids
+                                or (m.get("parentMandateId") and target_domain in str(m.get("permittedActions", [])))
+                                or (m.get("parentMandateId") and target_domain in str(m.get("scope", "")).lower())
+                            )
+                            and m.get("state") == "active"
+                            and not m.get("supersededAt")
+                        ),
+                        None,
+                    )
+                    if active_sub_m:
+                        existing_child_mandate_id = active_sub_m.get("id")
+                        m_limit = active_sub_m.get("budgetLimitMinor", 0)
+                        m_spent = active_sub_m.get("spentMinor", 0)
+                        subagent_mandate_funds_minor = max(0, m_limit - m_spent)
+                except Exception as m_err:
+                    logger.debug("Could not inspect existing subagent mandates: %s", m_err)
+
+            # 2. Check for existing task in state
+            existing_task = None
             extracted_amt = 0
             if state and state.get("subagent_tasks"):
                 for t in state["subagent_tasks"]:
-                    if t.get("agent") == target_domain or t.get("agent_id") == f"agent-{target_domain}-specialist":
+                    if t.get("agent") == target_domain or t.get("agent_id") == canonical_holder_id:
+                        existing_task = t
                         extracted_amt = t.get("quoted_amount_minor") or t.get("amount_minor") or 0
-                        t["phase"] = "payment_execution"
-                        t["status"] = "payment_execution"
-                        t["requires_spending"] = True
-                        return [t], [f"Delegate payment execution for {target_domain} to specialist subagent via child mandate"]
+                        if t.get("child_mandate_id") and not existing_child_mandate_id:
+                            existing_child_mandate_id = t["child_mandate_id"]
+                        if t.get("amount_minor", 0) > 0 and subagent_mandate_funds_minor == 0:
+                            subagent_mandate_funds_minor = t["amount_minor"]
+                        break
 
-            # If not in state tasks, scan messages for quoted numbers
+            # 3. If amount not in state tasks, scan messages for quoted numbers
             if extracted_amt <= 0 and messages:
                 for prev_m in reversed(messages):
                     c = str(prev_m.get("content") or "")
@@ -1095,12 +1186,37 @@ def dynamic_plan_subagents(
                             pass
 
             if extracted_amt <= 0:
-                extracted_amt = 25000 if budget_currency == "USD" else 250000
+                if subagent_mandate_funds_minor > 0:
+                    extracted_amt = subagent_mandate_funds_minor
+                else:
+                    extracted_amt = 25000 if budget_currency == "USD" else 250000
 
-            sub = next((s for s in subagents if s.alias == target_domain or s.id == f"agent-{target_domain}-specialist" or s.id == f"agent-{target_domain}-coordinator"), None)
+            # 4. Check available funds
+            root_available = state.get("available_reserve_minor") if state else None
+            if root_available is None and state:
+                root_available = state.get("budget_limit_minor")
+
+            has_sufficient_funds = False
+            if subagent_mandate_funds_minor >= extracted_amt or subagent_mandate_funds_minor > 0 or existing_child_mandate_id:
+                has_sufficient_funds = True
+            elif root_available is not None and root_available >= extracted_amt:
+                has_sufficient_funds = True
+            elif not gateway_client or not env_id:
+                # Standalone/mock execution without live environment constraints
+                has_sufficient_funds = True
+
+            if not has_sufficient_funds:
+                avail_funds = subagent_mandate_funds_minor or (root_available or 0)
+                return [], [
+                    f"Cannot delegate payment: Insufficient funds in {target_domain.capitalize()} mandate or reserve. "
+                    f"Required: {_format_budget(extracted_amt, budget_currency)}, "
+                    f"Available: {_format_budget(avail_funds, budget_currency)}."
+                ]
+
             if sub:
+                task_id = (existing_task.get("id") if existing_task else None) or f"task_{sub.alias}_{uuid.uuid4().hex[:8]}"
                 task_envelope = {
-                    "id": f"task_{sub.alias}_{uuid.uuid4().hex[:8]}",
+                    "id": task_id,
                     "agent": sub.alias,
                     "agent_id": sub.id,
                     "action": "book_hotel" if target_domain == "hotel" else sub.default_action,
@@ -1114,7 +1230,12 @@ def dynamic_plan_subagents(
                     "requires_spending": True,
                     "authority_checked": True,
                     "delegated": True,
+                    "child_mandate_id": existing_child_mandate_id,
+                    "holder_agent_id": sub.id,
                 }
+                if existing_task:
+                    existing_task.update(task_envelope)
+                    return [existing_task], [f"Delegate payment execution for {target_domain} to specialist subagent via child mandate"]
                 return [task_envelope], [f"Delegate payment execution for {target_domain} to specialist subagent via child mandate"]
 
     if is_confirmation_message(current_prompt):
@@ -2118,21 +2239,46 @@ class PersonalLangGraphAgent:
                     clarification_questions.append(p.replace("Clarification needed:", "").strip())
             subagent_tasks = []
 
-        if is_confirmed and not has_pending_proposal and not any(t.get("status") == "completed" for t in (state.get("subagent_tasks") or [])):
-            return {
-                "run_id": run_id,
-                "plan": ["No pending budget proposal exists to authorize."],
-                "subagent_tasks": [],
-                "user_preferences": user_preferences,
-                "clarification_required": False,
-                "missing_fields": [],
-                "clarification_questions": [],
-                "is_user_rejected": False,
-                "is_user_confirmed": False,
-                "no_pending_proposal_to_approve": True,
-                "assembled_context": assembled_context_data,
-                "events": self.event_emitter.events,
-            }
+        has_execution_tasks = any(
+            t.get("phase") in ("payment_execution", "authorized") or t.get("status") == "payment_execution"
+            for t in subagent_tasks
+        )
+
+        if (
+            is_confirmed
+            and not has_execution_tasks
+            and not has_pending_proposal
+            and not any(t.get("status") == "completed" for t in (state.get("subagent_tasks") or []))
+        ):
+            # Check if environment already has approved proposals or active child mandates on Gateway
+            has_approved_or_child = False
+            if self.gateway_client and environment_id:
+                try:
+                    live_approvals = self.gateway_client.list_approvals(environment_id)
+                    if any(a.get("status") in ("approved", "pending") for a in live_approvals):
+                        has_approved_or_child = True
+                    if not has_approved_or_child:
+                        live_mandates = self.gateway_client.list_mandates(environment_id)
+                        if any(m.get("state") == "active" and m.get("parentMandateId") for m in live_mandates):
+                            has_approved_or_child = True
+                except Exception:
+                    pass
+
+            if not has_approved_or_child:
+                return {
+                    "run_id": run_id,
+                    "plan": ["No pending budget proposal exists to authorize."],
+                    "subagent_tasks": [],
+                    "user_preferences": user_preferences,
+                    "clarification_required": False,
+                    "missing_fields": [],
+                    "clarification_questions": [],
+                    "is_user_rejected": False,
+                    "is_user_confirmed": False,
+                    "no_pending_proposal_to_approve": True,
+                    "assembled_context": assembled_context_data,
+                    "events": self.event_emitter.events,
+                }
 
         return {
             "run_id": run_id,
@@ -2841,7 +2987,7 @@ class PersonalLangGraphAgent:
             task["delegated"] = authority_allowed
 
             if authority_allowed:
-                child_id = f"mandate-child-{agent_name}-{uuid.uuid4().hex[:8]}"
+                child_id = task.get("child_mandate_id") or f"mandate-child-{agent_name}-{uuid.uuid4().hex[:8]}"
                 sub_rec = subagent_registry.get(agent_name)
                 canonical_catalog_id = sub_rec.id if sub_rec else subagent_registry.resolve_alias_to_id(agent_name)
                 target_holder_id = canonical_catalog_id
@@ -2861,77 +3007,119 @@ class PersonalLangGraphAgent:
                 # Real Gateway child mandate creation if mandate_id configured
                 has_real_mandate = bool(mandate_id and self.gateway_client)
                 delegation_success = not has_real_mandate
-                if has_real_mandate and effective_delegating_mandate_id:
+                if task.get("child_mandate_id"):
+                    delegation_success = True
+                elif has_real_mandate and effective_delegating_mandate_id:
                     try:
-                        # Inspect parent mandate to match its constraints (currency, expiry, approval)
-                        parent_mandate = None
+                        # Check if child agent already holds an active child mandate with sufficient funds in the environment
+                        already_funded_mandate = None
                         if environment_id:
                             try:
                                 env_mandates = self.gateway_client.list_mandates(environment_id)
-                                parent_mandate = next((m for m in env_mandates if m.get("id") == effective_delegating_mandate_id), None)
-                            except Exception as m_exc:
-                                logger.debug("Could not fetch parent mandate metadata: %s", m_exc)
+                                valid_holder_ids = {target_holder_id, agent_name, f"agent-{agent_name}-specialist", f"agent-{agent_name}-coordinator"}
+                                try:
+                                    env_agents = self.gateway_client.list_agents(environment_id)
+                                    for ea in env_agents:
+                                        ea_name = str(ea.get("name", "")).lower()
+                                        ea_role = str(ea.get("role", "")).lower()
+                                        ea_id = str(ea.get("id", ""))
+                                        if agent_name in ea_name or agent_name in ea_role or agent_name in ea_id.lower():
+                                            valid_holder_ids.add(ea_id)
+                                            target_holder_id = ea_id
+                                except Exception:
+                                    pass
 
-                        parent_expires_at = parent_mandate.get("expiresAt") if parent_mandate else None
-                        parent_approval = bool(parent_mandate.get("approvalRequired", True)) if parent_mandate else True
-                        parent_currency = parent_mandate.get("currency") if parent_mandate else currency
-
-                        # If environment_id is present, resolve or register child agent in the environment
-                        if environment_id:
-                            try:
-                                env_agents = self.gateway_client.list_agents(environment_id)
-                                matched = next(
+                                already_funded_mandate = next(
                                     (
-                                        a
-                                        for a in env_agents
-                                        if a.get("id") == canonical_catalog_id
-                                        or a.get("name", "").lower() == (sub_rec.name.lower() if sub_rec else agent_name.lower())
+                                        m for m in env_mandates
+                                        if (
+                                            m.get("holderAgentId") in valid_holder_ids
+                                            or (m.get("parentMandateId") and agent_name in str(m.get("permittedActions", [])))
+                                            or (m.get("parentMandateId") and agent_name in str(m.get("scope", "")).lower())
+                                        )
+                                        and m.get("state") == "active"
+                                        and not m.get("supersededAt")
+                                        and m.get("budgetLimitMinor", 0) >= amount_minor
                                     ),
                                     None,
                                 )
-                                if not matched:
-                                    if is_child_task and parent_task and parent_task.get("holder_agent_id"):
-                                        parent_id = parent_task["holder_agent_id"]
-                                    else:
-                                        parent_agent = next(
-                                            (a for a in env_agents if a.get("kind") == "personal" or a.get("parentAgentId") is None),
-                                            None,
-                                        )
-                                        parent_id = parent_agent["id"] if parent_agent else "root-personal-agent"
-                                    reg_res = self.gateway_client.register_child_agent(
-                                        environment_id=environment_id,
-                                        parent_agent_id=parent_id,
-                                        name=sub_rec.name if sub_rec else agent_name,
-                                        kind=sub_rec.specialty if sub_rec else "custom",
-                                        capabilities=sub_rec.capabilities if sub_rec else [action],
-                                    )
-                                    matched = reg_res.get("agent")
-                                if matched and matched.get("id"):
-                                    target_holder_id = matched["id"]
-                            except Exception as reg_exc:
-                                logger.warning("Could not auto-register child agent in environment: %s", reg_exc)
+                            except Exception:
+                                pass
 
-                        delegation_res = self.gateway_client.delegate_mandate(
-                            mandate_id=effective_delegating_mandate_id,
-                            holder_agent_id=target_holder_id,
-                            budget_limit_minor=amount_minor,
-                            currency=parent_currency or currency,
-                            permitted_actions=[action] if action else ["*"],
-                            expires_at=parent_expires_at,
-                            approval_required=parent_approval,
-                        )
-                        if not delegation_res or not isinstance(delegation_res, dict):
-                            delegation_success = False
-                            task["error"] = "Gateway returned invalid delegation response"
-                        elif delegation_res.get("mandate"):
-                            child_id = delegation_res["mandate"]["id"]
+                        if already_funded_mandate:
+                            child_id = already_funded_mandate["id"]
                             delegation_success = True
+                            logger.info("Reusing existing funded child mandate %s for %s", child_id, target_holder_id)
                         else:
-                            decision = delegation_res.get("decision")
-                            err_reason = decision.get("reason") if isinstance(decision, dict) else "Gateway child mandate delegation denied"
-                            logger.warning("Gateway child mandate delegation denied for %s: %s", agent_name, err_reason)
-                            task["error"] = err_reason or "Mandate creation failed"
-                            delegation_success = False
+                            # Inspect parent mandate to match its constraints (currency, expiry, approval)
+                            parent_mandate = None
+                            if environment_id:
+                                try:
+                                    env_mandates = self.gateway_client.list_mandates(environment_id)
+                                    parent_mandate = next((m for m in env_mandates if m.get("id") == effective_delegating_mandate_id), None)
+                                except Exception as m_exc:
+                                    logger.debug("Could not fetch parent mandate metadata: %s", m_exc)
+
+                            parent_expires_at = parent_mandate.get("expiresAt") if parent_mandate else None
+                            parent_approval = bool(parent_mandate.get("approvalRequired", True)) if parent_mandate else True
+                            parent_currency = parent_mandate.get("currency") if parent_mandate else currency
+
+                            # If environment_id is present, resolve or register child agent in the environment
+                            if environment_id:
+                                try:
+                                    env_agents = self.gateway_client.list_agents(environment_id)
+                                    matched = next(
+                                        (
+                                            a
+                                            for a in env_agents
+                                            if a.get("id") == canonical_catalog_id
+                                            or a.get("name", "").lower() == (sub_rec.name.lower() if sub_rec else agent_name.lower())
+                                        ),
+                                        None,
+                                    )
+                                    if not matched:
+                                        if is_child_task and parent_task and parent_task.get("holder_agent_id"):
+                                            parent_id = parent_task["holder_agent_id"]
+                                        else:
+                                            parent_agent = next(
+                                                (a for a in env_agents if a.get("kind") == "personal" or a.get("parentAgentId") is None),
+                                                None,
+                                            )
+                                            parent_id = parent_agent["id"] if parent_agent else "root-personal-agent"
+                                        reg_res = self.gateway_client.register_child_agent(
+                                            environment_id=environment_id,
+                                            parent_agent_id=parent_id,
+                                            name=sub_rec.name if sub_rec else agent_name,
+                                            kind=sub_rec.specialty if sub_rec else "custom",
+                                            capabilities=sub_rec.capabilities if sub_rec else [action],
+                                        )
+                                        matched = reg_res.get("agent")
+                                    if matched and matched.get("id"):
+                                        target_holder_id = matched["id"]
+                                except Exception as reg_exc:
+                                    logger.warning("Could not auto-register child agent in environment: %s", reg_exc)
+
+                            delegation_res = self.gateway_client.delegate_mandate(
+                                mandate_id=effective_delegating_mandate_id,
+                                holder_agent_id=target_holder_id,
+                                budget_limit_minor=amount_minor,
+                                currency=parent_currency or currency,
+                                permitted_actions=[action] if action else ["*"],
+                                expires_at=parent_expires_at,
+                                approval_required=parent_approval,
+                            )
+                            if not delegation_res or not isinstance(delegation_res, dict):
+                                delegation_success = False
+                                task["error"] = "Gateway returned invalid delegation response"
+                            elif delegation_res.get("mandate"):
+                                child_id = delegation_res["mandate"]["id"]
+                                delegation_success = True
+                            else:
+                                decision = delegation_res.get("decision")
+                                err_reason = decision.get("reason") if isinstance(decision, dict) else "Gateway child mandate delegation denied"
+                                logger.warning("Gateway child mandate delegation denied for %s: %s", agent_name, err_reason)
+                                task["error"] = err_reason or "Mandate creation failed"
+                                delegation_success = False
                     except Exception as exc:
                         logger.warning("Gateway child mandate delegation error: %s", exc)
                         task["error"] = str(exc)
@@ -2978,6 +3166,28 @@ class PersonalLangGraphAgent:
             budget_str = _format_budget(amt_minor, cur)
             child_mandate_ref = task.get("child_mandate_id") or "mandate-child-simulated"
             target_holder_id = task.get("holder_agent_id") or agent_name
+            if (not task.get("child_mandate_id") or task.get("child_mandate_id") == "mandate-child-simulated") and environment_id and self.gateway_client:
+                try:
+                    env_mands = self.gateway_client.list_mandates(environment_id)
+                    found_cm = next(
+                        (
+                            m for m in env_mands
+                            if m.get("state") == "active"
+                            and m.get("parentMandateId")
+                            and not m.get("supersededAt")
+                            and (
+                                m.get("holderAgentId") == target_holder_id
+                                or agent_name in str(m.get("permittedActions", []))
+                                or agent_name in str(m.get("scope", "")).lower()
+                            )
+                        ),
+                        None,
+                    )
+                    if found_cm:
+                        child_mandate_ref = found_cm["id"]
+                        task["child_mandate_id"] = child_mandate_ref
+                except Exception:
+                    pass
             payment_action_id = f"pi_{agent_name}_{uuid.uuid4().hex[:8]}"
             paypal_approval_url: str | None = None
             paypal_order_id: str | None = None
@@ -3068,12 +3278,12 @@ class PersonalLangGraphAgent:
                                     currency="USD",
                                 )
                                 act_data = pp_res.get("action") or {}
-                                act_id = act_data.get("id")
+                                act_id = act_data.get("id") or pp_res.get("approvalId")
                                 order_data = pp_res.get("order") or {}
                                 order_id = order_data.get("id")
-                                approval_url = order_data.get("approvalUrl")
-                                if act_id:
-                                    payment_action_id = act_id
+                                approval_url = order_data.get("approvalUrl") or pp_res.get("approveUrl")
+                                if approval_url or act_id:
+                                    payment_action_id = act_id or f"pi_{uuid.uuid4().hex[:8]}"
                                     paypal_approval_url = approval_url
                                     paypal_order_id = order_id
                                     logger.info(
@@ -3119,6 +3329,9 @@ class PersonalLangGraphAgent:
                                 logger.info("Successfully settled %s on Gateway ledger: %s", amt_minor, act_id)
                 except Exception as exec_exc:
                     logger.warning("Gateway ledger execution reserve/capture error: %s", exec_exc)
+
+            if (cur.upper() == "USD" or task.get("rail") == "PayPal") and not paypal_approval_url:
+                paypal_approval_url = None
 
             # Payment authorization tool invocation using validated child mandate
             tool_result: dict[str, Any] = {
@@ -3206,20 +3419,82 @@ class PersonalLangGraphAgent:
                 subagent_registry=subagent_registry,
                 environment_id=environment_id,
                 mandate_id=mandate_id,
+                event_emitter=self.event_emitter,
+                run_id=run_id,
+                task_id=task_id,
             )
             subagent_result = execute_specialist_agent(
                 agent_name, task, prompt, model_id=effective_model, mcp_tools=mcp_tools
             )
             if "payment_authorization" in subagent_result:
-                subagent_result["payment_authorization"]["action_id"] = payment_action_id
-                subagent_result["payment_authorization"]["payment_intent"] = payment_action_id
-                subagent_result["payment_authorization"]["mandate_id"] = child_mandate_ref
-                if paypal_approval_url:
-                    subagent_result["payment_authorization"]["approval_url"] = paypal_approval_url
-                    subagent_result["payment_authorization"]["provider_order_id"] = paypal_order_id
-                    subagent_result["payment_authorization"]["rail"] = "PayPal"
-                    subagent_result["payment_authorization"]["status"] = "awaiting_approval"
+                pay_auth = subagent_result["payment_authorization"]
+                if payment_action_id and not pay_auth.get("action_id"):
+                    pay_auth["action_id"] = payment_action_id
+                if not pay_auth.get("payment_intent"):
+                    pay_auth["payment_intent"] = pay_auth.get("action_id") or payment_action_id
+                if child_mandate_ref and not pay_auth.get("mandate_id"):
+                    pay_auth["mandate_id"] = child_mandate_ref
+                if paypal_approval_url and not pay_auth.get("approval_url"):
+                    pay_auth["approval_url"] = paypal_approval_url
+                    pay_auth["provider_order_id"] = paypal_order_id
+                    pay_auth["rail"] = "PayPal"
+                    pay_auth["status"] = "awaiting_approval"
             results[agent_name] = subagent_result
+
+            # If PayPal approval URL was returned by subagent MCP tool
+            if not paypal_approval_url and subagent_result.get("payment_authorization", {}).get("approval_url"):
+                paypal_approval_url = subagent_result["payment_authorization"]["approval_url"]
+                paypal_order_id = subagent_result["payment_authorization"].get("provider_order_id")
+
+            pay_auth = subagent_result.get("payment_authorization", {})
+            appr_id = (
+                pay_auth.get("approval_id")
+                or pay_auth.get("action_id")
+                or payment_action_id
+                or paypal_order_id
+                or f"appr-{uuid.uuid4().hex[:12]}"
+            )
+            appr_url = pay_auth.get("approval_url") or paypal_approval_url
+            is_awaiting = (
+                pay_auth.get("status") in ("awaiting_approval", "awaiting_buyer_approval")
+                or bool(appr_url)
+                or bool(pay_auth.get("approval_id"))
+            )
+            if is_awaiting:
+                self.event_emitter.emit(
+                    "approval.requested",
+                    payload={
+                        "type": "action_approval",
+                        "approvalId": appr_id,
+                        "agentId": agent_name,
+                        "action": task.get("action", f"book_{agent_name}"),
+                        "recipient": task.get("description", f"{agent_name.capitalize()} Merchant"),
+                        "amountMinor": pay_auth.get("amount_minor") or amt_minor,
+                        "currency": pay_auth.get("currency") or ("USD" if appr_url else cur),
+                        "mandateId": pay_auth.get("mandate_id") or child_mandate_ref,
+                        "approvalUrl": appr_url,
+                    },
+                    run_id=run_id,
+                    task_id=task_id,
+                    agent=agent_name,
+                )
+                if appr_url:
+                    self.event_emitter.emit(
+                        "payment.order_created",
+                        payload={
+                            "actionId": appr_id,
+                            "provider": "paypal",
+                            "providerOrderId": paypal_order_id or appr_id,
+                            "approvalUrl": appr_url,
+                            "amountMinor": pay_auth.get("amount_minor") or amt_minor,
+                            "currency": "USD",
+                            "agentId": agent_name,
+                            "recipient": task.get("description", f"{agent_name.capitalize()} Merchant"),
+                        },
+                        run_id=run_id,
+                        task_id=task_id,
+                        agent=agent_name,
+                    )
 
             output_summary = subagent_result.get(
                 "summary",

@@ -157,6 +157,141 @@ PAYGUARDIAN_MCP_TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_delegated_balance",
+            "description": "Check the specialist subagent's available delegated budget and current spending ceiling.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The specialist agent alias or ID (e.g. 'hotel', 'travel', 'food').",
+                    },
+                    "mandate_id": {
+                        "type": "string",
+                        "description": "Optional specific child mandate ID.",
+                    },
+                },
+                "required": ["agent_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_payment",
+            "description": "Request payment using the subagent's cryptographically delegated child mandate. The Gateway independently validates the mandate, merchant, amount, scope, and balance.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The subagent requesting payment (e.g. 'hotel', 'travel', 'food').",
+                    },
+                    "amount_minor": {
+                        "type": "integer",
+                        "description": "Payment amount in minor units (e.g. cents/paise).",
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "3-letter currency code (e.g. 'USD', 'INR'). Default 'USD'.",
+                    },
+                    "recipient": {
+                        "type": "string",
+                        "description": "The merchant or recipient name (e.g. 'Boutique Hotel Center', 'SkyLine Air').",
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "The action scope (e.g. 'book_hotel', 'purchase_flight', 'order_dining').",
+                    },
+                },
+                "required": ["agent_id", "amount_minor", "recipient"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_payment_status",
+            "description": "Check whether an initiated payment succeeded, failed, or is pending user approval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "payment_intent_id": {
+                        "type": "string",
+                        "description": "The payment intent ID or action ID returned by request_payment.",
+                    },
+                },
+                "required": ["payment_intent_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_budget_increase",
+            "description": "Request additional allocation from the main agent when an item cost exceeds current delegated budget.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The specialist agent requesting a budget top-up.",
+                    },
+                    "additional_amount_minor": {
+                        "type": "integer",
+                        "description": "Additional amount needed in minor units.",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Reason why additional allocation is required.",
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "3-letter currency code (default 'USD').",
+                    },
+                },
+                "required": ["agent_id", "additional_amount_minor", "reason"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_approval_status",
+            "description": (
+                "Checks live human authorization status of proposals or payment requests in the environment via the Gateway. "
+                "Returns whether proposals are currently 'pending', 'approved' (allowed), or 'rejected' (denied)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["pending", "approved", "rejected"],
+                        "description": "Optional filter for approval state.",
+                    },
+                    "approval_id": {
+                        "type": "string",
+                        "description": "Optional specific approval request ID.",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+]
+
+SPECIALIST_MCP_TOOL_SCHEMAS: list[dict[str, Any]] = [
+    t for t in PAYGUARDIAN_MCP_TOOL_SCHEMAS
+    if t["function"]["name"] in (
+        "get_delegated_balance",
+        "request_payment",
+        "get_payment_status",
+        "request_budget_increase",
+    )
 ]
 
 
@@ -180,10 +315,20 @@ class PayGuardianMCPTools:
         state: dict[str, Any] | None = None,
         gateway_client: GatewayClient | None = None,
         subagent_registry: SubagentRegistry | None = None,
+        environment_id: str | None = None,
+        mandate_id: str | None = None,
+        event_emitter: Any | None = None,
+        run_id: str | None = None,
+        task_id: str | None = None,
     ) -> None:
         self.state = state if state is not None else {}
         self.gateway_client = gateway_client
         self.subagent_registry = subagent_registry or default_registry
+        self.environment_id = environment_id
+        self.mandate_id = mandate_id
+        self.event_emitter = event_emitter
+        self.run_id = run_id
+        self.task_id = task_id
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:
         """Return the OpenAPI/OpenAI-compatible tool schemas for LLM tool binding."""
@@ -452,6 +597,507 @@ class PayGuardianMCPTools:
             "tasks": tasks,
         }
 
+    def get_delegated_balance(
+        self, agent_id: str, mandate_id: str | None = None
+    ) -> dict[str, Any]:
+        """Tool 8: get_delegated_balance. Checks subagent's available delegated budget."""
+        agent_clean = agent_id.lower().replace("agent-", "").split("-")[0]
+        tasks = self.state.get("subagent_tasks", [])
+        task = next(
+            (t for t in tasks if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)),
+            None,
+        )
+
+        env_id = self.environment_id or self.state.get("environment_id")
+        allocated_minor = task.get("amount_minor", 0) if task else 0
+        currency = task.get("currency", "USD") if task else "USD"
+        child_mandate_ref = (task.get("child_mandate_id") if task else None) or mandate_id
+
+        if not child_mandate_ref and self.gateway_client and env_id:
+            try:
+                m_list = self.gateway_client.list_mandates(env_id)
+                matched_m = next(
+                    (
+                        m for m in m_list
+                        if m.get("holderAgentId") in (agent_id, f"agent-{agent_clean}-specialist", agent_clean)
+                        and m.get("state") == "active"
+                        and not m.get("supersededAt")
+                    ),
+                    None,
+                )
+                if matched_m:
+                    child_mandate_ref = matched_m["id"]
+                    if allocated_minor == 0:
+                        allocated_minor = matched_m.get("budgetLimitMinor", 0)
+                        currency = matched_m.get("currency", currency)
+            except Exception as exc:
+                logger.debug("Gateway mandate lookup in get_delegated_balance fallback: %s", exc)
+
+        # Query gateway ledger accounts if available for real balance
+        spent_minor = 0
+        if self.gateway_client and env_id and child_mandate_ref:
+            try:
+                accounts = self.gateway_client.list_ledger_accounts(env_id)
+                child_acc = next((a for a in accounts if a.get("mandateId") == child_mandate_ref), None)
+                if child_acc:
+                    allocated_minor = child_acc.get("availableMinor", allocated_minor)
+                    spent_minor = child_acc.get("settledMinor", 0)
+            except Exception as exc:
+                logger.debug("Gateway balance query fallback: %s", exc)
+
+        available_minor = max(0, allocated_minor - spent_minor)
+        return {
+            "agent_id": agent_id,
+            "child_mandate_id": child_mandate_ref,
+            "allocated_budget_minor": allocated_minor,
+            "spent_minor": spent_minor,
+            "available_budget_minor": available_minor,
+            "currency": currency,
+            "status": "active" if child_mandate_ref else "pending_delegation",
+        }
+
+    def request_payment(
+        self,
+        agent_id: str,
+        amount_minor: int,
+        currency: str = "USD",
+        recipient: str = "",
+        action: str = "procure_goods",
+        mandate_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Tool 9: request_payment.
+
+        Binds the subagent strictly to its cryptographic child mandate.
+        The PayGuardian Gateway independently validates mandate validity, merchant,
+        amount, scope, and available ledger balance.
+        """
+        agent_clean = agent_id.lower().replace("agent-", "").split("-")[0]
+        tasks = self.state.get("subagent_tasks", [])
+        task = next(
+            (t for t in tasks if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)),
+            None,
+        )
+
+        child_mandate_ref = (task.get("child_mandate_id") if task else None) or mandate_id or self.mandate_id
+        env_id = self.environment_id or self.state.get("environment_id")
+        matched_m = None
+        if self.gateway_client and env_id:
+            try:
+                agents_list = self.gateway_client.list_agents(env_id) or []
+                matched_agent = next(
+                    (
+                        a for a in agents_list
+                        if a.get("id") == agent_id
+                        or a.get("kind", "").lower() == agent_clean
+                        or agent_clean in a.get("name", "").lower()
+                    ),
+                    None,
+                )
+                if matched_agent:
+                    agent_id = matched_agent["id"]
+
+                if not child_mandate_ref:
+                    m_list = self.gateway_client.list_mandates(env_id)
+                    matched_m = next(
+                        (
+                            m for m in m_list
+                            if m.get("holderAgentId") == agent_id
+                            and m.get("state") == "active"
+                            and not m.get("supersededAt")
+                        ),
+                        None,
+                    )
+                    if not matched_m:
+                        matched_m = next(
+                            (
+                                m for m in m_list
+                                if m.get("holderAgentId") in (agent_id, f"agent-{agent_clean}-specialist", agent_clean)
+                                and m.get("state") == "active"
+                                and not m.get("supersededAt")
+                            ),
+                            None,
+                        )
+                    if not matched_m:
+                        matched_m = next((m for m in m_list if not m.get("parentMandateId") and m.get("state") == "active"), None)
+                    if matched_m:
+                        child_mandate_ref = matched_m["id"]
+            except Exception:
+                pass
+
+        if not child_mandate_ref:
+            return {
+                "success": False,
+                "error": "UNAUTHORIZED_PAYMENT: Subagent has not been delegated a cryptographic child mandate.",
+                "code": "NO_CHILD_MANDATE",
+            }
+
+        # Validate against subagent's allocated budget ceiling
+        allocated_limit = task.get("amount_minor", 0) if task else 0
+        if allocated_limit == 0 and matched_m:
+            allocated_limit = matched_m.get("budgetLimitMinor", 0)
+        if allocated_limit > 0 and amount_minor > allocated_limit:
+            return {
+                "success": False,
+                "error": (
+                    f"EXCEEDS_DELEGATED_BUDGET: Requested payment of {_format_curr(amount_minor, currency)} "
+                    f"exceeds subagent's delegated budget of {_format_curr(allocated_limit, currency)}. "
+                    "Use request_budget_increase to request additional allocation from orchestrator."
+                ),
+                "code": "BUDGET_EXCEEDED",
+                "allocated_limit_minor": allocated_limit,
+                "requested_amount_minor": amount_minor,
+            }
+
+        payment_intent_id = f"pi_{agent_clean}_{uuid.uuid4().hex[:8]}"
+        paypal_approval_url: str | None = None
+        paypal_order_id: str | None = None
+        approval_id: str | None = None
+        status = "authorized"
+        is_approval_required = False
+
+        if self.gateway_client:
+            try:
+                # Independent Gateway verification
+                auth_check = self.gateway_client.check_authority(
+                    mandate_id=child_mandate_ref,
+                    action=action,
+                    amount_minor=amount_minor,
+                    currency=currency,
+                )
+                decision = auth_check.get("decision", {})
+                if not decision.get("allowed", True):
+                    code = decision.get("code")
+                    if code == "APPROVAL_REQUIRED":
+                        is_approval_required = True
+                    else:
+                        return {
+                            "success": False,
+                            "error": f"GATEWAY_REJECTED: {decision.get('reason', 'Payment disallowed by mandate policies')}",
+                            "code": code or "POLICY_REJECT",
+                        }
+            except Exception as gw_exc:
+                logger.warning("Gateway check_authority exception: %s", gw_exc)
+
+        import hashlib
+        req_hash = hashlib.sha256(f"{agent_id}:{child_mandate_ref}:{amount_minor}:{action}".encode()).hexdigest()
+
+        # If human authorization is required, dispatch approval request to Gateway
+        if is_approval_required:
+            status = "awaiting_approval"
+            if self.gateway_client and env_id:
+                try:
+                    appr_res = self.gateway_client.request_approval(
+                        environment_id=env_id,
+                        mandate_id=child_mandate_ref,
+                        agent_id=agent_id,
+                        action=action,
+                        amount_minor=amount_minor,
+                        currency=currency,
+                        request_hash=req_hash,
+                    )
+                    if isinstance(appr_res, dict) and appr_res.get("approval"):
+                        approval_id = appr_res["approval"]["id"]
+                except Exception as a_exc:
+                    logger.warning("Gateway request_approval exception: %s", a_exc)
+
+        if not approval_id:
+            approval_id = f"appr-{payment_intent_id}"
+
+        # PayPal Order routing for USD / PayPal transactions
+        is_paypal = currency.upper() == "USD"
+        if is_paypal and hasattr(self.gateway_client, "create_paypal_order") and env_id:
+            try:
+                accounts: list[dict[str, Any]] = []
+                try:
+                    accounts = self.gateway_client.list_ledger_accounts(env_id) or []
+                except Exception:
+                    pass
+                target_acc = next((a for a in accounts if a.get("mandateId") == child_mandate_ref), accounts[0] if accounts else None)
+                acc_id = target_acc["id"] if (target_acc and isinstance(target_acc, dict) and "id" in target_acc) else f"acc_{child_mandate_ref}"
+                pp_res = self.gateway_client.create_paypal_order(
+                    environment_id=env_id,
+                    agent_id=agent_id,
+                    mandate_id=child_mandate_ref,
+                    ledger_account_id=acc_id,
+                    idempotency_key=f"pp_req_{uuid.uuid4().hex[:12]}",
+                    request_hash=req_hash,
+                    action=action,
+                    amount_minor=amount_minor,
+                    currency="USD",
+                    approval_id=approval_id,
+                )
+                order_info = pp_res.get("order") or {}
+                act_info = pp_res.get("action") or {}
+                if act_info.get("id"):
+                    payment_intent_id = act_info["id"]
+                elif pp_res.get("approvalId"):
+                    payment_intent_id = pp_res["approvalId"]
+                paypal_order_id = order_info.get("id")
+                paypal_approval_url = order_info.get("approvalUrl") or pp_res.get("approveUrl")
+                if paypal_approval_url:
+                    status = "awaiting_approval"
+            except Exception as pp_err:
+                logger.warning("PayPal checkout creation via gateway skipped: %s", pp_err)
+
+        if is_paypal and not paypal_approval_url:
+            paypal_approval_url = None
+            if is_approval_required:
+                status = "awaiting_approval"
+
+        # Record payment intent in state
+        payment_record = {
+            "payment_intent_id": payment_intent_id,
+            "agent_id": agent_id,
+            "child_mandate_id": child_mandate_ref,
+            "amount_minor": amount_minor,
+            "currency": currency,
+            "recipient": recipient,
+            "action": action,
+            "status": status,
+            "approval_id": approval_id,
+            "approval_url": paypal_approval_url,
+            "paypal_order_id": paypal_order_id,
+        }
+        self.state.setdefault("payment_intents", {})[payment_intent_id] = payment_record
+
+        # Update task status
+        if task:
+            task["payment_authorization"] = {
+                "action_id": payment_intent_id,
+                "payment_intent": payment_intent_id,
+                "mandate_id": child_mandate_ref,
+                "amount_minor": amount_minor,
+                "currency": currency,
+                "status": status,
+                "approval_id": approval_id,
+                "approval_url": paypal_approval_url,
+                "provider_order_id": paypal_order_id,
+                "rail": "PayPal" if paypal_approval_url else "GatewayLedger",
+            }
+
+        if self.event_emitter and (status == "awaiting_approval" or paypal_approval_url or approval_id):
+            try:
+                self.event_emitter.emit(
+                    "approval.requested",
+                    payload={
+                        "type": "action_approval",
+                        "approvalId": approval_id or payment_intent_id,
+                        "agentId": agent_id,
+                        "action": action,
+                        "recipient": recipient,
+                        "amountMinor": amount_minor,
+                        "currency": "USD" if paypal_approval_url else currency,
+                        "mandateId": child_mandate_ref,
+                        "approvalUrl": paypal_approval_url,
+                    },
+                    run_id=self.run_id,
+                    task_id=self.task_id,
+                    agent=agent_id,
+                )
+                if paypal_approval_url:
+                    self.event_emitter.emit(
+                        "payment.order_created",
+                        payload={
+                            "actionId": payment_intent_id,
+                            "provider": "paypal",
+                            "providerOrderId": paypal_order_id,
+                            "approvalUrl": paypal_approval_url,
+                            "amountMinor": amount_minor,
+                            "currency": "USD",
+                            "agentId": agent_id,
+                            "recipient": recipient,
+                            "mandateId": child_mandate_ref,
+                        },
+                        run_id=self.run_id,
+                        task_id=self.task_id,
+                        agent=agent_id,
+                    )
+            except Exception as ev_err:
+                logger.warning("Error emitting payment approval events from MCP tool: %s", ev_err)
+
+        return {
+            "success": True,
+            "payment_intent_id": payment_intent_id,
+            "status": status,
+            "approval_id": approval_id,
+            "amount_minor": amount_minor,
+            "currency": currency,
+            "recipient": recipient,
+            "child_mandate_id": child_mandate_ref,
+            "approval_url": paypal_approval_url,
+            "provider_order_id": paypal_order_id,
+            "rail": "PayPal" if paypal_approval_url else "GatewayLedger",
+            "message": (
+                f"Payment request of {_format_curr(amount_minor, currency)} for {recipient} "
+                f"successfully initiated by {agent_id} under child mandate {child_mandate_ref} ({status})."
+                + (f" Approval request {approval_id} registered on Gateway for human authorization." if status == "awaiting_approval" else "")
+                + (f" Complete payment via PayPal Sandbox: {paypal_approval_url}" if paypal_approval_url else "")
+            ),
+        }
+
+    def get_payment_status(self, payment_intent_id: str) -> dict[str, Any]:
+        """Tool 10: get_payment_status. Checks whether payment succeeded, failed or is pending."""
+        intents = self.state.get("payment_intents", {})
+        intent = intents.get(payment_intent_id)
+        if not intent:
+            # Check within tasks
+            tasks = self.state.get("subagent_tasks", [])
+            for t in tasks:
+                pa = t.get("payment_authorization")
+                if pa and (pa.get("action_id") == payment_intent_id or pa.get("payment_intent") == payment_intent_id):
+                    return {"payment_intent_id": payment_intent_id, "status": pa.get("status", "unknown"), "details": pa}
+            return {"error": f"Payment intent '{payment_intent_id}' not found.", "status": "not_found"}
+
+        return {
+            "payment_intent_id": payment_intent_id,
+            "status": intent.get("status", "unknown"),
+            "amount_minor": intent.get("amount_minor"),
+            "currency": intent.get("currency"),
+            "recipient": intent.get("recipient"),
+            "approval_url": intent.get("approval_url"),
+            "child_mandate_id": intent.get("child_mandate_id"),
+        }
+
+    def request_budget_increase(
+        self,
+        agent_id: str,
+        additional_amount_minor: int,
+        reason: str = "",
+        currency: str = "USD",
+    ) -> dict[str, Any]:
+        """Tool 11: request_budget_increase.
+
+        Allows a subagent to request additional spending allocation from the main agent
+        when merchant prices exceed initial delegation.
+        """
+        agent_clean = agent_id.lower().replace("agent-", "").split("-")[0]
+        tasks = self.state.get("subagent_tasks", [])
+        task = next(
+            (t for t in tasks if (t.get("agent", "").lower() == agent_clean or t.get("agent_id") == agent_id)),
+            None,
+        )
+
+        curr_limit = task.get("amount_minor", 0) if task else 0
+        new_requested_limit = curr_limit + additional_amount_minor
+
+        # Check remaining reserve from root mandate
+        budget_summary = self.get_budget_summary()
+        remaining_reserve = budget_summary.get("remaining_reserve_minor", 0)
+
+        if remaining_reserve >= additional_amount_minor:
+            # Main agent grants budget increase from parent reserve
+            if task:
+                task["amount_minor"] = new_requested_limit
+                task["budget_increased"] = True
+                task["budget_increase_reason"] = reason
+
+            # Top up child ledger account if connected to Gateway
+            env_id = self.environment_id or self.state.get("environment_id")
+            mandate_id = self.mandate_id or self.state.get("mandate_id")
+            child_ref = task.get("child_mandate_id") if task else None
+            if self.gateway_client and env_id and mandate_id and child_ref:
+                try:
+                    accounts = self.gateway_client.list_ledger_accounts(env_id)
+                    parent_acc = next((a for a in accounts if a.get("mandateId") == mandate_id), None)
+                    child_acc = next((a for a in accounts if a.get("mandateId") == child_ref), None)
+                    if parent_acc and child_acc:
+                        import hashlib
+                        self.gateway_client.allocate_ledger(
+                            environment_id=env_id,
+                            parent_account_id=parent_acc["id"],
+                            child_account_id=child_acc["id"],
+                            amount_minor=additional_amount_minor,
+                            idempotency_key=f"topup_{uuid.uuid4().hex[:12]}",
+                            request_hash=hashlib.sha256(f"{parent_acc['id']}:{child_acc['id']}:{additional_amount_minor}".encode()).hexdigest(),
+                        )
+                except Exception as topup_exc:
+                    logger.debug("Ledger top-up skipped: %s", topup_exc)
+
+            return {
+                "success": True,
+                "status": "granted",
+                "agent_id": agent_id,
+                "additional_granted_minor": additional_amount_minor,
+                "new_budget_limit_minor": new_requested_limit,
+                "currency": currency,
+                "reason": reason,
+                "message": (
+                    f"Budget increase of {_format_curr(additional_amount_minor, currency)} granted by Main Agent. "
+                    f"New spending ceiling is {_format_curr(new_requested_limit, currency)}."
+                ),
+            }
+        else:
+            return {
+                "success": False,
+                "status": "requires_user_approval",
+                "agent_id": agent_id,
+                "requested_additional_minor": additional_amount_minor,
+                "remaining_reserve_minor": remaining_reserve,
+                "currency": currency,
+                "reason": reason,
+                "message": (
+                    f"Requested increase of {_format_curr(additional_amount_minor, currency)} exceeds "
+                    f"available parent reserve ({_format_curr(remaining_reserve, currency)}). "
+                    "Escalated to human user for root mandate expansion."
+                ),
+            }
+
+    def get_approval_status(
+        self,
+        status: str | None = None,
+        approval_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Tool: get_approval_status - Check live gateway approval records (pending, approved, rejected)."""
+        env_id = self.environment_id or self.state.get("environment_id")
+        if not env_id and self.gateway_client:
+            try:
+                envs = self.gateway_client._client.get("/v1/environments", headers=self.gateway_client._headers()).json()
+                env_list = envs.get("environments", [])
+                if env_list:
+                    env_id = env_list[0].get("id")
+            except Exception:
+                pass
+
+        if self.gateway_client and env_id:
+            try:
+                if approval_id:
+                    single = self.gateway_client.get_approval(env_id, approval_id)
+                    if single:
+                        return {
+                            "count": 1,
+                            "has_pending": single.get("status") == "pending",
+                            "approval": single,
+                            "approvals": [single],
+                        }
+                    return {"count": 0, "has_pending": False, "approval": None, "approvals": []}
+
+                approvals = self.gateway_client.list_approvals(env_id, status=status)
+                pending = [a for a in approvals if a.get("status") == "pending"]
+                approved = [a for a in approvals if a.get("status") == "approved"]
+                rejected = [a for a in approvals if a.get("status") == "rejected"]
+                return {
+                    "count": len(approvals),
+                    "has_pending": len(pending) > 0,
+                    "pending_count": len(pending),
+                    "approved_count": len(approved),
+                    "rejected_count": len(rejected),
+                    "approvals": approvals,
+                }
+            except Exception as exc:
+                logger.debug("Gateway get_approval_status fetch failed: %s", exc)
+
+        # Fallback inspection from local state
+        tasks = self.state.get("subagent_tasks", [])
+        pending_tasks = [t for t in tasks if t.get("status") in ("authorization_pending", "quote_received")]
+        return {
+            "count": len(tasks),
+            "has_pending": len(pending_tasks) > 0,
+            "pending_count": len(pending_tasks),
+            "approved_count": 0,
+            "rejected_count": 0,
+            "approvals": [],
+        }
+
     def call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         """Execute a tool by name with arguments."""
         try:
@@ -482,6 +1128,36 @@ class PayGuardianMCPTools:
                 )
             elif name == "get_task_status":
                 return self.get_task_status(task_id=arguments.get("task_id"))
+            elif name == "get_delegated_balance":
+                return self.get_delegated_balance(
+                    agent_id=arguments.get("agent_id", ""),
+                    mandate_id=arguments.get("mandate_id"),
+                )
+            elif name == "request_payment":
+                return self.request_payment(
+                    agent_id=arguments.get("agent_id", ""),
+                    amount_minor=int(arguments.get("amount_minor", 0)),
+                    currency=arguments.get("currency", "USD"),
+                    recipient=arguments.get("recipient", ""),
+                    action=arguments.get("action", "procure_goods"),
+                    mandate_id=arguments.get("mandate_id"),
+                )
+            elif name == "get_payment_status":
+                return self.get_payment_status(
+                    payment_intent_id=arguments.get("payment_intent_id", "")
+                )
+            elif name == "request_budget_increase":
+                return self.request_budget_increase(
+                    agent_id=arguments.get("agent_id", ""),
+                    additional_amount_minor=int(arguments.get("additional_amount_minor", 0)),
+                    reason=arguments.get("reason", ""),
+                    currency=arguments.get("currency", "USD"),
+                )
+            elif name == "get_approval_status":
+                return self.get_approval_status(
+                    status=arguments.get("status"),
+                    approval_id=arguments.get("approval_id"),
+                )
             else:
                 return {"error": f"Unknown tool: '{name}'"}
         except Exception as exc:

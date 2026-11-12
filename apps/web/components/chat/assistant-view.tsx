@@ -48,6 +48,8 @@ import {
 } from "../ui/background-inbox";
 import { OAuthConsentCard } from "../ui/oauth-consent-card";
 import { PaymentApprovalOverlay } from "../ui/payment-approval-overlay";
+import { PaymentResultCard } from "../cards/payment-result-card";
+import { apiClient } from "../../lib/api/client";
 import { useAdaptiveStream } from "../../lib/adaptive-stream";
 import {
   saveConversation,
@@ -92,6 +94,7 @@ interface PendingApprovalData {
   mandateId: string;
   type?: string;
   approvalUrl?: string;
+  recipient?: string;
   proposedAllocations?: ProposedAllocationItem[];
   rootBudgetMinor?: number;
 }
@@ -143,6 +146,17 @@ export function AssistantView({
   // Pending user approval state
   const [pendingApproval, setPendingApproval] = React.useState<PendingApprovalData | null>(null);
   const [isProposalMinimized, setIsProposalMinimized] = React.useState(false);
+  const [completedPayments, setCompletedPayments] = React.useState<Array<{
+    id: string;
+    transactionId: string;
+    recipient: string;
+    merchantCategory: string;
+    amountMinor: number;
+    currency: string;
+    rail: string;
+    agentName?: string;
+    completedAt?: string;
+  }>>([]);
 
   // Context window modal
   const [contextWindowOpen, setContextWindowOpen] = React.useState(false);
@@ -462,6 +476,7 @@ export function AssistantView({
         "task.completed",
         "task.failed",
         "approval.requested",
+        "payment.order_created",
         "context.assembled",
         "run.completed",
       ];
@@ -625,22 +640,50 @@ export function AssistantView({
       case "approval.requested": {
         setIsProposalMinimized(false);
         const apprData: PendingApprovalData = {
-          id: payload.approvalId || `appr-${Date.now()}`,
+          id: payload.approvalId || payload.id || `appr-${Date.now()}`,
           clientName: payload.agentId ? `${payload.agentId} Agent` : "Specialist Agent",
           productName: "PayGuardian Gateway",
           action: payload.action || "action.execute",
-          amountMinor: payload.amountMinor || 0,
+          amountMinor: payload.amountMinor ?? payload.amount_minor ?? 0,
           currency: payload.currency || "USD",
-          mandateId: payload.mandateId || "",
+          mandateId: payload.mandateId || payload.mandate_id || "",
           type: payload.type || (payload.proposedAllocations ? "budget_proposal" : "action_approval"),
           proposedAllocations: payload.proposedAllocations,
           rootBudgetMinor: payload.rootBudgetMinor || currentEnv?.budgetLimitMinor,
+          approvalUrl: payload.approvalUrl || payload.approval_url,
+          recipient: payload.recipient,
         };
         setPendingApproval(apprData);
         const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
         if (typeof window !== "undefined" && targetId) {
           try {
             localStorage.setItem(`pg_pending_approval_${targetId}`, JSON.stringify(apprData));
+          } catch {
+            // ignore
+          }
+        }
+        break;
+      }
+
+      case "payment.order_created": {
+        setIsProposalMinimized(false);
+        const payData: PendingApprovalData = {
+          id: payload.actionId || payload.providerOrderId || payload.approvalId || `appr-${Date.now()}`,
+          clientName: payload.agentId ? `${payload.agentId} Specialist` : "Hotel Specialist",
+          productName: "PayGuardian Gateway (PayPal Sandbox)",
+          action: payload.action || "book_hotel",
+          amountMinor: payload.amountMinor ?? payload.amount_minor ?? 0,
+          currency: payload.currency || "USD",
+          mandateId: payload.mandateId || payload.mandate_id || "",
+          type: "action_approval",
+          approvalUrl: payload.approvalUrl || payload.approval_url,
+          recipient: payload.recipient,
+        };
+        setPendingApproval(payData);
+        const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+        if (typeof window !== "undefined" && targetId) {
+          try {
+            localStorage.setItem(`pg_pending_approval_${targetId}`, JSON.stringify(payData));
           } catch {
             // ignore
           }
@@ -954,7 +997,11 @@ export function AssistantView({
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const reason = errData.message || errData.code || `Gateway error HTTP ${res.status}`;
+        const reason =
+          errData.failures?.[0]?.reason ||
+          errData.message ||
+          errData.code ||
+          `Gateway error HTTP ${res.status}`;
         return { ok: false, message: `Authority check failed: ${reason}` };
       }
 
@@ -1175,6 +1222,26 @@ export function AssistantView({
                 />
               )}
 
+            {/* Settled Completed Payments */}
+            {completedPayments.map((p) => (
+              <div key={p.id} className="pt-2">
+                <PaymentResultCard
+                  id={p.id}
+                  transactionId={p.transactionId}
+                  recipient={p.recipient}
+                  merchantCategory={p.merchantCategory}
+                  amountMinor={p.amountMinor}
+                  currency={p.currency}
+                  rail={p.rail}
+                  currentStage="completed"
+                  agentName={p.agentName}
+                  completedAt={p.completedAt}
+                  onViewTrace={onViewTrace}
+                  className="mb-4"
+                />
+              </div>
+            ))}
+
             {/* Pending Approval / Proposed Budget Allocation Component */}
             {pendingApproval && (
               <div className="pt-2">
@@ -1194,48 +1261,159 @@ export function AssistantView({
                     />
                   )
                 ) : (
-                  <PaymentApprovalOverlay
-                    isOpen={true}
-                    clientName={pendingApproval.clientName}
-                    productName={pendingApproval.productName || "PayGuardian Gateway"}
-                    action={pendingApproval.action}
-                    amountMinor={pendingApproval.amountMinor}
-                    currency={pendingApproval.currency}
-                    mandateId={pendingApproval.mandateId}
-                    approvalUrl={pendingApproval.approvalUrl}
-                    redirectUri="PayGuardian Gateway (PayPal Sandbox)"
-                    email="operator@payguardian.local"
-                    onApprove={async () => {
-                      const appUrl = pendingApproval.approvalUrl;
-                      setPendingApproval(null);
-                      if (appUrl) {
-                        window.open(appUrl, "_blank", "noopener,noreferrer");
+                  <>
+                    <PaymentResultCard
+                      id={pendingApproval.id}
+                      transactionId={pendingApproval.id}
+                      recipient={pendingApproval.recipient || "Hotel Merchant / Vendor"}
+                      merchantCategory="Lodging & Accommodations"
+                      amountMinor={pendingApproval.amountMinor}
+                      currency={pendingApproval.currency}
+                      rail="PayPal Sandbox"
+                      currentStage="sent_to_provider"
+                      agentName={pendingApproval.clientName}
+                      approvalUrl={pendingApproval.approvalUrl}
+                      onViewTrace={onViewTrace}
+                      className="mb-4"
+                    />
+                    <PaymentApprovalOverlay
+                      isOpen={!isProposalMinimized}
+                      environmentId={
+                        (isValidUuid(currentEnv?.id) ? currentEnv?.id : null) ||
+                        store.environmentsList.find((e) => isValidUuid(e.id))?.id
                       }
-                      await handleSendMessage({
-                        prompt: "I have authorized the payment via PayPal. Please proceed with confirmation.",
-                        mode: "Delegate",
-                        modelId: activeModelId,
-                        modelName: "Default Model",
-                        effort: "Medium",
-                        autoMode: true,
-                        attachedFiles: [],
-                        files: [],
-                      });
-                    }}
-                    onDeny={async () => {
-                      setPendingApproval(null);
-                      await handleSendMessage({
-                        prompt: "I deny the payment request.",
-                        mode: "Ask",
-                        modelId: activeModelId,
-                        modelName: "Default Model",
-                        effort: "Medium",
-                        autoMode: true,
-                        attachedFiles: [],
-                        files: [],
-                      });
-                    }}
-                  />
+                      approvalId={pendingApproval.id}
+                      actionId={pendingApproval.id}
+                      clientName={pendingApproval.clientName}
+                      productName={pendingApproval.productName || "PayGuardian Gateway"}
+                      action={pendingApproval.action}
+                      amountMinor={pendingApproval.amountMinor}
+                      currency={pendingApproval.currency}
+                      recipient={pendingApproval.recipient || "Hotel Merchant / Vendor"}
+                      mandateId={pendingApproval.mandateId}
+                      approvalUrl={pendingApproval.approvalUrl}
+                      redirectUri="PayGuardian Gateway (PayPal Sandbox)"
+                      email="operator@payguardian.local"
+                      onClose={() => setIsProposalMinimized(true)}
+                      onApprove={async (captureResult?: any) => {
+                        const envId =
+                          (isValidUuid(currentEnv?.id) ? currentEnv?.id : null) ||
+                          store.environmentsList.find((e) => isValidUuid(e.id))?.id;
+
+                        if (captureResult) {
+                          const orderId = captureResult.orderId || captureResult.order?.id || "N/A";
+                          const captureId = captureResult.captureId || captureResult.transactionId || "N/A";
+                          const amt = ((pendingApproval.amountMinor || 15000) / 100).toFixed(2);
+                          const curr = pendingApproval.currency || "USD";
+
+                          setCompletedPayments((prev) => [
+                            ...prev,
+                            {
+                              id: pendingApproval.id,
+                              transactionId: captureId !== "N/A" ? captureId : orderId,
+                              recipient: pendingApproval.recipient || "Hotel Merchant / Vendor",
+                              merchantCategory: "Lodging & Accommodations",
+                              amountMinor: pendingApproval.amountMinor || 15000,
+                              currency: curr,
+                              rail: "PayPal Sandbox",
+                              agentName: pendingApproval.clientName,
+                              completedAt: new Date().toISOString(),
+                            },
+                          ]);
+
+                          const successMsg: ThreadMessage = {
+                            id: `asst-pp-capture-${Date.now()}`,
+                            role: "assistant",
+                            text:
+                              `### 🛡️ Payment Authorized & Settled via PayPal Sandbox\n\n` +
+                              `The delegated payment has been authorized and captured directly through PayPal Sandbox.\n\n` +
+                              `- **Order ID**: \`${orderId}\`\n` +
+                              `- **Capture ID**: \`${captureId}\`\n` +
+                              `- **Amount**: \`$${amt} ${curr}\`\n` +
+                              `- **Recipient**: ${pendingApproval.recipient || "Hotel Merchant / Vendor"}\n` +
+                              `- **Status**: **COMPLETED & Settled in Ledger**\n\n` +
+                              `The cryptographic child mandate ledger entry is settled and policy invariants are verified.`,
+                            steps: [],
+                          };
+                          setThreadMessages((prev) => [...prev, successMsg]);
+                          setPendingApproval(null);
+                          return;
+                        }
+
+                        let appUrl =
+                          pendingApproval.approvalUrl &&
+                          !pendingApproval.approvalUrl.includes("ORDER-") &&
+                          !pendingApproval.approvalUrl.includes("simulated") &&
+                          (pendingApproval.approvalUrl.startsWith("https://www.sandbox.paypal.com") ||
+                            pendingApproval.approvalUrl.startsWith("https://www.paypal.com"))
+                            ? pendingApproval.approvalUrl
+                            : null;
+
+                        // If not already present, create a live PayPal Sandbox checkout order on the Gateway
+                        if (!appUrl && envId) {
+                          try {
+                            const res = await apiClient.payments.createPayPalOrder(envId, {
+                              agentId: pendingApproval.clientName?.toLowerCase().includes("hotel") ? "hotel" : "travel",
+                              mandateId: pendingApproval.mandateId,
+                              ledgerAccountId: `acc_${pendingApproval.mandateId}`,
+                              idempotencyKey: `pp_ord_${Date.now()}`,
+                              requestHash: `req_${Date.now()}`,
+                              action: pendingApproval.action || "book_hotel",
+                              amountMinor: pendingApproval.amountMinor || 15000,
+                              currency: "USD",
+                              approvalId: pendingApproval.id,
+                              returnUrl: typeof window !== "undefined" ? `${window.location.origin}/paypal/return` : undefined,
+                              cancelUrl: typeof window !== "undefined" ? `${window.location.origin}/paypal/cancel` : undefined,
+                            });
+                            const liveUrl = (res as any)?.order?.approvalUrl || (res as any)?.approveUrl;
+                            if (liveUrl && !liveUrl.includes("ORDER-")) {
+                              appUrl = liveUrl;
+                            }
+                          } catch (orderErr) {
+                            console.warn("Failed creating live PayPal order on approve:", orderErr);
+                          }
+                        }
+
+                        // Sync approval confirmation to Gateway approval store
+                        if (envId && pendingApproval.id) {
+                          try {
+                            await apiClient.approvals.approve(envId, pendingApproval.id);
+                          } catch (apprErr) {
+                            console.warn("Failed syncing approval to Gateway:", apprErr);
+                          }
+                        }
+
+                        setPendingApproval(null);
+
+                        // If a live PayPal URL is available, navigate directly to PayPal checkout
+                        if (appUrl && typeof window !== "undefined") {
+                          const popup = window.open(appUrl, "_blank", "noopener,noreferrer");
+                          if (!popup || popup.closed || typeof popup.closed === "undefined") {
+                            window.location.href = appUrl;
+                          }
+                          return;
+                        }
+
+                        // Fallback if PayPal API is unreachable: navigate to PayGuardian's return status page
+                        if (envId && typeof window !== "undefined") {
+                          window.location.href = `/paypal/return?environment_id=${encodeURIComponent(envId)}&action_id=${encodeURIComponent(pendingApproval.id)}`;
+                        }
+                      }}
+                      onDeny={async () => {
+                        setPendingApproval(null);
+                        await handleSendMessage({
+                          prompt: "I deny the payment request.",
+                          mode: "Ask",
+                          modelId: activeModelId,
+                          modelName: "Default Model",
+                          effort: "Medium",
+                          autoMode: true,
+                          attachedFiles: [],
+                          files: [],
+                        });
+                      }}
+                    />
+                  </>
                 )}
               </div>
             )}
