@@ -365,11 +365,10 @@ export function ReasoningThread({
                     ) : null}
                     {!message.streaming ? (
                       <span
-                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900/70 border border-zinc-800/70 text-[11px] font-medium text-zinc-400 select-none opacity-80 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity"
+                        className="inline-flex items-center text-xs text-zinc-400 select-none cursor-default opacity-0 group-hover:opacity-100 transition-opacity"
                         title={`Responded with ${formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}`}
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                        <span>{formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}</span>
+                        {formatModelDisplayName(message.modelName || "Gemini 4 Hydrogen")}
                       </span>
                     ) : null}
                   </div>
