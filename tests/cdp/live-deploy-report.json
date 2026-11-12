@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-11-12T20:30:59.873Z",
+  "api": {
+    "url": "https://payguardian-api.vercel.app",
+    "health": {
+      "status": "ok",
+      "service": "gateway-api",
+      "phase": "repository-and-deployment-proof"
+    }
+  },
+  "agentRuntime": {
+    "url": "https://payguardian-agent-runtime.onrender.com",
+    "health": {
+      "status": "ok",
+      "service": "agent-runtime",
+      "phase": "approvals-and-agent-workflows",
+      "adkAvailable": true,
+      "configuredAgents": [
+        "personal",
+        "travel",
+        "hotel",
+        "transport",
+        "food",
+        "activities",
+        "merchant_attach",
+        "merchantattach"
+      ],
+      "authorityEnforcement": "gateway-enforced"
+    }
+  },
+  "results": [
+    {
+      "feature": "Google Social Auth on Login",
+      "status": "PASSED",
+      "details": {
+        "found": true,
+        "text": "Continue with Google"
+      },
+      "screenshot": "01_login_google_auth.png"
+    },
+    {
+      "feature": "Dashboard Overview & Preview Auth Access",
+      "status": "PASSED",
+      "details": {
+        "title": "PayGuardian"
+      },
+      "screenshot": "02_dashboard_overview.png"
+    },
+    {
+      "feature": "CDP Automation",
+      "status": "ERROR",
+      "details": {
+        "error": "Waiting failed: 10000ms exceeded"
+      }
+    }
+  ]
+}
