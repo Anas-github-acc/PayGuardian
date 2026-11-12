@@ -447,11 +447,26 @@ export function AssistantView({
         eventSourceRef.current.close();
       }
 
-      const tokenParam = "local-user";
+      let tokenParam = "local-user";
+      let localUserIdParam: string | undefined;
+      try {
+        const auth = getAuthHeaders();
+        if (auth["authorization"]) {
+          tokenParam = auth["authorization"].replace(/^Bearer\s+/i, "");
+        } else {
+          localUserIdParam = "local-user";
+        }
+      } catch {
+        localUserIdParam = "local-user";
+      }
+
       const lastIdParam = lastEventIdRef.current ? `&lastEventId=${lastEventIdRef.current}` : "";
-      const streamUrl = `${API_BASE}/v1/environments/${targetEnv}/runs/${runId}/stream?localUserId=${encodeURIComponent(
+      const localUserQuery = localUserIdParam
+        ? `&localUserId=${encodeURIComponent(localUserIdParam)}`
+        : "";
+      const streamUrl = `${API_BASE}/v1/environments/${targetEnv}/runs/${runId}/stream?token=${encodeURIComponent(
         tokenParam,
-      )}&token=${encodeURIComponent(tokenParam)}${lastIdParam}`;
+      )}${localUserQuery}${lastIdParam}`;
 
       const es = new EventSource(streamUrl);
       eventSourceRef.current = es;

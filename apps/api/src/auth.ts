@@ -15,7 +15,27 @@ export function createPrincipalResolver(
   const localAuthEnabled = config.localDevAuthEnabled;
 
   return async (authorization, localUserId) => {
-    if (localUserId && !localAuthEnabled) return null;
+    if (authorization?.startsWith("Bearer ")) {
+      const token = authorization.slice("Bearer ".length).trim();
+      if (token) {
+        if (token.startsWith("pg_") && registry) {
+          const verified = await registry.verifyAgentCredential(token);
+          if (verified) {
+            return {
+              userId: verified.agent.ownerUserId,
+              agentId: verified.agent.id,
+              kind: "agent",
+            };
+          }
+        } else if (client) {
+          const { data, error } = await client.auth.getUser(token);
+          if (!error && data.user) {
+            return { userId: data.user.id, kind: "user" };
+          }
+        }
+      }
+    }
+
     if (localAuthEnabled && localUserId) {
       const isSupabase = (process.env.DATABASE_MODE ?? "memory") === "supabase";
       const resolvedUserId =
@@ -24,19 +44,7 @@ export function createPrincipalResolver(
           : localUserId;
       return { userId: resolvedUserId, kind: "user" };
     }
-    if (!authorization?.startsWith("Bearer ")) return null;
-    const token = authorization.slice("Bearer ".length).trim();
-    if (!token) return null;
 
-    if (token.startsWith("pg_") && registry) {
-      const verified = await registry.verifyAgentCredential(token);
-      if (!verified) return null;
-      return { userId: verified.agent.ownerUserId, agentId: verified.agent.id, kind: "agent" };
-    }
-
-    if (!client) return null;
-    const { data, error } = await client.auth.getUser(token);
-    if (error || !data.user) return null;
-    return { userId: data.user.id, kind: "user" };
+    return null;
   };
 }
