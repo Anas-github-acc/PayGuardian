@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import {
   Fingerprint,
   Terminal,
@@ -103,8 +104,14 @@ export function AuthCard({ className, onSuccess }: AuthCardProps) {
         )}
       >
         <CardHeader className="p-0 pb-5 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success shadow-[0_0_14px_oklch(var(--success-solid)/0.25)]">
-            <Shield className="h-5 w-5" />
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-secondary shadow-md">
+            <Image
+              src="/payguardian.svg"
+              alt="PayGuardian Logo"
+              width={24}
+              height={24}
+              className="h-6 w-6 object-contain"
+            />
           </div>
           <CardTitle className="text-lg font-semibold tracking-tight text-foreground">
             {mode === "login" ? "PayGuardian Authentication" : "Register Security Principal"}

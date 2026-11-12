@@ -183,4 +183,58 @@ describe("Workspace Redesign Data & Arithmetic Invariants", () => {
     workspaceStore.setActiveNavTab("assistant");
     expect(workspaceStore.getState().activeNavTab).toBe("assistant");
   });
+
+  it("accurately constructs multi-level hierarchy: Travel Concierge has Hotel child, Hotel has no children, and only active agents are shown", () => {
+    const agents: AgentDto[] = [
+      { id: "personal-root", environmentId: "env-inr", parentAgentId: null, name: "Personal Agent", kind: "personal", status: "active", createdAt: "2026-11-10T20:19:41Z" },
+      { id: "travel-agent", environmentId: "env-inr", parentAgentId: "personal-root", name: "Travel Concierge", kind: "travel", status: "active", createdAt: "2026-11-10T20:47:05Z" },
+      { id: "hotel-agent", environmentId: "env-inr", parentAgentId: "travel-agent", name: "Hotel Specialist", kind: "hotel", status: "active", createdAt: "2026-11-10T20:47:06Z" },
+      { id: "food-agent", environmentId: "env-inr", parentAgentId: "personal-root", name: "Food & Dining Specialist", kind: "food", status: "active", createdAt: "2026-11-10T21:31:14Z" },
+      { id: "activities-agent", environmentId: "env-inr", parentAgentId: "personal-root", name: "Activities Specialist", kind: "activities", status: "active", createdAt: "2026-11-10T21:31:15Z" },
+      { id: "revoked-agent", environmentId: "env-inr", parentAgentId: "personal-root", name: "Old Worker", kind: "specialist", status: "revoked", createdAt: "2026-11-01T00:00:00Z" },
+    ];
+
+    const mandates: MandateDto[] = [
+      { id: "m-root", environmentId: "env-inr", issuerUserId: "u1", holderAgentId: "personal-root", parentMandateId: null, budgetLimitMinor: 1100000, allocatedMinor: 426400, spentMinor: 0, reservedMinor: 0, currency: "INR", permittedActions: ["*"], expiresAt: "2026-12-10T20:19:01Z", canDelegate: true, maxDelegationDepth: 2, approvalRequired: true, state: "active", revokedAt: null, createdAt: "2026-11-10T20:19:41Z" },
+      { id: "m-travel", environmentId: "env-inr", issuerUserId: "u1", holderAgentId: "travel-agent", parentMandateId: "m-root", budgetLimitMinor: 84400, allocatedMinor: 84400, spentMinor: 0, reservedMinor: 0, currency: "INR", permittedActions: ["travel.*"], expiresAt: "2026-12-10T20:19:01Z", canDelegate: true, maxDelegationDepth: 1, approvalRequired: true, state: "active", revokedAt: null, createdAt: "2026-11-10T21:31:15Z" },
+      { id: "m-hotel", environmentId: "env-inr", issuerUserId: "u1", holderAgentId: "hotel-agent", parentMandateId: "m-travel", budgetLimitMinor: 84400, allocatedMinor: 0, spentMinor: 0, reservedMinor: 0, currency: "INR", permittedActions: ["hotel.*"], expiresAt: "2026-12-10T20:19:01Z", canDelegate: false, maxDelegationDepth: 0, approvalRequired: true, state: "active", revokedAt: null, createdAt: "2026-11-10T21:31:16Z" },
+      { id: "m-food", environmentId: "env-inr", issuerUserId: "u1", holderAgentId: "food-agent", parentMandateId: "m-root", budgetLimitMinor: 177000, allocatedMinor: 0, spentMinor: 0, reservedMinor: 0, currency: "INR", permittedActions: ["food.*"], expiresAt: "2026-12-10T20:19:01Z", canDelegate: false, maxDelegationDepth: 0, approvalRequired: true, state: "active", revokedAt: null, createdAt: "2026-11-10T21:31:15Z" },
+      { id: "m-activities", environmentId: "env-inr", issuerUserId: "u1", holderAgentId: "activities-agent", parentMandateId: "m-root", budgetLimitMinor: 165000, allocatedMinor: 0, spentMinor: 0, reservedMinor: 0, currency: "INR", permittedActions: ["activities.*"], expiresAt: "2026-12-10T20:19:01Z", canDelegate: false, maxDelegationDepth: 0, approvalRequired: true, state: "active", revokedAt: null, createdAt: "2026-11-10T21:31:15Z" },
+    ];
+
+    const { nodes, edges } = mapWorkspaceGraph(agents, mandates);
+
+    // Verify correct parentAgentId on nodes
+    const travelNode = nodes.find((n) => n.id === "travel-agent");
+    const hotelNode = nodes.find((n) => n.id === "hotel-agent");
+    const foodNode = nodes.find((n) => n.id === "food-agent");
+    const activitiesNode = nodes.find((n) => n.id === "activities-agent");
+    const revokedNode = nodes.find((n) => n.id === "revoked-agent");
+
+    expect(travelNode?.parentAgentId).toBe("personal-root");
+    expect(hotelNode?.parentAgentId).toBe("travel-agent"); // Travel agent's child is Hotel Specialist!
+    expect(foodNode?.parentAgentId).toBe("personal-root"); // Food connects to Personal Agent
+    expect(activitiesNode?.parentAgentId).toBe("personal-root"); // Activities connects to Personal Agent
+
+    // Verify allocated authority for child leaf agents
+    expect(hotelNode?.allocatedMinor).toBe(84400); // ₹844.00
+    expect(hotelNode?.isFunded).toBe(true);
+    expect(foodNode?.allocatedMinor).toBe(177000); // ₹1,770.00
+    expect(activitiesNode?.allocatedMinor).toBe(165000); // ₹1,650.00
+    expect(revokedNode?.status).toBe("revoked");
+
+    // Edges verification: Hotel Specialist has NO outgoing edges
+    const hotelOutgoingEdges = edges.filter((e) => e.source === "hotel-agent");
+    expect(hotelOutgoingEdges).toHaveLength(0); // Hotel Specialist has NO children!
+
+    // Travel agent has Hotel Specialist as child
+    const travelOutgoingEdges = edges.filter((e) => e.source === "travel-agent");
+    expect(travelOutgoingEdges).toHaveLength(1);
+    expect(travelOutgoingEdges[0].target).toBe("hotel-agent");
+
+    // Only active agents: activeNodes filter excludes revoked
+    const activeNodes = nodes.filter((n) => n.status === "active");
+    expect(activeNodes.some((n) => n.id === "revoked-agent")).toBe(false);
+    expect(activeNodes).toHaveLength(5);
+  });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot,
@@ -18,6 +19,7 @@ import {
 import { cn } from "../../lib/utils";
 import { useWorkspaceStore, type NavTab } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
+import { useApprovals } from "../../lib/api/hooks/use-approvals";
 import { StatusPill } from "./status-pill";
 
 export interface SidebarProps {
@@ -41,9 +43,11 @@ interface NavItem {
 export function Sidebar({ open, onClose, className, activeTabOverride }: SidebarProps) {
   const { activeTab, activeSubTab, navigateTab } = useDashboardNavigation();
   const { currentEnvironment } = useWorkspaceStore();
+  const { approvals } = useApprovals(currentEnvironment?.id);
   const currentTab = activeTabOverride ?? activeTab;
 
-  const pendingApprovalsCount = currentEnvironment?.pendingApprovalsCount ?? 0;
+  const livePendingCount = approvals.filter((a) => a.status === "pending").length;
+  const pendingApprovalsCount = livePendingCount > 0 ? livePendingCount : (currentEnvironment?.pendingApprovalsCount ?? 0);
   const isSandbox = currentEnvironment?.type === "sandbox";
 
   const items: NavItem[] = [
@@ -125,7 +129,13 @@ export function Sidebar({ open, onClose, className, activeTabOverride }: Sidebar
         {/* Brand */}
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
           <div className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-secondary text-foreground">
-            <Shield className="h-3.5 w-3.5" />
+            <Image
+              src="/payguardian.svg"
+              alt="PayGuardian Logo"
+              width={16}
+              height={16}
+              className="h-4 w-4 object-contain"
+            />
           </div>
           <span className="text-sm font-semibold text-foreground">PayGuardian</span>
           <span className="rounded border border-border bg-secondary px-1 py-px font-mono text-[9px] font-medium text-muted-foreground uppercase">

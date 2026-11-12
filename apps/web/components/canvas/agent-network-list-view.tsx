@@ -178,11 +178,10 @@ export function AgentNetworkListView({
               nodes.map((node, idx) => {
                 const isFocused = idx === focusedIndex;
                 const isSelected = store.selectedNodeId === node.id;
-                const availableMinor = calculateAvailableMinor(
-                  node.allocatedMinor,
-                  node.spentMinor,
-                  node.reservedMinor
-                );
+                const availableMinor =
+                  node.availableMinor !== undefined
+                    ? node.availableMinor
+                    : calculateAvailableMinor(node.allocatedMinor, node.spentMinor, node.reservedMinor);
 
                 return (
                   <tr
@@ -259,17 +258,17 @@ export function AgentNetworkListView({
 
                     {/* Allocated */}
                     <td className="py-2.5 px-3 text-right font-mono tabular-nums text-zinc-200">
-                      {node.isFunded ? formatMinorUnits(node.allocatedMinor, currency) : "—"}
+                      {formatMinorUnits(node.allocatedMinor, currency)}
                     </td>
 
                     {/* Spent */}
                     <td className="py-2.5 px-3 text-right font-mono tabular-nums text-zinc-400">
-                      {node.isFunded ? formatMinorUnits(node.spentMinor, currency) : "—"}
+                      {formatMinorUnits(node.spentMinor, currency)}
                     </td>
 
                     {/* Available */}
                     <td className="py-2.5 px-3 text-right font-mono tabular-nums text-blue-400 font-medium">
-                      {node.isFunded ? formatMinorUnits(availableMinor, currency) : "—"}
+                      {formatMinorUnits(availableMinor, currency)}
                     </td>
 
                     {/* Inspect Link */}

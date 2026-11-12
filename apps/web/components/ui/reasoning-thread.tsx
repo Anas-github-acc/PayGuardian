@@ -12,6 +12,7 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import { AIRenderer } from "@/components/rendering";
+import { AgentProgress } from "./agent-progress";
 
 /** A tool step of an answer: what the agent did, how long it took and what came back. */
 export type ThreadStep = {
@@ -36,6 +37,7 @@ export type ThreadMessage =
       text: string;
       /** The answer is still arriving: a caret follows the text. */
       streaming?: boolean;
+      progressLabel?: string;
     };
 
 export type ReasoningThreadProps = {
@@ -43,6 +45,8 @@ export type ReasoningThreadProps = {
   /** Accessible name of the conversation. */
   label?: string;
   className?: string;
+  isStreaming?: boolean;
+  progressLabel?: string;
 };
 
 /** How long a finished answer stays in the announcement region before it is cleared. */
@@ -126,7 +130,14 @@ export function Reasoning({ seconds, text }: { text: string; seconds?: number })
         onClick={toggle}
         type="button"
       >
-        <Brain aria-hidden="true" className="size-4" />
+        {thinking ? (
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-4 animate-spin text-[#D0785A] motion-reduce:animate-none"
+          />
+        ) : (
+          <Brain aria-hidden="true" className="size-4" />
+        )}
         {thinking ? "Thinking…" : `Thought for ${seconds} s`}
         <ChevronRight
           aria-hidden="true"
@@ -165,7 +176,7 @@ export function Step({ step }: { step: ThreadStep }) {
             "flex size-5 shrink-0 items-center justify-center rounded-full border",
             step.state === "done" &&
               "border-primary bg-primary text-primary-foreground",
-            step.state === "running" && "border-primary text-primary",
+            step.state === "running" && "border-[#D0785A] text-[#D0785A]",
             step.state === "error" &&
               "border-destructive bg-destructive/10 text-destructive"
           )}
@@ -173,7 +184,7 @@ export function Step({ step }: { step: ThreadStep }) {
           {step.state === "running" ? (
             <LoaderCircle
               aria-hidden="true"
-              className="size-3 animate-spin motion-reduce:animate-none"
+              className="size-3 animate-spin text-[#D0785A] motion-reduce:animate-none"
             />
           ) : step.state === "done" ? (
             <Check aria-hidden="true" className="size-3" />
@@ -236,6 +247,8 @@ export function ReasoningThread({
   className,
   label = "Conversation",
   messages,
+  isStreaming,
+  progressLabel,
 }: ReasoningThreadProps) {
   const reduced = useReducedMotion();
   const finished = useFinishedAnswer(messages);
@@ -263,7 +276,7 @@ export function ReasoningThread({
       role="log"
     >
       <AnimatePresence initial={false}>
-        {messages.map((message) =>
+        {messages.map((message, index) =>
           message.role === "user" ? (
             <div key={message.id} className="group flex w-full flex-col items-end">
               <motion.div
@@ -292,61 +305,73 @@ export function ReasoningThread({
               </div>
             </div>
           ) : (
-            <motion.article
-              animate={{ opacity: 1, y: 0 }}
-              // While the answer streams it stays out of the live region (and busy); the status
-              // below the thread reads it once it is complete.
-              aria-busy={message.streaming || undefined}
-              aria-label="Assistant answer"
-              aria-live={message.streaming ? "off" : undefined}
-              className="group flex flex-col gap-2.5"
-              initial={reduced ? false : { opacity: 0, y: 8 }}
-              key={message.id}
-              transition={reduced ? { duration: 0 } : ENTER}
-            >
-              {message.reasoning ? <Reasoning {...message.reasoning} /> : null}
-              {message.steps && message.steps.length > 0 ? (
-                <ol
-                  aria-label="Steps"
-                  className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3"
-                >
-                  {message.steps.map((step) => (
-                    <Step key={step.id} step={step} />
-                  ))}
-                </ol>
-              ) : null}
-              {message.text ? (
-                <div className="space-y-4 text-pretty text-base sm:text-[17px] leading-relaxed text-zinc-100">
-                  <Answer text={message.text} />
-                  {message.streaming ? (
-                    <span
-                      aria-hidden="true"
-                      className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-primary align-text-bottom motion-reduce:animate-none"
-                    />
-                  ) : null}
+            <div key={message.id} className="flex flex-col gap-2">
+              {(message.streaming || (isStreaming && index === messages.length - 1)) ? (
+                <div className="flex items-center text-zinc-300 py-1">
+                  <AgentProgress label={message.progressLabel || progressLabel || "Thinking…"} />
                 </div>
               ) : null}
-              {/* Wrapping block occupies space at all times; copy button only visible on hover */}
-              <div className="flex h-7 min-h-[28px] items-center justify-start px-1 pt-1">
-                {!message.streaming && message.text ? (
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(message.text, message.id)}
-                    className="inline-flex items-center justify-center p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                    title="Copy response"
+              <motion.article
+                animate={{ opacity: 1, y: 0 }}
+                // While the answer streams it stays out of the live region (and busy); the status
+                // below the thread reads it once it is complete.
+                aria-busy={message.streaming || undefined}
+                aria-label="Assistant answer"
+                aria-live={message.streaming ? "off" : undefined}
+                className="group flex flex-col gap-2.5"
+                initial={reduced ? false : { opacity: 0, y: 8 }}
+                transition={reduced ? { duration: 0 } : ENTER}
+              >
+                {message.reasoning ? <Reasoning {...message.reasoning} /> : null}
+                {message.steps && message.steps.length > 0 ? (
+                  <ol
+                    aria-label="Steps"
+                    className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3"
                   >
-                    {copiedId === message.id ? (
-                      <Check className="size-4 text-emerald-400" />
-                    ) : (
-                      <Copy className="size-4" />
-                    )}
-                  </button>
+                    {message.steps.map((step) => (
+                      <Step key={step.id} step={step} />
+                    ))}
+                  </ol>
                 ) : null}
-              </div>
-            </motion.article>
+                {message.text ? (
+                  <div className="space-y-4 text-pretty text-base sm:text-[17px] leading-relaxed text-zinc-100">
+                    <Answer text={message.text} />
+                    {message.streaming ? (
+                      <span
+                        aria-hidden="true"
+                        className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-[#D0785A] align-text-bottom motion-reduce:animate-none"
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+                {message.text ? (
+                  <div className="flex h-7 min-h-[28px] items-center justify-start px-1 pt-1">
+                    {!message.streaming ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(message.text, message.id)}
+                        className="inline-flex items-center justify-center p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        title="Copy response"
+                      >
+                        {copiedId === message.id ? (
+                          <Check className="size-4 text-emerald-400" />
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </motion.article>
+            </div>
           )
         )}
       </AnimatePresence>
+      {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "user" ? (
+        <div className="flex items-center text-zinc-300 py-1">
+          <AgentProgress label={progressLabel || "Thinking…"} />
+        </div>
+      ) : null}
       <p className="sr-only" role="status">
         {finished}
       </p>

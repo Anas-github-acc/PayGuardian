@@ -49,6 +49,9 @@ export interface AgentNodeData {
   allocatedMinor: number;
   spentMinor: number;
   reservedMinor: number;
+  availableMinor?: number;
+  subDelegatedMinor?: number;
+  parentAgentId?: string | null;
   position: [number, number, number];
   isFunded: boolean; // Solid if true, Dashed if false
   isSimulation?: boolean;
@@ -138,26 +141,26 @@ export interface WorkspaceState {
 // Initial default environment fixtures ensuring crisp, immediate preview
 export const DEFAULT_ENVIRONMENTS: Environment[] = [
   {
-    id: "env-sandbox-travel-01",
-    name: "Travel & Hospitality",
-    slug: "travel-hospitality",
-    purpose: "Autonomous flight booking, hotel procurement, and itinerary management",
-    currency: "USD",
-    budgetLimitMinor: 1000000, // $10,000.00
-    spentMinor: 245000, // $2,450.00
-    reservedMinor: 150000, // $1,500.00
-    availableMinor: 605000, // $6,050.00
+    id: "2fe8eeb0-9933-4895-bba0-349c95721ed8",
+    name: "Procurement & Travel",
+    slug: "procurement-travel",
+    purpose: "Autonomous flight booking, vendor procurement, and travel logistics",
+    currency: "INR",
+    budgetLimitMinor: 1100000, // ₹11,000.00
+    spentMinor: 0,
+    reservedMinor: 0,
+    availableMinor: 1100000,
     status: "active",
     type: "sandbox",
-    createdAt: "2026-10-28T10:00:00Z",
-    expiresAt: "2026-12-31T23:59:59Z",
+    createdAt: "2026-11-10T20:19:40.897406+00:00",
+    expiresAt: "2027-01-01T00:00:00Z",
     agentCount: 4,
-    pendingApprovalsCount: 1,
+    pendingApprovalsCount: 0,
     maxDelegationDepth: 2,
-    approvalThresholdMinor: 50000, // $500.00
+    approvalThresholdMinor: 50000, // ₹500.00
     allowedRails: ["PayPal", "Simulation"],
     consentStatement:
-      "By proceeding, you grant authority to environment 'Travel & Hospitality' to initiate payments up to $10,000.00 via PayPal. Actions exceeding $500.00 strictly require explicit human cryptographic sign-off. Authority expires on Dec 31, 2026.",
+      "By proceeding, you grant authority to environment 'Procurement & Travel' to initiate payments via PayPal. Actions exceeding threshold strictly require explicit human cryptographic sign-off.",
   },
   {
     id: "env-prod-ops-02",

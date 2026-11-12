@@ -37,7 +37,7 @@ def build_agent(name: str, model: str | None = None) -> Any:
 
     from google.adk.agents import Agent
 
-    target_model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    target_model = model or os.getenv("DEFAULT_MODEL", "free/gpt-6-luna")
     return Agent(
         name=f"payguardian_{name}_agent",
         model=target_model,

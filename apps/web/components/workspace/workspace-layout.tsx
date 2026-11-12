@@ -32,6 +32,8 @@ export function WorkspaceLayout({
   const {
     nodes,
     edges,
+    agents,
+    mandates,
     ledgerAccounts,
     isLoading: isGraphLoading,
     error: graphError,
@@ -44,9 +46,19 @@ export function WorkspaceLayout({
   const effectiveSelectedNodeId =
     nodes.some((n) => n.id === selectedNodeId) ? selectedNodeId : rootAgentNode?.id ?? "orchestrator-root";
 
-  const dynamicSpentMinor = ledgerAccounts.reduce((sum, a) => sum + (a.capturedMinor || 0), 0);
-  const dynamicReservedMinor = ledgerAccounts.reduce((sum, a) => sum + (a.reservedMinor || 0), 0);
-  const totalLimitMinor = env?.budgetLimitMinor ?? 0;
+  const dynamicSpentMinor =
+    ledgerAccounts.length > 0
+      ? ledgerAccounts.reduce((sum, a) => sum + (a.capturedMinor || 0), 0)
+      : mandates.reduce((sum, m) => sum + (m.spentMinor || 0), 0) || env?.spentMinor || 0;
+
+  const dynamicReservedMinor =
+    ledgerAccounts.length > 0
+      ? ledgerAccounts.reduce((sum, a) => sum + (a.reservedMinor || 0), 0)
+      : mandates.reduce((sum, m) => sum + (m.reservedMinor || 0), 0) || env?.reservedMinor || 0;
+
+  const totalLimitMinor =
+    env?.budgetLimitMinor ?? (mandates.find((m) => !m.parentMandateId)?.budgetLimitMinor ?? 0);
+  const currency = env?.currency ?? "USD";
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = React.useState(false);
 
@@ -133,7 +145,7 @@ export function WorkspaceLayout({
           totalLimitMinor={totalLimitMinor}
           spentMinor={dynamicSpentMinor}
           reservedMinor={dynamicReservedMinor}
-          currency={env?.currency ?? "USD"}
+          currency={currency}
           rootAgentCount={nodes.filter((n) => n.role === "orchestrator").length || 1}
         />
 
@@ -143,6 +155,10 @@ export function WorkspaceLayout({
           onSelectNode={handleSelectNode}
           nodes={nodes}
           edges={edges}
+          currency={currency}
+          totalLimitMinor={totalLimitMinor}
+          spentMinor={dynamicSpentMinor}
+          reservedMinor={dynamicReservedMinor}
           isLoading={isGraphLoading}
           error={graphError}
           onRetry={refetchGraph}
@@ -155,6 +171,11 @@ export function WorkspaceLayout({
             selectedNodeId={effectiveSelectedNodeId}
             onRevoke={handleRevokeNode}
             onViewTrace={onViewTrace}
+            nodes={nodes}
+            agents={agents}
+            mandates={mandates}
+            ledgerAccounts={ledgerAccounts}
+            currency={currency}
           />
 
           {/* Right: Recent Activity */}
@@ -180,6 +201,8 @@ export function WorkspaceLayout({
       {/* Node Detail Drawer */}
       <NodeDetailDrawer
         nodeId={selectedNodeId}
+        node={nodes.find((n) => n.id === selectedNodeId)}
+        currency={currency}
         isOpen={isDrawerOpen}
         onClose={handleCloseDrawer}
         onRevoke={handleRevokeNode}

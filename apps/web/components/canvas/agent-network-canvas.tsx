@@ -89,7 +89,7 @@ export function AgentNetworkCanvas({
   const flowParticlesRef = React.useRef<Array<{ mesh: THREE.Mesh; start: THREE.Vector3; end: THREE.Vector3; speed: number; progress: number }>>([]);
   const strobeNodesRef = React.useRef<Map<string, { mesh: THREE.Mesh; baseColor: THREE.Color; intensity: number }>>(new Map());
 
-  // Helper to create crisp high-DPI text canvas sprite
+  // Helper to create crisp high-DPI text canvas sprite with Allocated, Spent, Available
   const createNodeSprite = (node: AgentNodeData, curr: string) => {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
@@ -100,15 +100,15 @@ export function AgentNetworkCanvas({
     ctx.clearRect(0, 0, 512, 256);
 
     // Background pill container
-    ctx.fillStyle = "rgba(13, 13, 13, 0.85)";
+    ctx.fillStyle = "rgba(10, 10, 12, 0.92)";
     ctx.strokeStyle = node.isSimulation
       ? "rgba(255, 255, 255, 0.55)"
       : node.isFunded
-      ? "rgba(255, 255, 255, 0.35)"
+      ? "rgba(59, 130, 246, 0.5)"
       : "rgba(255, 255, 255, 0.15)";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.roundRect(16, 16, 480, 224, 28);
+    ctx.roundRect(14, 14, 484, 228, 24);
     ctx.fill();
     ctx.stroke();
 
@@ -118,41 +118,84 @@ export function AgentNetworkCanvas({
       ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.roundRect(166, 26, 180, 26, 13);
+      ctx.roundRect(166, 22, 180, 24, 12);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = "#cccccc";
-      ctx.font = "bold 15px ui-monospace, SFMono-Regular, monospace";
+      ctx.font = "bold 13px ui-monospace, SFMono-Regular, monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("[SIMULATION]", 256, 39);
+      ctx.fillText("[SIMULATION]", 256, 34);
     }
 
     // Node Name
-    ctx.fillStyle = "#ededed";
-    ctx.font = "bold 32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(node.name, 256, node.isSimulation ? 80 : 75);
+    ctx.fillText(node.name, 256, node.isSimulation ? 64 : 54);
 
-    // Subtitle Role
-    ctx.fillStyle = "#999999";
-    ctx.font = "22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    // Subtitle Role & Status
+    ctx.fillStyle = "#a1a1aa";
+    ctx.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     const roleText = node.role === "orchestrator" ? "Orchestrator Root" : `Subagent · ${node.status}`;
-    ctx.fillText(roleText, 256, node.isSimulation ? 122 : 120);
+    ctx.fillText(roleText, 256, node.isSimulation ? 94 : 86);
 
-    // Monetary Balance or Unfunded indicator
-    if (node.isFunded) {
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 30px ui-monospace, SFMono-Regular, monospace";
-      const amtText = formatMinorUnits(node.allocatedMinor, curr);
-      ctx.fillText(amtText, 256, node.isSimulation ? 176 : 175);
-    } else {
-      ctx.fillStyle = "#666666";
-      ctx.font = "24px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillText("Attached · Unfunded ($0)", 256, node.isSimulation ? 176 : 175);
-    }
+    // Subtle divider
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(30, 114);
+    ctx.lineTo(482, 114);
+    ctx.stroke();
+
+    // 3 metrics: ALLOCATED | SPENT | AVAILABLE
+    const availMinor =
+      node.availableMinor !== undefined
+        ? node.availableMinor
+        : Math.max(0, node.allocatedMinor - (node.subDelegatedMinor || 0) - node.spentMinor - node.reservedMinor);
+
+    const allocText = formatMinorUnits(node.allocatedMinor, curr);
+    const spentText = formatMinorUnits(node.spentMinor, curr);
+    const availText = formatMinorUnits(availMinor, curr);
+
+    // Column 1: Allocated (x: 105)
+    ctx.fillStyle = "#71717a";
+    ctx.font = "bold 12px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText("ALLOCATED", 105, 140);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 17px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText(allocText, 105, 172);
+
+    // Column 2: Spent (x: 256)
+    ctx.fillStyle = "#71717a";
+    ctx.font = "bold 12px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText("SPENT", 256, 140);
+    ctx.fillStyle = node.spentMinor > 0 ? "#f97316" : "#a1a1aa";
+    ctx.font = "bold 17px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText(spentText, 256, 172);
+
+    // Column 3: Available (x: 407)
+    ctx.fillStyle = "#71717a";
+    ctx.font = "bold 12px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText("AVAILABLE", 407, 140);
+    ctx.fillStyle = "#38bdf8";
+    ctx.font = "bold 17px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText(availText, 407, 172);
+
+    // Bottom Status Pill indicator
+    ctx.fillStyle = node.isFunded ? "rgba(59, 130, 246, 0.2)" : "rgba(245, 158, 11, 0.2)";
+    ctx.strokeStyle = node.isFunded ? "rgba(59, 130, 246, 0.6)" : "rgba(245, 158, 11, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(176, 204, 160, 22, 11);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = node.isFunded ? "#60a5fa" : "#fbbf24";
+    ctx.font = "11px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillText(node.isFunded ? "FUNDED & ACTIVE" : "UNFUNDED / READY", 256, 215);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;

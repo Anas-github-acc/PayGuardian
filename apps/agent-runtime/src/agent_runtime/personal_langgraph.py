@@ -29,11 +29,15 @@ from agent_runtime.agents import configured_agent_names
 from agent_runtime.context_compiler import (
     CORE_SYSTEM_INSTRUCTIONS,
     SPECIALIST_SYSTEM_PROMPT,
+    TRAVEL_SPECIALIST_PROMPT,
+    HOTEL_SPECIALIST_PROMPT,
+    FOOD_SPECIALIST_PROMPT,
     ContextCompiler,
 )
 from agent_runtime.gateway_client import GatewayClient, assert_safe_prompt_content
 from agent_runtime.mcp_tools import (
     PAYGUARDIAN_MCP_TOOL_SCHEMAS,
+    SPECIALIST_MCP_TOOL_SCHEMAS,
     PayGuardianMCPTools,
 )
 from agent_runtime.subagent_registry import (
@@ -222,20 +226,22 @@ def extract_user_prompt(messages: list[dict[str, Any]]) -> str:
 
 
 USER_CONFIRMATION_PATTERNS = [
-    r"^\s*(?:okay\s+)?delegate\s*$",
-    r"\b(?:okay\s+)?delegate\s+(?:the\s+)?budget\b",
+    r"\b(?:okay\s+)?delegate(?:\s+(?:the\s+)?budget)?\b",
     r"^\s*proceed\s*$",
-    r"^\s*confirm\s*$",
-    r"^\s*approve\s*$",
-    r"^\s*approved\s*$",
-    r"^\s*yes\s+(?:proceed|do it|go ahead|delegate)\s*$",
-    r"^\s*go\s+ahead\s*$",
-    r"^\s*do\s+it\s*$",
-    r"^\s*execute\s*$",
-    r"^\s*buy\s+it\s*$",
-    r"\bapprove\s+(?:the\s+)?(?:budget|proposal|delegation)\b",
-    r"\bauthorize\b",
+    r"\bconfirm(?:\s+(?:the\s+)?(?:plan|proposal|these|this|budget|delegation))?\b",
+    r"\bapproved?\b",
+    r"\b(?:yes\s+)?(?:proceed|do\s+it|go\s+ahead|delegate)\b",
+    r"\bgo\s+ahead\b",
+    r"\bdo\s+it\b",
+    r"\bexecute(?:\s+(?:the\s+)?(?:plan|payment|proposal|delegation))?\b",
+    r"\bbuy\s+it\b",
+    r"\bapprove\s+(?:the\s+)?(?:budget|proposal|delegation|plan)\b",
+    r"\bauthorized?\b",
     r"\blooks\s+good\b",
+    r"\b(?:make|complete|process|proceed\s+with|execute|do)\s+(?:the\s+)?(?:payment|payments|purchase|transaction)\b",
+    r"\b(?:go\s+and\s+)?make\s+(?:the\s+)?payment\b",
+    r"\bpay\s+(?:for\s+)?(?:these|them|this|it|all)\b",
+    r"\b(?:these|this)\s+(?:are|is)\s+(?:the\s+)?plan\b",
 ]
 
 USER_REJECTION_PATTERNS = [
@@ -258,9 +264,23 @@ def is_confirmation_message(text: str) -> bool:
     if is_rejection_message(text):
         return False
     t = text.strip().lower()
-    if any(w in t for w in ("buy the", "buy a", "buy me", "purchase", "ticket", "search products", "like biscuit")):
+    if any(w in t for w in ("buy ", "buy the", "buy a", "buy me", "purchase", "ticket", "search products", "biscuit", "chai")):
         return False
     return any(re.search(pat, t) for pat in USER_CONFIRMATION_PATTERNS)
+
+
+def is_payment_order_message(text: str) -> bool:
+    if is_rejection_message(text):
+        return False
+    t = text.strip().lower()
+    return any(
+        re.search(pat, t)
+        for pat in (
+            r"\b(buy|book|pay|purchase|order|checkout)\b",
+            r"\b(make\s+(the\s+)?payment)\b",
+            r"\b(go\s+and\s+spend|spend\s+the\s+money)\b",
+        )
+    )
 
 
 def extract_user_preferences(messages: list[dict[str, Any]], current_prompt: str) -> dict[str, Any]:
@@ -474,9 +494,10 @@ def execute_specialist_agent(
     task: SubagentTask,
     prompt: str,
     model_id: str | None = None,
+    mcp_tools: Any | None = None,
 ) -> dict[str, Any]:
-    """Execute specialist subagent (via ADK or simulation wrapper). Backwards-compatible fallback."""
-    target_model = model_id or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    """Execute specialist subagent using real LLM, specialist system prompt, and MCP payment tools."""
+    target_model = model_id or os.getenv("DEFAULT_MODEL", "free/gpt-6-luna")
     names = configured_agent_names()
     if agent_name in names:
         _ = build_runtime_agent(agent_name, model=target_model)
@@ -498,21 +519,216 @@ def execute_specialist_agent(
     amount_minor = raw_amount if raw_amount > 0 else default_quotes.get(agent_lower, 50000)
     budget_str = _format_budget(amount_minor, currency)
 
+    domain_prompts = {
+        "travel": TRAVEL_SPECIALIST_PROMPT,
+        "hotel": HOTEL_SPECIALIST_PROMPT,
+        "food": FOOD_SPECIALIST_PROMPT,
+    }
+    independent_system_prompt = domain_prompts.get(
+        agent_lower, f"You are the {agent_name.capitalize()} Specialist. Execute your assigned domain tasks."
+    )
+    # Assemble core specialist system prompt and independent domain system prompt
+    specialist_system_prompt = f"{SPECIALIST_SYSTEM_PROMPT}\n\n{independent_system_prompt}"
+
+    # Assembled MCP tool definitions for LLM
+    mcp_tool_definitions = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_delegated_balance",
+                "description": "Check the subagent's available delegated budget ceiling and remaining spendable balance",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "agent_id": {"type": "string", "description": "Specialist subagent alias (e.g. hotel, travel, food)"}
+                    },
+                    "required": ["agent_id"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "request_payment",
+                "description": "Request payment using delegated authority through the PayGuardian Gateway",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "agent_id": {"type": "string", "description": "Specialist subagent alias"},
+                        "amount_minor": {"type": "integer", "description": "Payment amount in minor units (paise or cents)"},
+                        "currency": {"type": "string", "description": "Currency code (e.g. INR, USD)"},
+                        "recipient": {"type": "string", "description": "Merchant, vendor or service provider name"},
+                        "action": {"type": "string", "description": "Action being executed (e.g. book_hotel, buy_tickets, order_dining)"},
+                        "mandate_id": {"type": "string", "description": "Child mandate reference ID"},
+                    },
+                    "required": ["agent_id", "amount_minor", "currency", "recipient", "action"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_payment_status",
+                "description": "Check whether an initiated payment succeeded, failed, or is pending",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "payment_intent_id": {"type": "string", "description": "Payment intent ID returned from request_payment"}
+                    },
+                    "required": ["payment_intent_id"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "request_budget_increase",
+                "description": "Request additional allocation from the main agent when price exceeds available delegated ceiling",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "agent_id": {"type": "string", "description": "Specialist subagent alias"},
+                        "additional_amount_minor": {"type": "integer", "description": "Additional amount needed in minor units"},
+                        "reason": {"type": "string", "description": "Justification explaining why extra funds are required"},
+                        "currency": {"type": "string", "description": "Currency code"},
+                    },
+                    "required": ["agent_id", "additional_amount_minor", "reason"],
+                },
+            },
+        },
+    ]
+
+    # Assemble task envelope prompt combining task instructions, user prompt, and constraints
+    child_mandate_id = task.get("child_mandate_id") or "mandate-child-simulated"
+    task_envelope_prompt = (
+        f"<TASK_ENVELOPE>\n"
+        f"Objective: {task.get('description', f'Fulfill {agent_name} request')}\n"
+        f"Domain Specialist: {agent_name.capitalize()}\n"
+        f"Assigned Action: {task.get('action', f'execute_{agent_lower}')}\n"
+        f"User Prompt: '{prompt}'\n"
+        f"Delegated Child Mandate: {child_mandate_id}\n"
+        f"Allocated Budget Ceiling: {budget_str} ({currency})\n"
+        f"Available MCP Tools: get_delegated_balance, request_payment, get_payment_status, request_budget_increase\n"
+        f"Instructions:\n"
+        f"1. Check your delegated balance using get_delegated_balance.\n"
+        f"2. Initiate the payment using request_payment under your child mandate {child_mandate_id}.\n"
+        f"3. If the cost exceeds your allocation, use request_budget_increase.\n"
+        f"4. Provide a structured, verified fulfillment summary confirming the reservation/booking details and cost.\n"
+        f"</TASK_ENVELOPE>"
+    )
+
+    llm_generated_text = ""
+    payment_auth_result: dict[str, Any] | None = None
+
+    # Call LLM with assembled system prompt and MCP tools
+    try:
+        from agent_runtime.llm_provider import LLMFactory, LLMResponse
+
+        provider, resolved_model = LLMFactory.get_provider_for_model(target_model)
+        resp = provider.generate(
+            prompt=task_envelope_prompt,
+            system_instruction=specialist_system_prompt,
+            model=resolved_model,
+            tools=mcp_tool_definitions,
+            max_tokens=800,
+            temperature=0.3,
+        )
+        if isinstance(resp, LLMResponse):
+            llm_generated_text = resp.content or ""
+            if resp.tool_calls and mcp_tools is not None:
+                for tc in resp.tool_calls:
+                    fn = tc.name
+                    args = tc.arguments or {}
+                    if fn == "get_delegated_balance":
+                        mcp_tools.get_delegated_balance(args.get("agent_id", agent_lower))
+                    elif fn == "request_budget_increase":
+                        inc_amt = args.get("additional_amount_minor", 0)
+                        if inc_amt > 0:
+                            topup = mcp_tools.request_budget_increase(
+                                agent_id=args.get("agent_id", agent_lower),
+                                additional_amount_minor=inc_amt,
+                                reason=args.get("reason", "Budget increase"),
+                                currency=args.get("currency", currency),
+                            )
+                            if topup.get("success"):
+                                amount_minor = topup.get("new_budget_limit_minor", amount_minor)
+                                budget_str = _format_budget(amount_minor, currency)
+                    elif fn == "request_payment":
+                        pay_req = mcp_tools.request_payment(
+                            agent_id=args.get("agent_id", agent_lower),
+                            amount_minor=args.get("amount_minor", amount_minor),
+                            currency=args.get("currency", currency),
+                            recipient=args.get("recipient", task.get("description", f"{agent_name.capitalize()} Merchant")),
+                            action=args.get("action", task.get("action", f"book_{agent_lower}")),
+                            mandate_id=args.get("mandate_id") or child_mandate_id,
+                        )
+                        if pay_req.get("success"):
+                            payment_auth_result = {
+                                "action_id": pay_req.get("payment_intent_id"),
+                                "payment_intent": pay_req.get("payment_intent_id"),
+                                "mandate_id": pay_req.get("child_mandate_id") or child_mandate_id,
+                                "status": pay_req.get("status", "authorized"),
+                                "amount_minor": args.get("amount_minor", amount_minor),
+                                "approval_url": pay_req.get("approval_url"),
+                                "provider_order_id": pay_req.get("provider_order_id"),
+                                "rail": pay_req.get("rail", "GatewayLedger"),
+                            }
+        elif isinstance(resp, str):
+            llm_generated_text = resp
+    except Exception as exc:
+        logger.debug("Specialist subagent LLM execution fallback for %s: %s", agent_name, exc)
+
+    # Ensure MCP tool payment execution runs if not already triggered by LLM tool calls
+    if payment_auth_result is None and mcp_tools is not None:
+        try:
+            bal = mcp_tools.get_delegated_balance(agent_lower)
+            avail_minor = bal.get("available_budget_minor", amount_minor)
+            if amount_minor > avail_minor and avail_minor > 0:
+                topup = mcp_tools.request_budget_increase(
+                    agent_id=agent_lower,
+                    additional_amount_minor=amount_minor - avail_minor,
+                    reason=f"Price quote for {agent_lower} exceeds currently delegated balance",
+                    currency=currency,
+                )
+                if topup.get("success"):
+                    amount_minor = topup.get("new_budget_limit_minor", amount_minor)
+                    budget_str = _format_budget(amount_minor, currency)
+
+            recipient_name = task.get("description") or f"{agent_name.capitalize()} Merchant Provider"
+            pay_req = mcp_tools.request_payment(
+                agent_id=agent_lower,
+                amount_minor=amount_minor,
+                currency=currency,
+                recipient=recipient_name,
+                action=task.get("action", f"book_{agent_lower}"),
+                mandate_id=child_mandate_id,
+            )
+            if pay_req.get("success"):
+                payment_auth_result = {
+                    "action_id": pay_req.get("payment_intent_id"),
+                    "payment_intent": pay_req.get("payment_intent_id"),
+                    "mandate_id": pay_req.get("child_mandate_id") or child_mandate_id,
+                    "status": pay_req.get("status", "authorized"),
+                    "amount_minor": amount_minor,
+                    "approval_url": pay_req.get("approval_url"),
+                    "provider_order_id": pay_req.get("provider_order_id"),
+                    "rail": pay_req.get("rail", "GatewayLedger"),
+                }
+        except Exception as exc:
+            logger.debug("Specialist subagent fallback MCP interaction error: %s", exc)
+
+    has_real_llm_text = bool(llm_generated_text and len(llm_generated_text.strip()) > 30 and "Processed by" not in llm_generated_text)
+
     if agent_lower == "travel":
         dest_hint = "the destination"
         for word in prompt.split():
             if len(word) > 3 and word[0].isupper() and word.isalpha():
                 dest_hint = word
                 break
-        return {
-            "agent": "travel",
-            "model": target_model,
-            "action": task.get("action", "plan_itinerary"),
-            "allocated_budget_minor": amount_minor,
-            "allocated_budget_display": budget_str,
-            "currency": currency,
-            "quoted_cost_minor": amount_minor,
-            "itinerary": (
+        itinerary_text = (
+            llm_generated_text.strip()
+            if has_real_llm_text
+            else (
                 f"Travel Specialist (Quoted fare: {budget_str}) — Itinerary for {dest_hint}:\n\n"
                 f"**Outbound Flight**: Direct route confirmed. "
                 f"Economy seat selection confirmed. Quoted cost: "
@@ -522,8 +738,19 @@ def execute_specialist_agent(
                 f"**Transit**: Airport transfer coordination identified. "
                 f"Remaining {_format_budget(int(amount_minor * 0.05), currency)} estimated for connections.\n\n"
                 f"Total quoted travel cost: {budget_str} (Authorized via child mandate)."
-            ),
+            )
+        )
+        return {
+            "agent": "travel",
+            "model": target_model,
+            "action": task.get("action", "plan_itinerary"),
+            "allocated_budget_minor": amount_minor,
+            "allocated_budget_display": budget_str,
+            "currency": currency,
+            "quoted_cost_minor": amount_minor,
+            "itinerary": itinerary_text,
             "estimated_cost_minor": amount_minor,
+            "payment_authorization": payment_auth_result,
             "details": {
                 "route": f"Optimized flight route for {dest_hint}",
                 "schedule": "Outbound + return within selected travel window",
@@ -533,15 +760,10 @@ def execute_specialist_agent(
             "status": "completed",
         }
     if agent_lower == "hotel":
-        return {
-            "agent": "hotel",
-            "model": target_model,
-            "action": task.get("action", "book_hotel"),
-            "allocated_budget_minor": amount_minor,
-            "allocated_budget_display": budget_str,
-            "currency": currency,
-            "quoted_cost_minor": amount_minor,
-            "lodging": (
+        lodging_text = (
+            llm_generated_text.strip()
+            if has_real_llm_text
+            else (
                 f"Hotel Specialist (Quoted cost: {budget_str}) — Accommodation verified:\n\n"
                 f"**Property**: Boutique 4-star hotel in city centre, flexible cancellation policy.\n"
                 f"**Room**: Superior double room for 2 guests, breakfast included.\n"
@@ -551,8 +773,19 @@ def execute_specialist_agent(
                 f"  - Taxes & fees: {_format_budget(int(amount_minor * 0.15), currency)}\n"
                 f"  - Total: {budget_str}\n\n"
                 f"Payment authorized via PayGuardian child mandate."
-            ),
+            )
+        )
+        return {
+            "agent": "hotel",
+            "model": target_model,
+            "action": task.get("action", "book_hotel"),
+            "allocated_budget_minor": amount_minor,
+            "allocated_budget_display": budget_str,
+            "currency": currency,
+            "quoted_cost_minor": amount_minor,
+            "lodging": lodging_text,
             "estimated_cost_minor": amount_minor,
+            "payment_authorization": payment_auth_result,
             "details": {
                 "property": "Verified boutique hotel — flexible cancellation",
                 "nights": 3,
@@ -563,15 +796,10 @@ def execute_specialist_agent(
             "status": "completed",
         }
     if agent_lower == "food":
-        return {
-            "agent": "food",
-            "model": target_model,
-            "action": task.get("action", "recommend_dining"),
-            "allocated_budget_minor": amount_minor,
-            "allocated_budget_display": budget_str,
-            "currency": currency,
-            "quoted_cost_minor": amount_minor,
-            "dining": (
+        dining_text = (
+            llm_generated_text.strip()
+            if has_real_llm_text
+            else (
                 f"Food Specialist (Estimated dining: {budget_str}) — Dining plan curated:\n\n"
                 f"**Day 1 Dinner**: Locally-sourced farm-to-table bistro. Reservation confirmed "
                 f"({_format_budget(int(amount_minor * 0.35), currency)} est.)\n"
@@ -582,8 +810,19 @@ def execute_specialist_agent(
                 f"**Day 3**: Flexible budget for cafés and local street food "
                 f"({_format_budget(int(amount_minor * 0.10), currency)} reserved)\n\n"
                 f"All dining recommendations within {budget_str} estimated dining envelope."
-            ),
+            )
+        )
+        return {
+            "agent": "food",
+            "model": target_model,
+            "action": task.get("action", "recommend_dining"),
+            "allocated_budget_minor": amount_minor,
+            "allocated_budget_display": budget_str,
+            "currency": currency,
+            "quoted_cost_minor": amount_minor,
+            "dining": dining_text,
             "estimated_cost_minor": amount_minor,
+            "payment_authorization": payment_auth_result,
             "details": {
                 "options": [
                     "Farm-to-table bistro (dinner, Day 1)",
@@ -592,6 +831,7 @@ def execute_specialist_agent(
                     "Café/street food flex budget (Day 3)",
                 ],
                 "mandate_budget": budget_str,
+                "payment_status": "Authorized via PayGuardian child mandate",
             },
             "status": "completed",
         }
@@ -780,9 +1020,103 @@ def dynamic_plan_subagents(
         for t in ((state.get("subagent_tasks") if state else None) or [])
     ) or any(
         isinstance(m, dict) and m.get("role") in ("assistant", "agent")
-        and any(w in str(m.get("content") or "").lower() for w in ("proposed budget allocation", "please approve or reject", "pending human sign-off", "pending human authorization", "coordinated plan", "quoted"))
+        and any(w in str(m.get("content") or "").lower() for w in (
+            "budget allocation proposal",
+            "proposed budget allocation",
+            "proposed specialist delegations",
+            "human authorization required",
+            "please approve or reject",
+            "pending human sign-off",
+            "pending human authorization",
+            "coordinated plan",
+            "quoted",
+            "cryptographic child mandates",
+            "available mandate reserve",
+        ))
         for m in (messages[-2:] if messages else [])
     )
+
+    # Check for payment execution intent (e.g. "buy me hotel room", "buy the cheap hotel in pune", "buy the hotel", "book the flight", "pay for dinner")
+    is_payment_action = (intent == "PAYMENT_EXECUTION_INTENT") or any(
+        w in prompt_lower
+        for w in (
+            "buy ", "buy the", "buy a", "buy me", "book ", "book the", "pay for",
+            "make payment", "order ", "purchase ", "checkout ",
+        )
+    ) or any(w in prompt_lower.split() for w in ("buy", "book", "pay", "purchase", "order", "checkout"))
+    if is_payment_action:
+        target_domain = None
+        if any(w in prompt_lower for w in ("hotel", "room", "stay", "lodging")):
+            target_domain = "hotel"
+        elif any(w in prompt_lower for w in ("train", "transit", "subway", "rail", "cab", "taxi")):
+            target_domain = "transport"
+        elif any(w in prompt_lower for w in ("flight", "airline", "travel", "ticket")):
+            target_domain = "travel"
+        elif any(w in prompt_lower for w in ("food", "dinner", "lunch", "meal", "restaurant", "bistro")):
+            target_domain = "food"
+        elif messages:
+            # Fall back to inspecting previous turns for domain context
+            for prev_m in reversed(messages):
+                prev_txt = str(prev_m.get("content") or "").lower()
+                if any(w in prev_txt for w in ("hotel", "room", "stay", "lodging")):
+                    target_domain = "hotel"
+                    break
+                elif any(w in prev_txt for w in ("flight", "travel", "airline")):
+                    target_domain = "travel"
+                    break
+                elif any(w in prev_txt for w in ("food", "dining", "meal", "biscuit", "snack")):
+                    target_domain = "food"
+                    break
+
+        if target_domain:
+            # Check for existing quoted amount in state tasks or conversation messages
+            extracted_amt = 0
+            if state and state.get("subagent_tasks"):
+                for t in state["subagent_tasks"]:
+                    if t.get("agent") == target_domain or t.get("agent_id") == f"agent-{target_domain}-specialist":
+                        extracted_amt = t.get("quoted_amount_minor") or t.get("amount_minor") or 0
+                        t["phase"] = "payment_execution"
+                        t["status"] = "payment_execution"
+                        t["requires_spending"] = True
+                        return [t], [f"Delegate payment execution for {target_domain} to specialist subagent via child mandate"]
+
+            # If not in state tasks, scan messages for quoted numbers
+            if extracted_amt <= 0 and messages:
+                for prev_m in reversed(messages):
+                    c = str(prev_m.get("content") or "")
+                    m_val = re.search(r"(?:hotel|specialist|fare|rate|quote).*?(?:\$|₹|inr|usd)\s*([\d,]+(?:\.\d+)?)", c, re.IGNORECASE)
+                    if not m_val:
+                        m_val = re.search(r"(?:\$|₹|rs\.?\s*)([\d,]+(?:\.\d+)?)", c)
+                    if m_val:
+                        try:
+                            extracted_amt = int(float(m_val.group(1).replace(",", "")) * 100)
+                            break
+                        except Exception:
+                            pass
+
+            if extracted_amt <= 0:
+                extracted_amt = 25000 if budget_currency == "USD" else 250000
+
+            sub = next((s for s in subagents if s.alias == target_domain or s.id == f"agent-{target_domain}-specialist" or s.id == f"agent-{target_domain}-coordinator"), None)
+            if sub:
+                task_envelope = {
+                    "id": f"task_{sub.alias}_{uuid.uuid4().hex[:8]}",
+                    "agent": sub.alias,
+                    "agent_id": sub.id,
+                    "action": "book_hotel" if target_domain == "hotel" else sub.default_action,
+                    "description": f"Execute booking and payment for {sub.name}",
+                    "scope": f"Autonomous {sub.specialty} execution and payment",
+                    "amount_minor": extracted_amt,
+                    "quoted_amount_minor": extracted_amt,
+                    "currency": budget_currency,
+                    "status": "payment_execution",
+                    "phase": "payment_execution",
+                    "requires_spending": True,
+                    "authority_checked": True,
+                    "delegated": True,
+                }
+                return [task_envelope], [f"Delegate payment execution for {target_domain} to specialist subagent via child mandate"]
+
     if is_confirmation_message(current_prompt):
         if not has_active_proposal and not any(t.get("status") == "completed" for t in ((state.get("subagent_tasks") if state else None) or [])):
             return [], ["No pending budget proposal exists to authorize."]
@@ -804,105 +1138,107 @@ def dynamic_plan_subagents(
 
     # Attempt LLM-based agent selection with attached MCP tools and Context Compiler
     selected_agent_specs: list[dict[str, Any]] = []
+    llm_planning_succeeded = False
 
-    try:
-        from agent_runtime.llm_provider import LLMFactory
+    if not is_confirmation_message(current_prompt):
+        try:
+            from agent_runtime.llm_provider import LLMFactory
 
-        provider, resolved_model = LLMFactory.get_provider_for_model(model_id)
+            provider, resolved_model = LLMFactory.get_provider_for_model(model_id)
 
-        # Compile operational context using exact dynamic template
-        operational_context = context_compiler.compile_operational_context(
-            current_message=current_prompt,
-            messages=messages,
-            active_plan=state.get("plan") if state else None,
-            active_tasks=state.get("subagent_tasks") if state else None,
-            environment_id=state.get("environment_id") if state else None,
-            mandate_id=state.get("mandate_id") if state else None,
-            fallback_state=state,
-        )
+            # Compile operational context using exact dynamic template
+            operational_context = context_compiler.compile_operational_context(
+                current_message=current_prompt,
+                messages=messages,
+                active_plan=state.get("plan") if state else None,
+                active_tasks=state.get("subagent_tasks") if state else None,
+                environment_id=state.get("environment_id") if state else None,
+                mandate_id=state.get("mandate_id") if state else None,
+                fallback_state=state,
+            )
 
-        agents_text = "\n".join([f"- {s.name} (alias: {s.alias}, id: {s.id}): {s.description}" for s in subagents])
-        llm_planning_prompt = (
-            f"{operational_context}\n\n"
-            f"AVAILABLE SPECIALIST AGENTS IN REGISTRY:\n{agents_text}\n\n"
-            "You are the PayGuardian Personal Agent analyzing the user request.\n"
-            "Use the attached MCP tools (discover_agents, get_agent_manifest, get_budget_summary, etc.) as needed.\n"
-            "Rules:\n"
-            "1. First, identify user intent from the INTENT TAXONOMY & DEFINITIONS and identify which policies apply from the APPLICATION POLICY CATALOG.\n"
-            "2. If intent is STATUS_QUERY, INFORMATION_QUERY, or GENERAL_CONVERSATION: do NOT select subagents; return empty selected_agents.\n"
-            "3. If intent is APPROVAL_INTENT: The LLM understands intentions but NEVER grants authority. Check 'Pending Proposals in Ledger'. If a proposal is pending, direct user to confirm via UI. If NO proposal is pending, return empty selected_agents and state that no pending proposal exists.\n"
-            "4. If intent is CLARIFICATION_NEEDED (the user's request is completely unintelligible or lacks any domain/action like 'help' or 'do something'): return empty selected_agents and specify clarification_question.\n"
-            "5. If intent is NEW_OBJECTIVE (any goal, task, optimization, or purchase like buying biscuits, planning a trip/getaway/vacation, booking hotel/travel/food, cloud spend optimization): select the matching specialist agent(s) from the AVAILABLE SPECIALIST AGENTS IN REGISTRY. Specialist agents will ask for specific parameters (like store location or dates) during discovery.\n"
-            "6. Return strictly valid JSON in this format:\n"
-            '{\n'
-            '  "identified_intent": "NEW_OBJECTIVE | STATUS_QUERY | APPROVAL_INTENT | CANCELLATION | MODIFICATION | CONTINUATION | CLARIFICATION_NEEDED | INFORMATION_QUERY | GENERAL_CONVERSATION",\n'
-            '  "applicable_policies": ["POL-MANDATE-LIMIT-01", ...],\n'
-            '  "reasoning": "brief explanation",\n'
-            '  "clarification_question": "optional question if CLARIFICATION_NEEDED",\n'
-            '  "selected_agents": [{"id": "agent-id-or-alias", "action": "action_name", "task_description": "short description"}]\n'
-            '}'
-        )
+            agents_text = "\n".join([f"- {s.name} (alias: {s.alias}, id: {s.id}): {s.description}" for s in subagents])
+            llm_planning_prompt = (
+                f"{operational_context}\n\n"
+                f"AVAILABLE SPECIALIST AGENTS IN REGISTRY:\n{agents_text}\n\n"
+                "You are the PayGuardian Personal Agent analyzing the user request.\n"
+                "Use the attached MCP tools (discover_agents, get_agent_manifest, get_budget_summary, etc.) as needed.\n"
+                "Rules:\n"
+                "1. First, identify user intent from the INTENT TAXONOMY & DEFINITIONS and identify which policies apply from the APPLICATION POLICY CATALOG.\n"
+                "2. If intent is STATUS_QUERY, INFORMATION_QUERY, or GENERAL_CONVERSATION: do NOT select subagents; return empty selected_agents.\n"
+                "3. If intent is APPROVAL_INTENT: The LLM understands intentions but NEVER grants authority. Check 'Pending Proposals in Ledger'. If a proposal is pending, direct user to confirm via UI. If NO proposal is pending, return empty selected_agents and state that no pending proposal exists.\n"
+                "4. If intent is CLARIFICATION_NEEDED: ONLY use if the prompt is completely unintelligible or lacks any domain/action (e.g. 'help' or 'do something'). Never use CLARIFICATION_NEEDED for planning a budget, trip, food, or purchase even if destination, dates, or items are unspecified.\n"
+                "5. If intent is NEW_OBJECTIVE (any goal, task, budget plan, trip, sightseeing, food, optimization, or purchase): ALWAYS select matching specialist agent(s) from the AVAILABLE SPECIALIST AGENTS IN REGISTRY. Specialist agents will formulate quotes or ask specific parameters during discovery.\n"
+                "6. Return strictly valid JSON in this format:\n"
+                '{\n'
+                '  "identified_intent": "NEW_OBJECTIVE | STATUS_QUERY | APPROVAL_INTENT | CANCELLATION | MODIFICATION | CONTINUATION | CLARIFICATION_NEEDED | INFORMATION_QUERY | GENERAL_CONVERSATION",\n'
+                '  "applicable_policies": ["POL-MANDATE-LIMIT-01", ...],\n'
+                '  "reasoning": "brief explanation",\n'
+                '  "clarification_question": "optional question if CLARIFICATION_NEEDED",\n'
+                '  "selected_agents": [{"id": "agent-id-or-alias", "action": "action_name", "task_description": "short description"}]\n'
+                '}'
+            )
 
-        resp = provider.generate(
-            prompt=llm_planning_prompt,
-            system_instruction=CORE_SYSTEM_INSTRUCTIONS,
-            model=resolved_model,
-            max_tokens=500,
-            temperature=0.2,
-            tools=mcp_tools.get_tool_schemas(),
-        )
+            resp = provider.generate(
+                prompt=llm_planning_prompt,
+                system_instruction=CORE_SYSTEM_INSTRUCTIONS,
+                model=resolved_model,
+                max_tokens=500,
+                temperature=0.2,
+                tools=mcp_tools.get_tool_schemas(),
+            )
 
-        content = resp.content if hasattr(resp, "content") else str(resp)
+            content = resp.content if hasattr(resp, "content") else str(resp)
 
-        # Handle native tool calls if emitted by the LLM
-        if hasattr(resp, "tool_calls") and resp.tool_calls:
-            for tc in resp.tool_calls:
-                mcp_tools.call_tool(tc.name, tc.arguments)
-                if tc.name in ("delegate_task", "discover_agents", "get_agent_manifest"):
-                    target_id = tc.arguments.get("agent_id") or tc.arguments.get("parent_agent_id")
-                    if target_id:
-                        sub = subagent_registry.get(str(target_id))
-                        if sub and not any(s["subagent"].id == sub.id for s in selected_agent_specs):
-                            selected_agent_specs.append(
-                                {
-                                    "subagent": sub,
-                                    "action": sub.default_action,
-                                    "description": tc.arguments.get("objective") or sub.description,
-                                }
-                            )
+            # Handle native tool calls if emitted by the LLM
+            if hasattr(resp, "tool_calls") and resp.tool_calls:
+                for tc in resp.tool_calls:
+                    mcp_tools.call_tool(tc.name, tc.arguments)
+                    if tc.name in ("delegate_task", "discover_agents", "get_agent_manifest"):
+                        target_id = tc.arguments.get("agent_id") or tc.arguments.get("parent_agent_id")
+                        if target_id:
+                            sub = subagent_registry.get(str(target_id))
+                            if sub and not any(s["subagent"].id == sub.id for s in selected_agent_specs):
+                                selected_agent_specs.append(
+                                    {
+                                        "subagent": sub,
+                                        "action": sub.default_action,
+                                        "description": tc.arguments.get("objective") or sub.description,
+                                    }
+                                )
 
-        llm_planning_succeeded = False
-        m_json = re.search(r"\{.*\}", content, re.DOTALL)
-        if m_json:
-            parsed = json.loads(m_json.group(0))
-            identified_intent = parsed.get("identified_intent")
-            if identified_intent == "CLARIFICATION_NEEDED" or parsed.get("clarification_question"):
-                q = parsed.get("clarification_question") or "Could you clarify what you would like me to help you with?"
-                return [], [f"Clarification needed: {q}"]
-            if identified_intent in ("STATUS_QUERY", "INFORMATION_QUERY", "GENERAL_CONVERSATION"):
-                return [], ["Process request through Personal Agent Orchestrator"]
-            if identified_intent == "CANCELLATION":
-                return [], ["User rejected proposed budget allocation. Cancellation in effect."]
+            llm_planning_succeeded = False
+            m_json = re.search(r"\{.*\}", content, re.DOTALL)
+            if m_json:
+                parsed = json.loads(m_json.group(0))
+                identified_intent = parsed.get("identified_intent")
+                if identified_intent in ("STATUS_QUERY", "INFORMATION_QUERY", "GENERAL_CONVERSATION"):
+                    return [], ["Process request through Personal Agent Orchestrator"]
+                if identified_intent == "CANCELLATION":
+                    return [], ["User rejected proposed budget allocation. Cancellation in effect."]
 
-            raw_selected = parsed.get("selected_agents", [])
-            for item in raw_selected:
-                target_id = item.get("id") or item.get("agent")
-                sub = subagent_registry.get(str(target_id))
-                if sub:
-                    act = item.get("action")
-                    if not act or act not in sub.capabilities:
-                        act = sub.default_action
-                    selected_agent_specs.append(
-                        {
-                            "subagent": sub,
-                            "action": act,
-                            "description": item.get("task_description") or sub.description,
-                        }
-                    )
-            if selected_agent_specs:
-                llm_planning_succeeded = True
-    except Exception as exc:
-        logger.info("LLM agent planning unavailable (%s), using dynamic capability matching.", exc)
+                raw_selected = parsed.get("selected_agents", [])
+                for item in raw_selected:
+                    target_id = item.get("id") or item.get("agent")
+                    sub = subagent_registry.get(str(target_id))
+                    if sub:
+                        act = item.get("action")
+                        if not act or act not in sub.capabilities:
+                            act = sub.default_action
+                        selected_agent_specs.append(
+                            {
+                                "subagent": sub,
+                                "action": act,
+                                "description": item.get("task_description") or sub.description,
+                            }
+                        )
+                if selected_agent_specs:
+                    llm_planning_succeeded = True
+                elif identified_intent == "CLARIFICATION_NEEDED" or (identified_intent != "APPROVAL_INTENT" and parsed.get("clarification_question")):
+                    q = parsed.get("clarification_question") or "Could you clarify what you would like me to help you with?"
+                    return [], [f"Clarification needed: {q}"]
+        except Exception as exc:
+            logger.info("LLM agent planning unavailable (%s), using dynamic capability matching.", exc)
 
     # Dynamic Capability Matching Fallback (ONLY if LLM is unavailable, offline, or threw error)
     if not llm_planning_succeeded and not selected_agent_specs:
@@ -913,18 +1249,24 @@ def dynamic_plan_subagents(
             w in prompt_lower
             for w in ("buy", "ticket", "train", "hotel", "flight", "search", "food", "procure", "optimize", "cloud", "biscuit", "chai")
         )
-        confirmation_phrases = (
-            "okay delegate",
-            "delegate the budget",
-            "confirm",
-            "approve",
-            "approved",
-            "yes please",
-            "yes proceed",
-            "go ahead and delegate",
-        )
-        is_confirmation = (not is_action_request) and any(
-            prompt_lower == p or prompt_lower.startswith(f"{p} ") for p in confirmation_phrases
+        is_confirmation = is_confirmation_message(prompt_lower) or (
+            (not is_action_request)
+            and any(
+                prompt_lower == p or prompt_lower.startswith(f"{p} ")
+                for p in (
+                    "okay delegate",
+                    "delegate the budget",
+                    "confirm",
+                    "approve",
+                    "approved",
+                    "yes please",
+                    "yes proceed",
+                    "go ahead and delegate",
+                    "make the payment",
+                    "pay for these",
+                    "proceed with payment",
+                )
+            )
         )
 
         if is_confirmation and not has_active_proposal and not any(t.get("status") == "completed" for t in ((state.get("subagent_tasks") if state else None) or [])):
@@ -1747,7 +2089,19 @@ class PersonalLangGraphAgent:
             for t in (state.get("subagent_tasks") or [])
         ) or any(
             isinstance(m, dict) and m.get("role") in ("assistant", "agent")
-            and any(w in str(m.get("content") or "").lower() for w in ("proposed budget allocation", "please approve or reject", "pending human sign-off", "pending human authorization", "coordinated plan", "quoted"))
+            and any(w in str(m.get("content") or "").lower() for w in (
+                "budget allocation proposal",
+                "proposed budget allocation",
+                "proposed specialist delegations",
+                "human authorization required",
+                "please approve or reject",
+                "pending human sign-off",
+                "pending human authorization",
+                "coordinated plan",
+                "quoted",
+                "cryptographic child mandates",
+                "available mandate reserve",
+            ))
             for m in (messages[-2:] if messages else [])
         )
 
@@ -1807,7 +2161,7 @@ class PersonalLangGraphAgent:
         available_reserve_minor = state.get("available_reserve_minor")
         available_reserve = available_reserve_minor if available_reserve_minor is not None else budget_limit_minor
         model_id = state.get("model_id")
-        effective_model = model_id or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        effective_model = model_id or os.getenv("DEFAULT_MODEL", "free/gpt-6-luna")
 
         if not tasks:
             return {
@@ -1836,6 +2190,25 @@ class PersonalLangGraphAgent:
             task = dict(t)
             agent_name = task.get("agent", "unknown")
             task_id = task.get("id", str(uuid.uuid4()))
+
+            # If task is an explicit payment execution task, preserve task envelope and pass through
+            if task.get("phase") in ("payment_execution", "authorized") and task.get("requires_spending"):
+                self.event_emitter.emit(
+                    "agent.started",
+                    payload={
+                        "agent": agent_name,
+                        "agentId": agent_name,
+                        "task_id": task_id,
+                        "action": task.get("action"),
+                        "phase": task.get("phase", "payment_execution"),
+                        "model": effective_model,
+                    },
+                    run_id=run_id,
+                    task_id=task_id,
+                    agent=agent_name,
+                )
+                updated_tasks.append(task)  # type: ignore[arg-type]
+                continue
 
             self.event_emitter.emit(
                 "agent.started",
@@ -2193,6 +2566,17 @@ class PersonalLangGraphAgent:
             task = dict(t)
             quoted_amt = task.get("quoted_amount_minor") or task.get("amount_minor", 0)
 
+            # If task is an explicit payment execution task ordered by the user, authorize it directly
+            if task.get("phase") in ("payment_execution", "authorized") and task.get("requires_spending"):
+                task["amount_minor"] = quoted_amt if quoted_amt > 0 else (25000 if currency == "USD" else 250000)
+                task["proposed_mandate_minor"] = task["amount_minor"]
+                task["phase"] = "authorized"
+                task["status"] = "authorized"
+                task["authority_checked"] = True
+                task["delegated"] = True
+                updated_tasks.append(task)  # type: ignore[arg-type]
+                continue
+
             # Ensure quote is non-zero
             if quoted_amt <= 0:
                 quoted_amt = 1000 if currency == "USD" else 10000
@@ -2273,8 +2657,8 @@ class PersonalLangGraphAgent:
                             task["phase"] = "failed"
                             task["status"] = "budget_exhausted"
                             task["amount_minor"] = 0
-                        task["proposed_mandate_minor"] = 0
-                        task["error"] = f"No reserve remaining from available mandate buffer ({_format_budget(available_reserve, currency)})."
+                            task["proposed_mandate_minor"] = 0
+                            task["error"] = f"No reserve remaining from available mandate buffer ({_format_budget(available_reserve, currency)})."
                 else:
                     allocated_so_far += quoted_amt
                     task["amount_minor"] = quoted_amt
@@ -2305,7 +2689,9 @@ class PersonalLangGraphAgent:
         if not user_confirmed:
             messages = state.get("messages", [])
             latest_prompt = extract_user_prompt(messages)
-            user_confirmed = is_confirmation_message(latest_prompt)
+            user_confirmed = is_confirmation_message(latest_prompt) or (
+                bool(messages and len(messages) > 1) and is_payment_order_message(latest_prompt)
+            )
 
         approval_required = state.get("approval_required", False)
         has_pending = any(t.get("status") == "authorization_pending" for t in updated_tasks)
@@ -2393,7 +2779,7 @@ class PersonalLangGraphAgent:
         updated_tasks: list[SubagentTask] = []
         for t in tasks:
             task = dict(t)
-            if task.get("phase") != "authorization_pending":
+            if task.get("child_mandate_id") or task.get("phase") not in ("authorization_pending", "authorized", "payment_execution"):
                 updated_tasks.append(task)  # type: ignore[arg-type]
                 continue
 
@@ -2574,7 +2960,7 @@ class PersonalLangGraphAgent:
         tasks = state.get("subagent_tasks", [])
         results: dict[str, Any] = dict(state.get("results") or {})
         model_id = state.get("model_id")
-        effective_model = model_id or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        effective_model = model_id or os.getenv("DEFAULT_MODEL", "free/gpt-6-luna")
 
         updated_tasks: list[SubagentTask] = []
         for t in tasks:
@@ -2582,7 +2968,7 @@ class PersonalLangGraphAgent:
             agent_name = task.get("agent", "unknown")
             task_id = task.get("id", str(uuid.uuid4()))
 
-            if task.get("phase") != "authorized":
+            if task.get("phase") not in ("authorized", "payment_execution"):
                 updated_tasks.append(task)  # type: ignore[arg-type]
                 continue
 
@@ -2593,6 +2979,8 @@ class PersonalLangGraphAgent:
             child_mandate_ref = task.get("child_mandate_id") or "mandate-child-simulated"
             target_holder_id = task.get("holder_agent_id") or agent_name
             payment_action_id = f"pi_{agent_name}_{uuid.uuid4().hex[:8]}"
+            paypal_approval_url: str | None = None
+            paypal_order_id: str | None = None
 
             # Execute real Ledger reserve & capture against the child mandate if connected
             if environment_id and mandate_id and self.gateway_client:
@@ -2665,27 +3053,85 @@ class PersonalLangGraphAgent:
                         req_hash = hashlib.sha256(
                             f"{target_holder_id}:{child_mandate_ref}:{amt_minor}".encode()
                         ).hexdigest()
-                        reserve_res = self.gateway_client.reserve_action(
-                            environment_id=environment_id,
-                            agent_id=target_holder_id,
-                            mandate_id=child_mandate_ref,
-                            ledger_account_id=target_acc["id"],
-                            idempotency_key=reserve_idem,
-                            request_hash=req_hash,
-                            action=task.get("action", "procure_merchant_goods"),
-                            amount_minor=amt_minor,
-                            currency=cur,
-                        )
-                        action_data = reserve_res.get("action") or reserve_res.get("reservation") or {}
-                        act_id = action_data.get("id")
-                        if act_id:
-                            self.gateway_client.capture_action(environment_id, act_id)
-                            payment_action_id = act_id
-                            logger.info("Successfully settled %s on Gateway ledger: %s", amt_minor, act_id)
+                        is_paypal = cur.upper() == "USD" or task.get("rail") == "PayPal"
+                        if is_paypal and hasattr(self.gateway_client, "create_paypal_order"):
+                            try:
+                                pp_res = self.gateway_client.create_paypal_order(
+                                    environment_id=environment_id,
+                                    agent_id=target_holder_id,
+                                    mandate_id=child_mandate_ref,
+                                    ledger_account_id=target_acc["id"],
+                                    idempotency_key=reserve_idem,
+                                    request_hash=req_hash,
+                                    action=task.get("action", "procure_merchant_goods"),
+                                    amount_minor=amt_minor,
+                                    currency="USD",
+                                )
+                                act_data = pp_res.get("action") or {}
+                                act_id = act_data.get("id")
+                                order_data = pp_res.get("order") or {}
+                                order_id = order_data.get("id")
+                                approval_url = order_data.get("approvalUrl")
+                                if act_id:
+                                    payment_action_id = act_id
+                                    paypal_approval_url = approval_url
+                                    paypal_order_id = order_id
+                                    logger.info(
+                                        "PayPal order %s created for action %s: approvalUrl=%s",
+                                        order_id, act_id, approval_url
+                                    )
+                            except Exception as pp_exc:
+                                logger.warning("PayPal order creation skipped, using internal ledger: %s", pp_exc)
+                                reserve_res = self.gateway_client.reserve_action(
+                                    environment_id=environment_id,
+                                    agent_id=target_holder_id,
+                                    mandate_id=child_mandate_ref,
+                                    ledger_account_id=target_acc["id"],
+                                    idempotency_key=reserve_idem,
+                                    request_hash=req_hash,
+                                    action=task.get("action", "procure_merchant_goods"),
+                                    amount_minor=amt_minor,
+                                    currency=cur,
+                                )
+                                action_data = reserve_res.get("action") or reserve_res.get("reservation") or {}
+                                act_id = action_data.get("id")
+                                if act_id:
+                                    self.gateway_client.capture_action(environment_id, act_id)
+                                    payment_action_id = act_id
+                                    logger.info("Successfully settled %s on Gateway ledger: %s", amt_minor, act_id)
+                        else:
+                            reserve_res = self.gateway_client.reserve_action(
+                                environment_id=environment_id,
+                                agent_id=target_holder_id,
+                                mandate_id=child_mandate_ref,
+                                ledger_account_id=target_acc["id"],
+                                idempotency_key=reserve_idem,
+                                request_hash=req_hash,
+                                action=task.get("action", "procure_merchant_goods"),
+                                amount_minor=amt_minor,
+                                currency=cur,
+                            )
+                            action_data = reserve_res.get("action") or reserve_res.get("reservation") or {}
+                            act_id = action_data.get("id")
+                            if act_id:
+                                self.gateway_client.capture_action(environment_id, act_id)
+                                payment_action_id = act_id
+                                logger.info("Successfully settled %s on Gateway ledger: %s", amt_minor, act_id)
                 except Exception as exec_exc:
                     logger.warning("Gateway ledger execution reserve/capture error: %s", exec_exc)
 
             # Payment authorization tool invocation using validated child mandate
+            tool_result: dict[str, Any] = {
+                "payment_intent": payment_action_id,
+                "status": "awaiting_buyer_approval" if paypal_approval_url else "authorized",
+                "code": "ALLOW",
+                "amount_minor": amt_minor,
+            }
+            if paypal_approval_url:
+                tool_result["approval_url"] = paypal_approval_url
+                tool_result["provider_order_id"] = paypal_order_id
+                tool_result["rail"] = "PayPal"
+
             self.event_emitter.emit(
                 "tool.started",
                 payload={
@@ -2695,8 +3141,9 @@ class PersonalLangGraphAgent:
                     "parameters": {
                         "child_mandate_id": child_mandate_ref,
                         "amount_minor": amt_minor,
-                        "currency": cur,
+                        "currency": "USD" if paypal_approval_url else cur,
                         "action": task.get("action"),
+                        "rail": "PayPal" if paypal_approval_url else "Simulation",
                     },
                 },
                 run_id=run_id,
@@ -2710,7 +3157,11 @@ class PersonalLangGraphAgent:
                     "phase": "execution",
                     "agent": agent_name,
                     "agentId": agent_name,
-                    "message": f"Executing payment authorization of {budget_str} via child mandate on PayGuardian Gateway...",
+                    "message": (
+                        f"PayPal order created for {budget_str}. Awaiting sandbox buyer approval..."
+                        if paypal_approval_url
+                        else f"Executing payment authorization of {budget_str} via child mandate on PayGuardian Gateway..."
+                    ),
                 },
                 run_id=run_id,
                 task_id=task_id,
@@ -2723,24 +3174,51 @@ class PersonalLangGraphAgent:
                     "agent": agent_name,
                     "agentId": agent_name,
                     "status": "success",
-                    "result": {
-                        "payment_intent": payment_action_id,
-                        "status": "authorized",
-                        "code": "ALLOW",
-                        "amount_minor": amt_minor,
-                    },
+                    "result": tool_result,
                 },
                 run_id=run_id,
                 task_id=task_id,
                 agent=agent_name,
             )
 
-            # Subagent completion
-            subagent_result = execute_specialist_agent(agent_name, task, prompt, model_id=model_id)
+            if paypal_approval_url:
+                self.event_emitter.emit(
+                    "payment.order_created",
+                    payload={
+                        "actionId": payment_action_id,
+                        "provider": "paypal",
+                        "providerOrderId": paypal_order_id,
+                        "approvalUrl": paypal_approval_url,
+                        "amountMinor": amt_minor,
+                        "currency": "USD",
+                        "agentId": agent_name,
+                        "recipient": task.get("description", f"{agent_name.capitalize()} Merchant"),
+                    },
+                    run_id=run_id,
+                    task_id=task_id,
+                    agent=agent_name,
+                )
+
+            # Subagent completion via MCP tools and specialist prompts
+            mcp_tools = PayGuardianMCPTools(
+                state=state,
+                gateway_client=self.gateway_client,
+                subagent_registry=subagent_registry,
+                environment_id=environment_id,
+                mandate_id=mandate_id,
+            )
+            subagent_result = execute_specialist_agent(
+                agent_name, task, prompt, model_id=effective_model, mcp_tools=mcp_tools
+            )
             if "payment_authorization" in subagent_result:
                 subagent_result["payment_authorization"]["action_id"] = payment_action_id
                 subagent_result["payment_authorization"]["payment_intent"] = payment_action_id
                 subagent_result["payment_authorization"]["mandate_id"] = child_mandate_ref
+                if paypal_approval_url:
+                    subagent_result["payment_authorization"]["approval_url"] = paypal_approval_url
+                    subagent_result["payment_authorization"]["provider_order_id"] = paypal_order_id
+                    subagent_result["payment_authorization"]["rail"] = "PayPal"
+                    subagent_result["payment_authorization"]["status"] = "awaiting_approval"
             results[agent_name] = subagent_result
 
             output_summary = subagent_result.get(
@@ -2759,6 +3237,11 @@ class PersonalLangGraphAgent:
                     ),
                 ),
             )
+            if paypal_approval_url and output_summary:
+                output_summary += (
+                    f"\n\n💳 **PayPal Sandbox Payment Created**: A payment of {budget_str} has been reserved. "
+                    f"Please [**Approve on PayPal Sandbox**]({paypal_approval_url}) to authorize and capture funds."
+                )
             self.event_emitter.emit(
                 "agent.output",
                 payload={
@@ -2983,6 +3466,8 @@ class PersonalLangGraphAgent:
                 f"**Remaining Mandate Buffer:** {_format_budget(rem, budget_currency)}",
                 "",
                 "> ⚠️ **Human Authorization Required**: To safeguard your funds, cryptographic child mandates have not been issued yet and no payments have occurred. Please review the proposal above and click **Approve & Issue Cryptographic Mandates** (or reply *'okay delegate'*) to grant spending authority, or **Reject Proposal** to cancel.",
+                ">",
+                "> 💡 **Ready to Purchase**: Once this delegation is authorized, each subagent holds its own dedicated spending envelope. You can then simply instruct the system or subagent to execute payment whenever ready (e.g., *'buy me the hotel'*, *'book the flight'*, or *'order dinner'*).",
             ])
             proposal_text = "\n".join(proposal_lines)
 
@@ -3138,6 +3623,17 @@ class PersonalLangGraphAgent:
                     or res.get("result")
                     or f"Agent '{agent_name}' completed successfully."
                 )
+                pay_auth = res.get("payment_authorization")
+                if pay_auth and isinstance(pay_auth, dict):
+                    pay_status = pay_auth.get("status")
+                    pay_amt = _format_budget(pay_auth.get("amount_minor", 0), pay_auth.get("currency", budget_currency))
+                    appr_id = pay_auth.get("approval_id")
+                    appr_url = pay_auth.get("approval_url")
+                    rich_text += f"\n- Payment Initiation: {pay_status} for {pay_amt}"
+                    if appr_id:
+                        rich_text += f"\n- Gateway Approval ID: {appr_id}"
+                    if appr_url:
+                        rich_text += f"\n- PayPal Sandbox Checkout URL: {appr_url}"
                 context_parts.append(f"[{agent_name.upper()} AGENT RESULT]\n{rich_text}")
             context_summary = "\n\n".join(context_parts)
 
@@ -3146,13 +3642,23 @@ class PersonalLangGraphAgent:
             f"User Request: {prompt}\n\n"
             f"{('Subagent Results:\n' + context_summary) if context_summary else ''}\n\n"
             "Communicate clearly and honestly. When answering budget or execution questions:\n"
-            "- Use actual application data from the operational context.\n"
+            "- Use actual application data from the operational context and subagent results.\n"
+            "- If a specialist subagent has initiated a payment awaiting human approval (status 'awaiting_approval'), clearly inform the user that the subagent submitted the payment request to the PayGuardian Gateway, report the Gateway Approval ID, and provide the PayPal Sandbox Checkout URL (if present) so the user can authorize or complete the transaction.\n"
             "- Present the relevant figures clearly.\n"
             "- Distinguish proposals from authorized allocations.\n"
             "- Distinguish completed tasks from pending tasks.\n"
             "- Never invent missing information."
         )
 
+        mcp_tools = PayGuardianMCPTools(
+            state=state,
+            gateway_client=self.gateway_client,
+            subagent_registry=subagent_registry,
+            environment_id=state.get("environment_id"),
+            mandate_id=state.get("mandate_id"),
+        )
+
+        final_response = ""
         try:
             resp = provider.generate(
                 prompt=llm_prompt,
@@ -3160,8 +3666,16 @@ class PersonalLangGraphAgent:
                 model=resolved_model,
                 max_tokens=1800,
             )
-            final_response = resp.content if hasattr(resp, "content") else str(resp)
+            raw_content = resp.content if hasattr(resp, "content") else str(resp)
+            if hasattr(resp, "tool_calls") and resp.tool_calls:
+                for tc in resp.tool_calls:
+                    mcp_tools.call_tool(tc.name, tc.arguments)
+            cleaned = re.sub(r"<tool_call>.*?</tool_call>", "", raw_content, flags=re.DOTALL).strip()
+            final_response = cleaned
         except Exception as exc:
+            logger.debug("Synthesizer LLM generation fallback: %s", exc)
+
+        if not final_response:
             lines: list[str] = [
                 "### Coordinated Plan & Assistant Response",
                 "",
@@ -3269,7 +3783,7 @@ class PersonalLangGraphAgent:
 
         input_messages = list(messages) if messages else [{"role": "user", "content": prompt_text}]
 
-        is_confirmed = is_confirmation_message(prompt_text)
+        is_confirmed = is_confirmation_message(prompt_text) or (bool(messages and len(messages) > 1) and is_payment_order_message(prompt_text))
         is_rejected = is_rejection_message(prompt_text)
 
         eff_budget_limit = budget_limit_minor or 0

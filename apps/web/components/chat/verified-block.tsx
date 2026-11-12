@@ -54,16 +54,20 @@ export function VerifiedBlock({
         {cardType === "payment_result" && (
           <PaymentResultCard
             id={(payload.id as string) ?? message.id}
-            transactionId={(payload.transactionId as string) ?? undefined}
-            recipient={(payload.recipient as string) ?? "Merchant Gateway"}
+            transactionId={(payload.transactionId as string) ?? (payload.providerOrderId as string) ?? (payload.provider_order_id as string) ?? undefined}
+            recipient={(payload.recipient as string) ?? "PayPal Merchant"}
             merchantCategory={(payload.merchantCategory as string) ?? undefined}
-            amountMinor={(payload.amountMinor as number) ?? 24500}
+            amountMinor={(payload.amountMinor as number) ?? (payload.amount_minor as number) ?? 24500}
             currency={(payload.currency as string) ?? "USD"}
             rail={(payload.rail as string) ?? "PayPal"}
             authHash={(payload.authHash as string) ?? gatewaySignature ?? undefined}
-            currentStage={(payload.currentStage as PaymentLifecycleStage) ?? "completed"}
+            currentStage={
+              (payload.currentStage as PaymentLifecycleStage) ??
+              (payload.approvalUrl || payload.approval_url ? "sent_to_provider" : "completed")
+            }
             completedAt={verifiedAt}
             agentName={(payload.agentName as string) ?? message.sender ?? undefined}
+            approvalUrl={(payload.approvalUrl as string) ?? (payload.approval_url as string) ?? undefined}
             onViewTrace={onViewTrace}
           />
         )}

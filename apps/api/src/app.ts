@@ -168,6 +168,15 @@ export function buildApp(
         const apiKey = process.env.GEMINI_API_KEY;
         const primary = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
+        const apinexModel = {
+          id: "free/gpt-6-luna",
+          label: "APInex GPT-6 Luna (Free)",
+          provider: "APInex",
+          default: true,
+        };
+
+        const googleModels: Array<{ id: string; label: string; provider: string; default: boolean }> = [];
+
         // If a Google AI API key is configured, dynamically discover available models from Google AI
         if (apiKey) {
           try {
@@ -175,25 +184,20 @@ export function buildApp(
             if (res.ok) {
               const data = (await res.json()) as { models?: Array<any> };
               if (Array.isArray(data.models)) {
-                const googleModels = data.models
-                  .filter((m: any) =>
+                for (const m of data.models) {
+                  if (
                     m.name &&
                     m.supportedGenerationMethods?.includes("generateContent") &&
                     m.name.includes("gemini")
-                  )
-                  .map((m: any) => {
+                  ) {
                     const id = m.name.replace(/^models\//, "");
-                    const isDefault = id === primary || id === "gemini-2.5-flash";
-                    return {
+                    googleModels.push({
                       id,
                       label: m.displayName || id.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
-                      provider: "Google Gemini (Free Tier)",
-                      default: isDefault,
-                    };
-                  });
-
-                if (googleModels.length > 0) {
-                  return { models: googleModels };
+                      provider: "Google Gemini",
+                      default: false,
+                    });
+                  }
                 }
               }
             }
@@ -202,15 +206,16 @@ export function buildApp(
           }
         }
 
-        // Unified Models Catalog: APInex Luna (Default Free) + Google Gemini Free
-        const catalog = [
-          { id: "free/gpt-6-luna", label: "APInex GPT-6 Luna (Free)", provider: "APInex", default: true },
-          { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Free)", provider: "Google Gemini" },
-          { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite (Free)", provider: "Google Gemini" },
-          { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google Gemini" },
-          { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Free)", provider: "Google Gemini" },
-        ];
-        return { models: catalog };
+        if (googleModels.length === 0) {
+          googleModels.push(
+            { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Free)", provider: "Google Gemini", default: false },
+            { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "Google Gemini", default: false },
+            { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google Gemini", default: false },
+            { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite (Free)", provider: "Google Gemini", default: false },
+          );
+        }
+
+        return { models: [apinexModel, ...googleModels] };
       },
     );
 
@@ -255,7 +260,7 @@ export function buildApp(
     approvals,
   });
   registerPhase6Routes(app, { registry, authority, resolvePrincipal, audit });
-  registerChatbotRoutes(app, { registry, authority, chatbot, providerJobs, resolvePrincipal, audit });
+  registerChatbotRoutes(app, { registry, authority, chatbot, providerJobs, resolvePrincipal, audit, approvals });
 
   return app;
 }

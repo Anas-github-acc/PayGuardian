@@ -50,7 +50,13 @@ def _check_merchant_clarification(
         "proceed with payment" in prompt_lower
         and ("biscuit" in prompt_lower or "chai" in prompt_lower)
     )
-    if is_direct_simulation:
+    is_budget_planning = (
+        "budget plan" in prompt_lower
+        or "plan a budget" in prompt_lower
+        or "budget proposal" in prompt_lower
+        or "budget allocation" in prompt_lower
+    )
+    if is_direct_simulation or is_budget_planning:
         return False, None
 
     if not preferences.get("location"):

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { AlertCircle, CheckCircle2, DollarSign, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -62,15 +63,31 @@ function ConsentCardShell({
       <Card glow className="overflow-hidden border-border/80 shadow-md">
         <CardHeader className="items-center space-y-3 text-center pb-3">
           <div
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-3"
             aria-label={`${clientName} requesting approval for ${productName}`}
           >
-            <div className="flex size-11 items-center justify-center rounded-full border border-border bg-muted font-bold text-sm text-foreground">
-              {getInitial(clientName)}
+            <div className="flex size-12 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10 p-2 shadow-inner">
+              <Image
+                src="/paypal.svg"
+                alt="PayPal"
+                width={28}
+                height={28}
+                className="size-7 object-contain"
+              />
             </div>
-            <div className="h-px w-6 bg-border" aria-hidden="true" />
-            <div className="flex size-11 items-center justify-center rounded-full border border-primary/30 bg-primary/10 font-bold text-sm text-primary">
-              <ShieldCheck className="size-5" />
+            <div className="flex items-center">
+              <div className="h-0.5 w-4 bg-gradient-to-r from-blue-500/40 to-cyan-400/40" />
+              <div className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <div className="h-0.5 w-4 bg-gradient-to-r from-cyan-400/40 to-blue-500/40" />
+            </div>
+            <div className="flex size-12 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-2 shadow-inner">
+              <Image
+                src="/payguardian.svg"
+                alt="PayGuardian"
+                width={28}
+                height={28}
+                className="size-7 object-contain"
+              />
             </div>
           </div>
           <div className="space-y-1">
@@ -212,26 +229,30 @@ export function OAuthConsentCard({
             "Deny"
           )}
         </Button>
-        <Button
+        <button
           type="button"
-          variant="primary"
-          size="sm"
           disabled={decision !== null}
           onClick={onApprove}
-          className="w-full sm:w-auto"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-[#0070BA] hover:bg-[#003087] text-white px-4 py-2 text-xs font-semibold shadow-md transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none w-full sm:w-auto cursor-pointer"
         >
           {decision === "approve" ? (
             <span className="flex items-center gap-1.5">
               <Loader2 className="size-3.5 animate-spin" />
-              <span>Authorizing...</span>
+              <span>Authorizing on PayPal...</span>
             </span>
           ) : (
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5" />
-              <span>Approve & Execute</span>
+            <span className="flex items-center gap-2">
+              <Image
+                src="/paypal.svg"
+                alt="PayPal"
+                width={14}
+                height={14}
+                className="size-3.5 object-contain brightness-0 invert"
+              />
+              <span>Authorize & Pay with PayPal</span>
             </span>
           )}
-        </Button>
+        </button>
       </div>
     </ConsentCardShell>
   );

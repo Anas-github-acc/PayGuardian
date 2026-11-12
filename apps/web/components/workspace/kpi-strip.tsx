@@ -81,7 +81,7 @@ export function KpiStrip({
             {formatMinorUnits(reservedMinor, currency)}
           </div>
           <p className="mt-1 text-xs text-zinc-400">
-            {reservedPercent}% allocated
+            {reservedPercent}% on hold
           </p>
         </div>
       </div>

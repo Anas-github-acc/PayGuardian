@@ -4,6 +4,7 @@ import * as React from "react";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import type { AgentNodeData, AgentEdgeData } from "../../app/lib/workspace-store";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 
 export function AnimatedDot({
@@ -102,67 +103,209 @@ export interface PipelineSvgProps {
   className?: string;
   onSelectNode?: (nodeId: string) => void;
   selectedNodeId?: string | null;
+  nodes?: AgentNodeData[];
+  edges?: AgentEdgeData[];
+  currency?: string;
 }
 
 export function PipelineSvg({
   className = "",
   onSelectNode,
   selectedNodeId,
+  nodes: propNodes,
+  edges: propEdges,
+  currency: propCurrency,
 }: PipelineSvgProps) {
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
-  const currency = env?.currency ?? "USD";
+  const currency = propCurrency ?? env?.currency ?? "USD";
   const activeId = selectedNodeId ?? store.selectedNodeId ?? "orchestrator-root";
 
-  const nodes = store.graphNodes;
+  const effectiveNodes = propNodes ?? store.graphNodes;
+  const effectiveEdges = propEdges ?? store.graphEdges;
+
+  // STRICT REQUIREMENT: Only current active agents should be displayed
+  const activeNodes = useMemo(
+    () => effectiveNodes.filter((n) => n.status === "active"),
+    [effectiveNodes]
+  );
+
   const rootNode = useMemo(
-    () => nodes.find((n) => n.role === "orchestrator" || n.id === "orchestrator-root") || nodes[0],
-    [nodes]
+    () => activeNodes.find((n) => n.role === "orchestrator" || n.id === "orchestrator-root") || activeNodes[0],
+    [activeNodes]
   );
-  const childAgents = useMemo(
-    () => nodes.filter((n) => n.id !== (rootNode?.id ?? "orchestrator-root")),
-    [nodes, rootNode]
+
+  const activeChildren = useMemo(
+    () => activeNodes.filter((n) => n.id !== (rootNode?.id ?? "orchestrator-root")),
+    [activeNodes, rootNode]
   );
+
+  const activeEdges = useMemo(() => {
+    const activeIds = new Set(activeNodes.map((n) => n.id));
+    return effectiveEdges.filter((e) => activeIds.has(e.source) && activeIds.has(e.target));
+  }, [effectiveEdges, activeNodes]);
 
   const handleNodeClick = (nodeId: string) => {
     workspaceStore.setSelectedNodeId(nodeId);
     onSelectNode?.(nodeId);
   };
 
-  const pTriggerToGateway = "M140,90 L180,90";
-  const pGatewayToOrch = "M306,90 L346,90";
+  // Build Dynamic Tree Topology
+  const rootId = rootNode?.id ?? "orchestrator-root";
 
-  // Dynamic positions for child subagents
-  const childPositions = useMemo(() => {
-    if (childAgents.length === 1) {
-      return [{ x: 550, y: 65, w: 160, h: 50, path: "M490,90 L550,90" }];
+  const getParentId = React.useCallback(
+    (child: AgentNodeData): string => {
+      const edge = activeEdges.find((e) => e.target === child.id);
+      if (edge) return edge.source;
+      if (child.parentAgentId && activeNodes.some((n) => n.id === child.parentAgentId)) {
+        return child.parentAgentId;
+      }
+      return rootId;
+    },
+    [activeEdges, activeNodes, rootId]
+  );
+
+  const { tier1Agents, tier2ByParent } = useMemo(() => {
+    const t1: AgentNodeData[] = [];
+    const t2 = new Map<string, AgentNodeData[]>();
+
+    // 1. Identify direct children of root (or fallback)
+    for (const c of activeChildren) {
+      const pId = getParentId(c);
+      if (pId === rootId) {
+        t1.push(c);
+      }
     }
-    if (childAgents.length === 2) {
-      return [
-        { x: 550, y: 22, w: 160, h: 48, path: "M490,90 C520,90 520,46 550,46" },
-        { x: 550, y: 110, w: 160, h: 48, path: "M490,90 C520,90 520,134 550,134" },
-      ];
+
+    // 2. Identify Tier 2 sub-children of Tier 1 agents
+    for (const c of activeChildren) {
+      const pId = getParentId(c);
+      if (pId !== rootId) {
+        if (t1.some((parent) => parent.id === pId)) {
+          const list = t2.get(pId) || [];
+          list.push(c);
+          t2.set(pId, list);
+        } else {
+          // Fallback: if parent not found, attach directly to root
+          t1.push(c);
+        }
+      }
     }
-    if (childAgents.length === 3) {
-      return [
-        { x: 540, y: 16, w: 145, h: 48, path: "M490,90 C515,90 515,40 540,40" },
-        { x: 540, y: 116, w: 145, h: 48, path: "M490,90 C515,90 515,140 540,140" },
-        { x: 720, y: 66, w: 145, h: 48, path: "M490,90 L720,90" },
-      ];
+
+    return { tier1Agents: t1, tier2ByParent: t2 };
+  }, [activeChildren, getParentId, rootId]);
+
+  // Compute Layout Positions and Edge Paths dynamically
+  const cardW = 145;
+  const cardH = 48;
+  const gap = 14;
+  const paddingY = 18;
+
+  const { layoutNodes, layoutPaths, totalRows } = useMemo(() => {
+    const nodesMap: Array<{
+      agent: AgentNodeData;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      tier: 1 | 2;
+    }> = [];
+
+    const paths: Array<{
+      id: string;
+      path: string;
+      isUnfunded: boolean;
+      isSelected: boolean;
+      idx: number;
+    }> = [];
+
+    let row = 0;
+    let pathIdx = 0;
+
+    for (const t1 of tier1Agents) {
+      const subChildren = tier2ByParent.get(t1.id) || [];
+
+      if (subChildren.length <= 1) {
+        const rowY = paddingY + row * (cardH + gap);
+        nodesMap.push({ agent: t1, x: 540, y: rowY, w: cardW, h: cardH, tier: 1 });
+
+        if (subChildren.length === 1) {
+          const t2 = subChildren[0];
+          nodesMap.push({ agent: t2, x: 730, y: rowY, w: cardW, h: cardH, tier: 2 });
+
+          // Direct path from Tier 1 to Tier 2
+          const isT2Unfunded = t2.status === "unfunded" || (t2.allocatedMinor ?? 0) === 0;
+          paths.push({
+            id: `edge-${t1.id}-${t2.id}`,
+            path: `M685,${rowY + 24} L730,${rowY + 24}`,
+            isUnfunded: isT2Unfunded,
+            isSelected: activeId === t2.id,
+            idx: pathIdx++,
+          });
+        }
+        row += 1;
+      } else {
+        const startRow = row;
+        const totalSpan = subChildren.length * (cardH + gap) - gap;
+        const t1Y = paddingY + startRow * (cardH + gap) + (totalSpan - cardH) / 2;
+        nodesMap.push({ agent: t1, x: 540, y: t1Y, w: cardW, h: cardH, tier: 1 });
+
+        subChildren.forEach((t2, j) => {
+          const t2Y = paddingY + (startRow + j) * (cardH + gap);
+          nodesMap.push({ agent: t2, x: 730, y: t2Y, w: cardW, h: cardH, tier: 2 });
+
+          const isT2Unfunded = t2.status === "unfunded" || (t2.allocatedMinor ?? 0) === 0;
+          paths.push({
+            id: `edge-${t1.id}-${t2.id}`,
+            path: `M685,${t1Y + 24} C705,${t1Y + 24} 710,${t2Y + 24} 730,${t2Y + 24}`,
+            isUnfunded: isT2Unfunded,
+            isSelected: activeId === t2.id,
+            idx: pathIdx++,
+          });
+        });
+
+        row += subChildren.length;
+      }
     }
-    return [
-      { x: 540, y: 16, w: 140, h: 48, path: "M490,90 C515,90 515,40 540,40" },
-      { x: 540, y: 116, w: 140, h: 48, path: "M490,90 C515,90 515,140 540,140" },
-      { x: 710, y: 16, w: 140, h: 48, path: "M680,40 L710,40" },
-      { x: 710, y: 116, w: 140, h: 48, path: "M680,140 L710,140" },
-    ];
-  }, [childAgents.length]);
+
+    return { layoutNodes: nodesMap, layoutPaths: paths, totalRows: Math.max(1, row) };
+  }, [tier1Agents, tier2ByParent, activeId]);
+
+  // Overall SVG dimensions
+  const totalContentHeight = paddingY * 2 + totalRows * cardH + (totalRows - 1) * gap;
+  const viewBoxHeight = Math.max(190, totalContentHeight);
+  const centerY = viewBoxHeight / 2;
+
+  const pTriggerToGateway = `M140,${centerY} L180,${centerY}`;
+  const pGatewayToOrch = `M306,${centerY} L346,${centerY}`;
+
+  // Paths from Orchestrator (right anchor 490, centerY) to each Tier 1 Node (left anchor 540, y + 24)
+  const orchToTier1Paths = useMemo(() => {
+    return layoutNodes
+      .filter((n) => n.tier === 1)
+      .map((n, idx) => {
+        const targetY = n.y + 24;
+        const isSelected = activeId === n.agent.id;
+        const isUnfunded = n.agent.status === "unfunded" || (n.agent.allocatedMinor ?? 0) === 0;
+        let d = `M490,${centerY} L540,${targetY}`;
+        if (Math.abs(targetY - centerY) > 2) {
+          d = `M490,${centerY} C515,${centerY} 515,${targetY} 540,${targetY}`;
+        }
+        return {
+          id: `orch-${n.agent.id}`,
+          path: d,
+          isUnfunded,
+          isSelected,
+          idx,
+        };
+      });
+  }, [layoutNodes, centerY, activeId]);
 
   return (
     <div className={`w-full py-2 ${className}`}>
       <svg
         width="100%"
-        viewBox="0 0 910 180"
+        viewBox={`0 0 920 ${viewBoxHeight}`}
         className="w-full h-auto block select-none"
       >
         <defs>
@@ -224,60 +367,76 @@ export function PipelineSvg({
           markerEnd="url(#blueArrow)"
         />
 
-        {/* Animated Traveling Signal Dots */}
+        {/* Animated Traveling Signal Dots on Backbone */}
         <AnimatedDot path={pTriggerToGateway} duration={1.1} delay={0} size={2.5} opacity={1} />
         <AnimatedDot path={pGatewayToOrch} duration={0.9} delay={0.2} size={2.5} opacity={1} />
 
-        {/* Dynamic Connection Paths for Child Subagents */}
-        {childAgents.length === 0 ? (
-          <path
-            d="M490,90 L550,90"
-            fill="none"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="1.5"
-            strokeDasharray="3 5"
-          />
-        ) : (
-          childAgents.map((agent, idx) => {
-            const pos = childPositions[idx] || childPositions[childPositions.length - 1];
-            const isSelected = activeId === agent.id;
-            const isUnfunded = agent.status === "unfunded" || (agent.allocatedMinor ?? 0) === 0;
-            const strokeColor = isUnfunded
-              ? "rgba(245,158,11,0.4)"
-              : isSelected
-              ? "rgba(0,82,255,0.8)"
-              : "rgba(0,82,255,0.25)";
-            return (
-              <React.Fragment key={`path-${agent.id}`}>
-                <path
-                  d={pos.path}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth="1.5"
-                  strokeDasharray="3 5"
-                  markerEnd={isUnfunded ? "url(#orangeArrow)" : "url(#blueArrow)"}
-                />
-                <AnimatedDot
-                  path={pos.path}
-                  duration={1.2}
-                  delay={0.1 + idx * 0.25}
-                  size={2.2}
-                  opacity={isUnfunded ? 0.75 : 0.9}
-                  color={isUnfunded ? "#f59e0b" : "#0052FF"}
-                />
-              </React.Fragment>
-            );
-          })
-        )}
+        {/* Dynamic Connection Paths: Orchestrator -> Tier 1 Subagents */}
+        {orchToTier1Paths.map((conn) => {
+          const strokeColor = conn.isUnfunded
+            ? "rgba(245,158,11,0.4)"
+            : conn.isSelected
+            ? "rgba(0,82,255,0.8)"
+            : "rgba(0,82,255,0.25)";
+          return (
+            <React.Fragment key={conn.id}>
+              <path
+                d={conn.path}
+                fill="none"
+                stroke={strokeColor}
+                strokeWidth="1.5"
+                strokeDasharray="3 5"
+                markerEnd={conn.isUnfunded ? "url(#orangeArrow)" : "url(#blueArrow)"}
+              />
+              <AnimatedDot
+                path={conn.path}
+                duration={1.2}
+                delay={0.1 + conn.idx * 0.25}
+                size={2.2}
+                opacity={conn.isUnfunded ? 0.75 : 0.9}
+                color={conn.isUnfunded ? "#f59e0b" : "#0052FF"}
+              />
+            </React.Fragment>
+          );
+        })}
+
+        {/* Dynamic Connection Paths: Tier 1 -> Tier 2 Subagents */}
+        {layoutPaths.map((conn) => {
+          const strokeColor = conn.isUnfunded
+            ? "rgba(245,158,11,0.4)"
+            : conn.isSelected
+            ? "rgba(0,82,255,0.8)"
+            : "rgba(0,82,255,0.25)";
+          return (
+            <React.Fragment key={conn.id}>
+              <path
+                d={conn.path}
+                fill="none"
+                stroke={strokeColor}
+                strokeWidth="1.5"
+                strokeDasharray="3 5"
+                markerEnd={conn.isUnfunded ? "url(#orangeArrow)" : "url(#blueArrow)"}
+              />
+              <AnimatedDot
+                path={conn.path}
+                duration={1.2}
+                delay={0.3 + conn.idx * 0.2}
+                size={2.2}
+                opacity={conn.isUnfunded ? 0.75 : 0.9}
+                color={conn.isUnfunded ? "#f59e0b" : "#0052FF"}
+              />
+            </React.Fragment>
+          );
+        })}
 
         {/* ─── NODE 1: Trigger / Operator Mandate ─── */}
         <g
-          onClick={() => handleNodeClick("orchestrator-root")}
+          onClick={() => handleNodeClick(rootId)}
           className="cursor-pointer group"
         >
           <rect
             x="24"
-            y="65"
+            y={centerY - 25}
             width="116"
             height="50"
             rx="8"
@@ -288,7 +447,7 @@ export function PipelineSvg({
           />
           <text
             x="82"
-            y="81"
+            y={centerY - 9}
             textAnchor="middle"
             fontSize="9"
             fill="rgba(255,255,255,0.35)"
@@ -299,7 +458,7 @@ export function PipelineSvg({
           </text>
           <text
             x="82"
-            y="97"
+            y={centerY + 7}
             textAnchor="middle"
             fontSize="11.5"
             fill="rgba(255,255,255,0.88)"
@@ -310,7 +469,7 @@ export function PipelineSvg({
           </text>
           <text
             x="82"
-            y="108"
+            y={centerY + 18}
             textAnchor="middle"
             fontSize="8"
             fill="rgba(255,255,255,0.22)"
@@ -324,7 +483,7 @@ export function PipelineSvg({
         <g className="cursor-default">
           <rect
             x="180"
-            y="65"
+            y={centerY - 25}
             width="126"
             height="50"
             rx="8"
@@ -334,7 +493,7 @@ export function PipelineSvg({
           />
           <text
             x="243"
-            y="81"
+            y={centerY - 9}
             textAnchor="middle"
             fontSize="8.5"
             fill="rgba(255,255,255,0.35)"
@@ -345,7 +504,7 @@ export function PipelineSvg({
           </text>
           <text
             x="243"
-            y="97"
+            y={centerY + 7}
             textAnchor="middle"
             fontSize="11"
             fill="rgba(255,255,255,0.85)"
@@ -356,7 +515,7 @@ export function PipelineSvg({
           </text>
           <text
             x="243"
-            y="108"
+            y={centerY + 18}
             textAnchor="middle"
             fontSize="8"
             fill="rgba(0,82,255,0.7)"
@@ -368,24 +527,24 @@ export function PipelineSvg({
 
         {/* ─── NODE 3: Main Orchestrator (Root Agent) ─── */}
         <g
-          onClick={() => handleNodeClick("orchestrator-root")}
+          onClick={() => handleNodeClick(rootId)}
           className="cursor-pointer group"
         >
           <rect
             x="346"
-            y="52"
+            y={centerY - 38}
             width="144"
             height="76"
             rx="10"
             fill="#050D1C"
-            stroke={activeId === "orchestrator-root" ? "#3b82f6" : "#0052FF"}
-            strokeWidth={activeId === "orchestrator-root" ? "1.8" : "1"}
+            stroke={activeId === rootId ? "#3b82f6" : "#0052FF"}
+            strokeWidth={activeId === rootId ? "1.8" : "1"}
             className="transition-all group-hover:stroke-blue-400"
           />
-          <rect x="378" y="52.5" width="80" height="1" rx="0.5" fill="rgba(51,117,255,0.6)" />
+          <rect x="378" y={centerY - 37.5} width="80" height="1" rx="0.5" fill="rgba(51,117,255,0.6)" />
           <text
             x="418"
-            y="72"
+            y={centerY - 18}
             textAnchor="middle"
             fontSize="9"
             fill="rgba(51,117,255,0.85)"
@@ -396,7 +555,7 @@ export function PipelineSvg({
           </text>
           <text
             x="418"
-            y="90"
+            y={centerY}
             textAnchor="middle"
             fontSize="12.5"
             fill="#fff"
@@ -407,26 +566,26 @@ export function PipelineSvg({
           </text>
           <text
             x="418"
-            y="103"
+            y={centerY + 13}
             textAnchor="middle"
             fontSize="9"
             fill="rgba(0,82,255,0.9)"
             fontFamily="monospace"
             fontWeight="500"
           >
-            {formatMinorUnits(rootNode?.allocatedMinor ?? env?.budgetLimitMinor ?? 0, currency)}
+            {formatMinorUnits(rootNode?.subDelegatedMinor || rootNode?.allocatedMinor || env?.budgetLimitMinor || 0, currency)}
           </text>
-          <PulsingDot cx={406} cy={116} color="#0052FF" duration={1.2} delay={0} />
-          <PulsingDot cx={418} cy={116} color="#0052FF" duration={1.2} delay={0.4} />
-          <PulsingDot cx={430} cy={116} color="#0052FF" duration={1.2} delay={0.8} />
+          <PulsingDot cx={406} cy={centerY + 26} color="#0052FF" duration={1.2} delay={0} />
+          <PulsingDot cx={418} cy={centerY + 26} color="#0052FF" duration={1.2} delay={0.4} />
+          <PulsingDot cx={430} cy={centerY + 26} color="#0052FF" duration={1.2} delay={0.8} />
         </g>
 
         {/* Dynamic Child Subagents Rendering */}
-        {childAgents.length === 0 ? (
+        {layoutNodes.length === 0 ? (
           <g className="cursor-default">
             <rect
               x="550"
-              y="65"
+              y={centerY - 25}
               width="210"
               height="50"
               rx="8"
@@ -437,7 +596,7 @@ export function PipelineSvg({
             />
             <text
               x="655"
-              y="86"
+              y={centerY - 4}
               textAnchor="middle"
               fontSize="10"
               fill="rgba(255,255,255,0.45)"
@@ -448,7 +607,7 @@ export function PipelineSvg({
             </text>
             <text
               x="655"
-              y="102"
+              y={centerY + 12}
               textAnchor="middle"
               fontSize="8.5"
               fill="rgba(255,255,255,0.25)"
@@ -458,8 +617,8 @@ export function PipelineSvg({
             </text>
           </g>
         ) : (
-          childAgents.map((agent, idx) => {
-            const pos = childPositions[idx] || childPositions[childPositions.length - 1];
+          layoutNodes.map((item) => {
+            const agent = item.agent;
             const isSelected = activeId === agent.id;
             const isUnfunded = agent.status === "unfunded" || (agent.allocatedMinor ?? 0) === 0;
             const strokeColor = isSelected
@@ -480,10 +639,10 @@ export function PipelineSvg({
                 className="cursor-pointer group"
               >
                 <rect
-                  x={pos.x}
-                  y={pos.y}
-                  width={pos.w}
-                  height={pos.h}
+                  x={item.x}
+                  y={item.y}
+                  width={item.w}
+                  height={item.h}
                   rx="8"
                   fill="#111113"
                   stroke={strokeColor}
@@ -492,8 +651,8 @@ export function PipelineSvg({
                   className="transition-colors group-hover:stroke-blue-400/80"
                 />
                 <text
-                  x={pos.x + pos.w / 2}
-                  y={pos.y + 19}
+                  x={item.x + item.w / 2}
+                  y={item.y + 19}
                   textAnchor="middle"
                   fontSize="11"
                   fill="rgba(255,255,255,0.9)"
@@ -503,8 +662,8 @@ export function PipelineSvg({
                   {displayName}
                 </text>
                 <text
-                  x={pos.x + pos.w / 2}
-                  y={pos.y + 34}
+                  x={item.x + item.w / 2}
+                  y={item.y + 34}
                   textAnchor="middle"
                   fontSize="9"
                   fill={isUnfunded ? "rgba(245,158,11,0.8)" : "rgba(255,255,255,0.4)"}
@@ -515,8 +674,8 @@ export function PipelineSvg({
                     : `${formatMinorUnits(agent.allocatedMinor, currency)} limit`}
                 </text>
                 <StatusIndicator
-                  cx={pos.x + pos.w - 14}
-                  cy={pos.y + 12}
+                  cx={item.x + item.w - 14}
+                  cy={item.y + 12}
                   color={isUnfunded ? "#f59e0b" : "#3b82f6"}
                   pulsing={isUnfunded}
                 />
@@ -529,11 +688,19 @@ export function PipelineSvg({
   );
 }
 
-export function PipelineTicker({ className = "" }: { className?: string }) {
+export function PipelineTicker({
+  className = "",
+  nodes: propNodes,
+  currency: propCurrency,
+}: {
+  className?: string;
+  nodes?: AgentNodeData[];
+  currency?: string;
+}) {
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
-  const currency = env?.currency ?? "USD";
-  const nodes = store.graphNodes;
+  const currency = propCurrency ?? env?.currency ?? "USD";
+  const nodes = propNodes ?? store.graphNodes;
   const subagentsCount = nodes.filter((n) => n.role === "subagent").length;
   const activeSubagentsCount = nodes.filter((n) => n.role === "subagent" && n.status === "active").length;
   const limitMinor = env?.budgetLimitMinor ?? 0;
@@ -565,16 +732,31 @@ export function PipelineTicker({ className = "" }: { className?: string }) {
   );
 }
 
-export function PipelineStats({ className = "" }: { className?: string }) {
+export function PipelineStats({
+  className = "",
+  nodes: propNodes,
+  currency: propCurrency,
+  totalLimitMinor: propLimit,
+  spentMinor: propSpent,
+  reservedMinor: propReserved,
+}: {
+  className?: string;
+  nodes?: AgentNodeData[];
+  currency?: string;
+  totalLimitMinor?: number;
+  spentMinor?: number;
+  reservedMinor?: number;
+}) {
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
-  const currency = env?.currency ?? "USD";
-  const limitMinor = env?.budgetLimitMinor ?? 0;
-  const spentMinor = env?.spentMinor ?? 0;
-  const reservedMinor = env?.reservedMinor ?? 0;
+  const currency = propCurrency ?? env?.currency ?? "USD";
+  const limitMinor = propLimit ?? env?.budgetLimitMinor ?? 0;
+  const spentMinor = propSpent ?? env?.spentMinor ?? 0;
+  const reservedMinor = propReserved ?? env?.reservedMinor ?? 0;
   const availableMinor = calculateAvailableMinor(limitMinor, spentMinor, reservedMinor);
 
-  const workflows = store.graphNodes.length;
+  const nodes = propNodes ?? store.graphNodes;
+  const workflows = nodes.length;
 
   return (
     <div className={`border-t border-zinc-800/80 px-4 py-3 flex flex-wrap gap-8 items-center w-full bg-zinc-950/80 ${className}`}>

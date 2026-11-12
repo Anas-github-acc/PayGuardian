@@ -5,6 +5,7 @@ import type { AuthorityStore } from "./phase2.js";
 import type { AuditEventStore } from "./audit.js";
 import type { ProviderJobStore } from "./provider-jobs.js";
 import type { AgentEvent, ChatbotStore } from "./chatbot.js";
+import type { ApprovalStore } from "./phase4.js";
 
 type AppRequest = FastifyRequest & {
   principal?: { userId: string; kind: "user" | "agent"; agentId?: string };
@@ -17,6 +18,7 @@ export type ChatbotRouteDependencies = {
   providerJobs: ProviderJobStore;
   resolvePrincipal: PrincipalResolver;
   audit?: AuditEventStore;
+  approvals?: ApprovalStore;
 };
 
 async function principal(
@@ -955,6 +957,23 @@ Financial facts, pending proposals, and authorization states are controlled by t
               "personal";
             if (evType === "agent.output" && evAgent === "personal") continue;
             const evTaskId = ev.taskId ?? ev.task_id ?? rootTask.id;
+            if (evType === "approval.requested" && dependencies.approvals) {
+              const p = (ev.payload as Record<string, unknown>) ?? {};
+              const apprId = String(p.approvalId || `appr-${run.id}`);
+              const apprAmount = Number(p.amountMinor ?? availableReserveMinor);
+              const apprCurrency = String(p.currency ?? budgetCurrency);
+              const apprMandate = String(p.mandateId || mandateId);
+              await dependencies.approvals.create({
+                id: apprId,
+                environmentId: scoped.environment.id,
+                mandateId: apprMandate,
+                agentId: String(evAgent || agentId),
+                action: String(p.action || "budget.delegate"),
+                amountMinor: apprAmount,
+                currency: apprCurrency,
+                requestHash: apprId,
+              }).catch(() => undefined);
+            }
             await dependencies.chatbot.appendEvent({
               runId: run.id,
               taskId: rootTask.id,

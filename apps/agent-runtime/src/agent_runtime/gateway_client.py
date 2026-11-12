@@ -170,6 +170,25 @@ class GatewayClient:
             res = client.post(url, json=payload, headers=self._headers())
             return res.json()  # type: ignore[no-any-return]
 
+    def list_approvals(self, environment_id: str, status: str | None = None) -> list[dict[str, Any]]:
+        query = f"?status={status}" if status else ""
+        url = f"{self.base_url}/v1/environments/{environment_id}/approvals{query}"
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.get(url, headers=self._headers())
+            if res.status_code == 200:
+                data = res.json()
+                return data.get("approvals", [])  # type: ignore[no-any-return]
+            return []
+
+    def get_approval(self, environment_id: str, approval_id: str) -> dict[str, Any] | None:
+        url = f"{self.base_url}/v1/environments/{environment_id}/approvals/{approval_id}"
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.get(url, headers=self._headers())
+            if res.status_code == 200:
+                data = res.json()
+                return data.get("approval")  # type: ignore[no-any-return]
+            return None
+
     def reserve_action(
         self,
         environment_id: str,
@@ -356,6 +375,57 @@ class GatewayClient:
         url = f"{self.base_url}/v1/environments/{environment_id}/actions/{action_id}/capture"
         with httpx.Client(timeout=self.timeout) as client:
             res = client.post(url, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def create_paypal_order(
+        self,
+        environment_id: str,
+        agent_id: str,
+        mandate_id: str,
+        ledger_account_id: str,
+        idempotency_key: str,
+        request_hash: str,
+        action: str,
+        amount_minor: int,
+        currency: str = "USD",
+        approval_id: str | None = None,
+        return_url: str | None = None,
+        cancel_url: str | None = None,
+    ) -> dict[str, Any]:
+        """Create an authorized PayPal Sandbox order with an approval URL."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/payments/paypal/orders"
+        payload: dict[str, Any] = {
+            "agentId": agent_id,
+            "mandateId": mandate_id,
+            "ledgerAccountId": ledger_account_id,
+            "idempotencyKey": idempotency_key,
+            "requestHash": request_hash,
+            "action": action,
+            "amountMinor": amount_minor,
+            "currency": currency.upper(),
+        }
+        if approval_id:
+            payload["approvalId"] = approval_id
+        if return_url:
+            payload["returnUrl"] = return_url
+        if cancel_url:
+            payload["cancelUrl"] = cancel_url
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, json=payload, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def capture_paypal_order(self, environment_id: str, action_id: str) -> dict[str, Any]:
+        """Capture an approved PayPal order on the Gateway."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/payments/paypal/{action_id}/capture"
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.post(url, headers=self._headers())
+            return res.json()  # type: ignore[no-any-return]
+
+    def get_paypal_operation(self, environment_id: str, action_id: str) -> dict[str, Any]:
+        """Fetch PayPal operation, action, and reservation details."""
+        url = f"{self.base_url}/v1/environments/{environment_id}/payments/paypal/{action_id}"
+        with httpx.Client(timeout=self.timeout) as client:
+            res = client.get(url, headers=self._headers())
             return res.json()  # type: ignore[no-any-return]
 
     def post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:

@@ -59,6 +59,8 @@ const CONTEXT_OPTIONS: ContextTagOption[] = [
 ];
 
 const FALLBACK_MODELS: ComposerModel[] = [
+  { id: "free/gpt-6-luna", name: "APInex GPT-6 Luna (Free)", effort: "Medium", provider: "openai", isFav: true, efforts: ALL_EFFORTS },
+  { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash", effort: "Medium", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", effort: "Medium", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", effort: "High", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
   { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash-Lite", effort: "Low", provider: "gemini", isFav: false, efforts: ALL_EFFORTS },
@@ -192,7 +194,6 @@ export function AIComposer({
   const [attachedFiles, setAttachedFiles] = React.useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
   const [contextMenuOpen, setContextMenuOpen] = React.useState(false);
-  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
 
   const [isRecording, setIsRecording] = React.useState(false);
   const [recordingSeconds, setRecordingSeconds] = React.useState(0);
@@ -204,7 +205,6 @@ export function AIComposer({
   const isHoveringEffortMenuRef = React.useRef(false);
   const hideEffortTimerRef = React.useRef<number | null>(null);
   const recognitionRef = React.useRef<SpeechRecognitionLike | null>(null);
-  const toastTimerRef = React.useRef<number | null>(null);
 
   /* ---------------- Model catalogue (backend → composer shape) ---------------- */
 
@@ -294,19 +294,6 @@ export function AIComposer({
     };
     window.addEventListener("click", handleGlobalClick);
     return () => window.removeEventListener("click", handleGlobalClick);
-  }, []);
-
-  React.useEffect(
-    () => () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    },
-    []
-  );
-
-  const showToast = React.useCallback((message: string) => {
-    setToastMessage(message);
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToastMessage(null), 5000);
   }, []);
 
   const clearHideEffortTimeout = React.useCallback(() => {
@@ -502,7 +489,6 @@ export function AIComposer({
 
     const trimmed = promptText.trim();
     if (!trimmed && attachedFiles.length === 0) {
-      showToast("Enter a prompt or attach a file to continue.");
       return;
     }
 
@@ -519,7 +505,6 @@ export function AIComposer({
       attachedFiles: [...attachedFiles],
       files: [...selectedFiles],
     });
-    showToast(`[${mode} · ${routingLabel}] Message sent to the gateway.`);
 
     setPromptText("");
     setAttachedFiles([]);
@@ -536,27 +521,6 @@ export function AIComposer({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Submitted prompt toast */}
-      {toastMessage && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs text-zinc-200 shadow-lg"
-        >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-            <span className="truncate">{toastMessage}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            className="shrink-0 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] text-zinc-400 transition-colors hover:text-white"
-          >
-            Clear
-          </button>
-        </div>
-      )}
-
       {/* Attached context file chips */}
       {attachedFiles.length > 0 && (
         <div className="mb-2.5 flex flex-wrap gap-2">

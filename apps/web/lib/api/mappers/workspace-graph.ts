@@ -7,8 +7,16 @@ export function mapWorkspaceGraph(
   ledgerAccounts: LedgerAccountDto[] = [],
 ): { nodes: AgentNodeData[]; edges: AgentEdgeData[] } {
   const mandateByAgent = new Map<string, MandateDto>();
-  for (const m of mandates) {
-    mandateByAgent.set(m.holderAgentId, m);
+  // Prioritize active mandates, then higher version so superseded ones are not accidentally picked
+  const sortedMandates = [...mandates].sort((a, b) => {
+    if (a.state === "active" && b.state !== "active") return -1;
+    if (b.state === "active" && a.state !== "active") return 1;
+    return (b.version ?? 0) - (a.version ?? 0);
+  });
+  for (const m of sortedMandates) {
+    if (!mandateByAgent.has(m.holderAgentId)) {
+      mandateByAgent.set(m.holderAgentId, m);
+    }
   }
 
   const accountByMandate = new Map<string, LedgerAccountDto>();
@@ -27,9 +35,12 @@ export function mapWorkspaceGraph(
     const mandate = mandateByAgent.get(agent.id);
     const account = mandate ? accountByMandate.get(mandate.id) : undefined;
     const allocatedMinor = mandate?.allocatedMinor ?? mandate?.budgetLimitMinor ?? 0;
+    const subDelegatedMinor = mandate?.allocatedMinor ?? 0;
     const spentMinor = account?.capturedMinor ?? mandate?.spentMinor ?? 0;
     const reservedMinor = account?.reservedMinor ?? mandate?.reservedMinor ?? 0;
-    const isFunded = (mandate?.budgetLimitMinor ?? 0) > 0;
+    const limitMinor = mandate?.budgetLimitMinor ?? allocatedMinor;
+    const availableMinor = Math.max(0, limitMinor - subDelegatedMinor - spentMinor - reservedMinor);
+    const isFunded = (mandate?.budgetLimitMinor ?? 0) > 0 || allocatedMinor > 0;
 
     let status: AgentNodeData["status"] = "active";
     if (agent.status === "revoked" || mandate?.state === "revoked") {
@@ -46,8 +57,11 @@ export function mapWorkspaceGraph(
       role: "orchestrator",
       status,
       allocatedMinor,
+      subDelegatedMinor,
       spentMinor,
       reservedMinor,
+      availableMinor,
+      parentAgentId: null,
       position: [idx * 120, 80, 0],
       isFunded,
     });
@@ -58,10 +72,16 @@ export function mapWorkspaceGraph(
   childAgents.forEach((agent, idx) => {
     const mandate = mandateByAgent.get(agent.id);
     const account = mandate ? accountByMandate.get(mandate.id) : undefined;
-    const allocatedMinor = mandate?.allocatedMinor ?? mandate?.budgetLimitMinor ?? 0;
+    // For child agents, their allocated authority ceiling is their mandate budget limit
+    const allocatedMinor =
+      (mandate?.budgetLimitMinor && mandate.budgetLimitMinor > 0)
+        ? mandate.budgetLimitMinor
+        : (mandate?.allocatedMinor ?? 0);
+    const subDelegatedMinor = mandate?.allocatedMinor ?? 0;
     const spentMinor = account?.capturedMinor ?? mandate?.spentMinor ?? 0;
     const reservedMinor = account?.reservedMinor ?? mandate?.reservedMinor ?? 0;
-    const isFunded = (mandate?.budgetLimitMinor ?? 0) > 0;
+    const availableMinor = Math.max(0, allocatedMinor - subDelegatedMinor - spentMinor - reservedMinor);
+    const isFunded = allocatedMinor > 0 && mandate?.state === "active";
 
     let status: AgentNodeData["status"] = "active";
     if (agent.status === "revoked" || mandate?.state === "revoked") {
@@ -83,8 +103,11 @@ export function mapWorkspaceGraph(
       role: "subagent",
       status,
       allocatedMinor,
+      subDelegatedMinor,
       spentMinor,
       reservedMinor,
+      availableMinor,
+      parentAgentId: agent.parentAgentId,
       position: [x, y, z],
       isFunded,
     });

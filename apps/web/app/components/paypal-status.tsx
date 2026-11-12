@@ -27,6 +27,7 @@ export function PayPalStatus({ cancelled = false }: { cancelled?: boolean }) {
   const [payment, setPayment] = useState<PaymentView | null>(null);
   const [message, setMessage] = useState("Loading PayPal operation…");
   const [busy, setBusy] = useState(false);
+  const [autoCaptured, setAutoCaptured] = useState(false);
   const localUserId = process.env.NEXT_PUBLIC_LOCAL_USER_ID ?? "local-user";
 
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -62,6 +63,21 @@ export function PayPalStatus({ cancelled = false }: { cancelled?: boolean }) {
   useEffect(() => {
     void refresh();
   }, [environmentId, actionId, cancelled]);
+
+  useEffect(() => {
+    if (
+      !cancelled &&
+      payment &&
+      payment.operation.status !== "COMPLETED" &&
+      !autoCaptured &&
+      !busy &&
+      environmentId &&
+      actionId
+    ) {
+      setAutoCaptured(true);
+      void capture();
+    }
+  }, [payment, cancelled, autoCaptured, busy, environmentId, actionId]);
 
   async function capture() {
     if (!environmentId || !actionId) return;
@@ -130,7 +146,7 @@ export function PayPalStatus({ cancelled = false }: { cancelled?: boolean }) {
             </div>
           </dl>
         ) : null}
-        <div className="action-row">
+        <div className="action-row" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "1.25rem" }}>
           {!cancelled && payment?.operation.status !== "COMPLETED" ? (
             <button type="button" onClick={() => void capture()} disabled={busy}>
               {busy ? "Working…" : "Capture payment"}
@@ -139,6 +155,38 @@ export function PayPalStatus({ cancelled = false }: { cancelled?: boolean }) {
           <button type="button" onClick={() => void reconcile()} disabled={busy}>
             {busy ? "Working…" : "Refresh provider status"}
           </button>
+          <a
+            href="/chat"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "0.5rem 1rem",
+              borderRadius: "0.375rem",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              textDecoration: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              color: "#fff",
+            }}
+          >
+            ← Return to Chat
+          </a>
+          <a
+            href="/dashboard"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "0.5rem 1rem",
+              borderRadius: "0.375rem",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              textDecoration: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              color: "#fff",
+            }}
+          >
+            Go to Dashboard
+          </a>
         </div>
       </section>
     </main>

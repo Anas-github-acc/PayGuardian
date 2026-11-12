@@ -32,6 +32,9 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
   const currentEnv = store.currentEnvironment;
   const {
     conversations,
+    activeConversationId,
+    selectConversation,
+    prefetchConversationOnHover,
     isLoading,
     sidebarOpen,
     toggleSidebar,
@@ -43,7 +46,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
     setMandateOverlayOpen,
   } = useChat();
 
-  const activeChatId = typeof params?.chatId === "string" ? params.chatId : null;
+  const activeChatId = activeConversationId ?? (typeof params?.chatId === "string" && params.chatId !== "new" ? params.chatId : null);
 
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -144,7 +147,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
           <div className="p-2 space-y-1">
             <button
               type="button"
-              onClick={() => router.push("/chat/new")}
+              onClick={() => selectConversation("new")}
               className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-900 hover:text-white transition-colors"
             >
               <SquarePen className="h-4 w-4 text-zinc-400" />
@@ -192,7 +195,8 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                             ? "bg-zinc-800 text-white font-medium"
                             : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
                         )}
-                        onClick={() => router.push(`/chat/${c.id}`)}
+                        onClick={() => selectConversation(c.id)}
+                        onMouseEnter={() => prefetchConversationOnHover(c.id)}
                       >
                         <MessageSquare className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                         <span className="truncate flex-1">{c.title}</span>
@@ -238,7 +242,8 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                             ? "bg-zinc-800 text-white font-medium"
                             : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
                         )}
-                        onClick={() => router.push(`/chat/${c.id}`)}
+                        onClick={() => selectConversation(c.id)}
+                        onMouseEnter={() => prefetchConversationOnHover(c.id)}
                       >
                         <MessageSquare className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                         <span className="truncate flex-1">{c.title}</span>
@@ -310,7 +315,7 @@ export function ChatSidebar({ className = "" }: ChatSidebarProps) {
                                 setActiveMenuId(null);
                                 await deleteConversation(c.id);
                                 if (activeChatId === c.id) {
-                                  router.push("/chat/new");
+                                  selectConversation("new");
                                 }
                               }}
                               className="flex w-full items-center gap-2 rounded px-2 py-1.5 hover:bg-zinc-800 text-red-400 hover:text-red-300 text-left transition-colors"

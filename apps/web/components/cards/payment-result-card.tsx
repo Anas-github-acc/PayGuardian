@@ -25,6 +25,7 @@ export interface PaymentResultCardProps {
   currentStage?: PaymentLifecycleStage;
   completedAt?: string;
   agentName?: string;
+  approvalUrl?: string;
   onViewTrace?: (traceId?: string) => void;
   className?: string;
 }
@@ -49,6 +50,7 @@ export function PaymentResultCard({
   currentStage = "completed",
   completedAt = new Date().toISOString(),
   agentName = "Travel Subagent",
+  approvalUrl,
   onViewTrace,
   className = "",
 }: PaymentResultCardProps) {
@@ -153,6 +155,25 @@ export function PaymentResultCard({
           </span>
         </div>
       </div>
+
+      {/* PayPal Sandbox Approval CTA */}
+      {approvalUrl && currentStage !== "completed" && (
+        <div className="mt-3 rounded-md bg-blue-950/40 border border-blue-500/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="text-xs">
+            <span className="font-semibold text-blue-300 block">PayPal Sandbox Approval Needed</span>
+            <span className="text-[11px] text-zinc-400">Authorize this transaction with your PayPal Sandbox buyer account.</span>
+          </div>
+          <a
+            href={approvalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-md font-sans font-medium h-8 px-3 text-xs gap-1.5 bg-blue-600 hover:bg-blue-500 text-white shadow shrink-0 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Approve on PayPal
+          </a>
+        </div>
+      )}
 
       {/* Action Footer */}
       <div className="mt-3 flex items-center justify-between pt-2 border-t border-border">

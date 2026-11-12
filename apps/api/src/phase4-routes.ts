@@ -515,6 +515,43 @@ export function registerPhase4Routes(
       finalStatus = "FAILED";
     }
 
+    if (dependencies.approvals) {
+      try {
+        let existing = await dependencies.approvals.get(scoped.environment.id, approvalId);
+        if (!existing) {
+          existing = await dependencies.approvals.create({
+            id: approvalId,
+            environmentId: scoped.environment.id,
+            mandateId: parentMandate.id,
+            agentId: rootAgent.id,
+            action: "budget.delegate",
+            amountMinor: totalDelegatedMinor,
+            currency,
+            requestHash: approvalId,
+          });
+        }
+        if (existing && existing.status === "pending") {
+          if (finalStatus === "FAILED") {
+            await dependencies.approvals.reject(
+              scoped.environment.id,
+              existing.id,
+              scoped.owner.userId,
+              failures[0]?.reason || "Delegation rejected by authority.",
+            );
+          } else {
+            await dependencies.approvals.approve(
+              scoped.environment.id,
+              existing.id,
+              scoped.owner.userId,
+              "allow_once",
+            );
+          }
+        }
+      } catch (apprErr) {
+        app.log.warn({ apprErr }, "Could not sync proposal status to approval store");
+      }
+    }
+
     await dependencies.audit.append({
       environmentId: scoped.environment.id,
       actorType: "user",

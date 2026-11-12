@@ -17,6 +17,7 @@ import { Badge } from "../ui/badge";
 
 export interface NodeDetailDrawerProps {
   nodeId: string | null;
+  node?: AgentNodeData;
   isOpen: boolean;
   onClose: () => void;
   currency?: string;
@@ -28,20 +29,23 @@ export interface NodeDetailDrawerProps {
 
 export function NodeDetailDrawer({
   nodeId,
+  node: propNode,
   isOpen,
   onClose,
-  currency = "USD",
+  currency: propCurrency,
   onRevoke,
   onDirectChat,
   onProposeAllocation: _onProposeAllocation,
   onDetach,
 }: NodeDetailDrawerProps) {
   const store = useWorkspaceStore();
+  const env = store.currentEnvironment;
+  const currency = propCurrency ?? env?.currency ?? "USD";
   const [activeTab, setActiveTab] = React.useState<"overview" | "authority" | "activity">("overview");
   const [showRevokeConfirm, setShowRevokeConfirm] = React.useState(false);
 
   // Find node by id in store graphNodes
-  const node = store.graphNodes.find((n) => n.id === nodeId);
+  const node = propNode ?? store.graphNodes.find((n) => n.id === nodeId);
 
   if (!node && !nodeId) return null;
 
@@ -198,7 +202,9 @@ export function NodeDetailDrawer({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-foreground">Budget Allocation</span>
                   <span className="font-mono font-semibold text-sm text-success tabular-nums">
-                    {targetNode.isFunded ? formatMinorUnits(targetNode.allocatedMinor, currency) : "Unfunded ($0)"}
+                    {targetNode.isFunded
+                      ? formatMinorUnits(targetNode.allocatedMinor, currency)
+                      : `${formatMinorUnits(0, currency)} (Unfunded)`}
                   </span>
                 </div>
 

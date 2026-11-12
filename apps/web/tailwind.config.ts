@@ -121,12 +121,17 @@ const config: Config = {
             strokeDashoffset: "-14",
           },
         },
+        marquee: {
+          from: { transform: "translateX(0%)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "fade-in-0": "fade-in-0 100ms ease-out",
         "fade-in-50": "fade-in-50 150ms ease-out",
         "zoom-in-95": "zoom-in-95 100ms ease-out",
         "agent-flow": "agent-flow 1s linear infinite",
+        marquee: "marquee 40s linear infinite",
       },
       spacing: {
         18: "4.5rem",

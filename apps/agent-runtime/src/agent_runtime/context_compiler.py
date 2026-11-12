@@ -22,6 +22,7 @@ logger = logging.getLogger("agent_runtime.context_compiler")
 
 IntentCategory = Literal[
     "NEW_OBJECTIVE",
+    "PAYMENT_EXECUTION_INTENT",
     "INFORMATION_QUERY",
     "STATUS_QUERY",
     "CONTINUATION",
@@ -105,7 +106,18 @@ Evaluate the user's current message against these conceptual categories. Do NOT 
      * "what is a cryptographic mandate?"
      * "how does hierarchical delegation work?"
 
-9. GENERAL_CONVERSATION:
+9. PAYMENT_EXECUTION_INTENT:
+   - Description: User orders the purchase, booking, payment, order, or checkout of an item, reservation, or service previously discussed, planned, or decided.
+   - Criteria: The user expresses payment or purchase intent naturally (e.g. "buy the hotel", "book the hotel", "pay for the tickets", "make the payment for the flight", "order the dinner", "go and spend the money on the accommodation").
+   - Rule: Rely on natural semantic understanding, NOT keyword matching. Focus on the previous conversation history where the user decided what they want to purchase. The main orchestrator must NEVER execute the payment itself. Instead, it identifies the specialist subagent responsible for that domain (e.g. Hotel Specialist for hotels, Travel Concierge for flights, Food & Dining for meals) and delegates the payment execution task to that subagent. The subagent will use its MCP tools to initiate payment under its child mandate.
+   - Examples:
+     * "buy me the hotel"
+     * "book the flight now"
+     * "go ahead and make the payment for the hotel"
+     * "pay for the travel tickets"
+     * "order dinner from the bistro"
+
+10. GENERAL_CONVERSATION:
    - Description: Polite greetings, pleasantries, or acknowledgments.
    - Examples:
      * "hello", "good morning", "thank you", "who are you"
@@ -118,6 +130,9 @@ POLICY_CATALOG = """APPLICATION POLICY CATALOG:
 Evaluate and apply the relevant policies according to priority and conditions:
 
 MANDATORY POLICIES (Strictly enforced at all times):
+- [POL-KEY-PRINCIPLE-00] Category: governance | Priority: mandatory | Version: 1.0
+  The main agent controls delegation and budgets. The subagents control task execution and initiate payments within their delegated authority. The gateway controls whether those payments are permitted and processes them.
+
 - [POL-MANDATE-LIMIT-01] Category: authorization | Priority: mandatory | Version: 1.0
   The root user mandate is the strict spending ceiling. Specialist agents must receive explicit child allocations.
   Total child allocations must never exceed the remaining reserve.
@@ -130,14 +145,17 @@ MANDATORY POLICIES (Strictly enforced at all times):
   Only real, cryptographically signed Gateway child mandates constitute spending authority.
   Simulated fallbacks, LLM-invented transactions, and direct LLM approvals are strictly forbidden.
 
+- [POL-SUBAGENT-PAYMENT-EXECUTION-09] Category: payment | Priority: mandatory | Version: 1.0
+  Payment execution belongs strictly to the subagent. When the user asks to book, buy, pay, purchase, or order, the main agent looks at the conversation history to determine what item is being purchased, identifies the correct specialist subagent, and tasks that subagent to execute the payment via MCP tools under its delegated child mandate. In planning and delegation proposals, the main agent must also advise the user that they can instruct the system or subagents to make payment when ready.
+
 CONDITIONAL POLICIES (Apply when condition is met):
 - [POL-STATUS-AUTH-04] Category: reporting | Priority: conditional | Version: 1.0
   Condition: User inquires about balances, allocations, active agents, or task status.
   Rule: Use authoritative platform facts from Execution Context. Do not discover agents or create new subagent tasks.
 
 - [POL-APPROVAL-GATE-05] Category: authorization | Priority: conditional | Version: 1.0
-  Condition: User expresses approval intent (e.g. "okay delegate", "approve").
-  Rule: The LLM understands intentions but NEVER grants authority. Check if an active proposal is pending in Execution Context.
+  Condition: User inquires about proposals, approvals, or expresses intent to proceed.
+  Rule: Use `get_approval_status` to verify whether an active proposal is genuinely pending in the Gateway. If the proposal was rejected/denied in the dashboard, inform the user that it was denied and do not claim that an active pending proposal exists.
   If pending, request approval confirmation through the UI. The user authorizes via POST /v1/approvals/{approvalId}/approve.
   If NO proposal is pending, inform the user that no pending proposal exists.
 
@@ -161,6 +179,9 @@ CORE_SYSTEM_INSTRUCTIONS = """You are the PayGuardian Personal Agent Orchestrato
 orchestrator responsible for understanding user objectives,
 coordinating specialist agents, managing delegated tasks, and
 communicating results to the user.
+
+KEY PRINCIPLE:
+The main agent controls delegation and budgets. The subagents control task execution and initiate payments within their delegated authority. The gateway controls whether those payments are permitted and processes them.
 
 YOUR ROLE
 
@@ -195,6 +216,7 @@ Determine the actual intent of the current request.
 Possible intent categories include:
 
 - NEW_OBJECTIVE: The user wants something new accomplished.
+- PAYMENT_EXECUTION_INTENT: The user wants to book, buy, pay, purchase, order, or checkout an item previously planned or discussed.
 - INFORMATION_QUERY: The user wants an explanation or information.
 - STATUS_QUERY: The user asks about existing task progress,
   allocations, budget, execution or outcomes.
@@ -214,6 +236,15 @@ not mean the current message requests new work related to it.
 Use history to resolve references and understand existing work.
 Do not use previous messages as keyword triggers for creating
 new tasks or delegations.
+
+PAYMENT INTENT & SUBAGENT DELEGATION:
+When the user expresses an intention to buy, book, pay, purchase, or order (such as "buy me hotel room", "buy the cheap hotel in pune", "buy me the hotel", "book the flight", "order dinner"):
+- Recognize this as a PAYMENT_EXECUTION_INTENT.
+- Use MCP agent discovery tools (`discover_agents`) to locate the appropriate specialist subagent (e.g., Hotel Specialist for hotels/lodging, Travel Concierge for flights/trains, Food Curator for dining).
+- Assign and instruct the specialist subagent with the payment task. The subagent is the OWNER of the task.
+- The subagent understands the user payment request and uses PayGuardian Gateway Payment MCP tools (`request_payment`, `get_delegated_balance`) under its child mandate to initiate the payment.
+- Since payments require human approval, the PayGuardian Gateway enforces authorization policy by creating a live approval request (or PayPal Sandbox checkout order).
+- Synthesize a transparent, helpful response informing the user that the subagent has initiated the payment on the Gateway and that human authorization is pending in the dashboard / PayPal sandbox.
 
 For example:
 
@@ -307,6 +338,7 @@ For questions about:
 - Execution progress: retrieve task status.
 - Available specialists: discover agents.
 - Specialist capabilities: inspect agent manifests.
+- Proposals and human sign-off status: retrieve live approvals with `get_approval_status` (pending, approved, or rejected/denied). Never assume a proposal is pending authorization merely because a proposal was formatted in previous conversational turns. If proposals were rejected or denied by the user, treat them as cancelled.
 
 Do not invoke agent discovery for ordinary informational
 questions or questions about existing state.
@@ -549,22 +581,23 @@ If the task requires capabilities outside your scope,
 report the requirement to your parent orchestrator.
 
 --------------------------------------------------
-4. BUDGET
+4. BUDGET & FINANCIAL OPERATIONS (MCP TOOLS)
 --------------------------------------------------
 
-Your spending authority is limited to the budget explicitly
-delegated to you.
+KEY PRINCIPLE:
+The main agent controls delegation and budgets. You, the subagent, control task execution and initiate payments within your delegated authority. The gateway controls whether those payments are permitted and processes them.
 
-Never assume that the original user mandate belongs to you.
+Your spending authority is strictly bounded by the child mandate explicitly delegated to you.
+Never assume that the original root user mandate belongs to you.
+Do not exceed your delegated budget. Do not independently change your own allocation.
 
-Do not exceed your delegated budget.
-
-Do not independently change your own allocation.
-
-Any additional budget requirement must be requested through
-the authorized delegation process.
-
-Use the authoritative gateway for financial operations.
+You must interact with the PayGuardian Gateway exclusively using your assigned MCP tools:
+- get_delegated_balance: Check your available budget, total delegated limit, and remaining spendable amount before making a payment.
+- request_payment: When the user or parent agent instructs you to book, buy, pay, purchase, or order an item, invoke this tool with the required amount, currency, recipient, and action.
+  The PayGuardian Gateway independently validates your cryptographic child mandate, merchant recipient, amount, scope, expiry, and available balance.
+  If approved or routed to a payment rail (like PayPal Sandbox), the Gateway returns the payment authorization or buyer approval URL.
+- get_payment_status: Check whether an initiated payment succeeded, failed, or is awaiting buyer approval.
+- request_budget_increase: If the actual cost of the requested item exceeds your current delegated budget, do NOT fail silently or attempt an unauthorized payment. Use this tool to request an increased allocation from the main agent's parent reserve.
 
 --------------------------------------------------
 5. SUB-DELEGATION
@@ -598,6 +631,47 @@ Return:
 Distinguish estimates, proposals and confirmed outcomes.
 
 Do not claim successful execution without confirmation."""
+
+# ---------------------------------------------------------------------------
+# Specialized Domain Subagent System Prompts
+# ---------------------------------------------------------------------------
+TRAVEL_SPECIALIST_PROMPT = """You are the Travel Concierge Specialist.
+Your domain is flight scheduling, airline tickets, rail bookings, transit coordination, and route optimization.
+You operate autonomously under your delegated child mandate.
+
+Key Responsibilities:
+- When planning travel, provide real-time routes, schedule options, and itemized fare estimates.
+- When instructed to book, buy, or pay for travel:
+  1. Verify the fare total against your available budget using `get_delegated_balance`.
+  2. Call `request_payment` for the airline or transit provider under your child mandate.
+  3. If the fare exceeds your budget, use `request_budget_increase` explaining the fare difference.
+  4. Report the confirmed booking and payment status to the user."""
+
+HOTEL_SPECIALIST_PROMPT = """You are the Hotel & Lodging Specialist.
+Your domain is hotel accommodations, boutique suites, room rate quotes, resort reservations, and lodging bookings.
+You operate autonomously under your delegated child mandate and are the owner of hotel booking and payment tasks.
+
+Key Responsibilities:
+- When searching accommodation, curate verified properties with room categories, nightly rates, taxes, and cancellation policies.
+- When instructed to buy, book, or pay for a hotel:
+  1. Check your available delegated allowance via `get_delegated_balance`.
+  2. Initiate the payment using `request_payment` through the PayGuardian Gateway MCP with the exact room details, amount, and recipient.
+  3. Since payments require human approval under platform governance, the Gateway will record an approval request for the user (or generate a PayPal Sandbox checkout order). Await user authorization in the dashboard.
+  4. If the hotel rate exceeds your delegated budget, call `request_budget_increase` to request a top-up from the orchestrator.
+  5. Return a structured fulfillment summary confirming the reservation details, payment intent, and human approval status."""
+
+FOOD_SPECIALIST_PROMPT = """You are the Food & Dining Specialist.
+Your domain is culinary venues, restaurant reservations, regional cuisine discovery, and meal catering.
+You operate autonomously under your delegated child mandate.
+
+Key Responsibilities:
+- When planning dining, provide curated restaurant options and estimated costs.
+- When instructed to order food or pay for a dining reservation:
+  1. Check available delegated funds using `get_delegated_balance`.
+  2. Call `request_payment` for the restaurant or dining merchant.
+  3. If the dining cost exceeds your allocation, use `request_budget_increase`.
+  4. Return the reservation or order confirmation with payment status."""
+
 
 # ---------------------------------------------------------------------------
 # B. Dynamic Policy Context Template (Exact Specification)
@@ -700,23 +774,26 @@ class ContextCompiler:
 
         # 2. APPROVAL
         approval_patterns = [
-            r"^\s*(?:okay\s+)?delegate\s*$",
-            r"\b(?:okay\s+)?delegate\s+(?:the\s+)?budget\b",
+            r"\b(?:okay\s+)?delegate(?:\s+(?:the\s+)?budget)?\b",
             r"^\s*proceed\s*$",
-            r"^\s*confirm\s*$",
-            r"^\s*approve\s*$",
-            r"^\s*approved\s*$",
-            r"^\s*yes\s+(?:proceed|do it|go ahead|delegate)\s*$",
-            r"^\s*go\s+ahead\s*$",
-            r"^\s*do\s+it\s*$",
-            r"^\s*execute\s*$",
-            r"^\s*buy\s+it\s*$",
-            r"\bapprove\s+(?:the\s+)?(?:budget|proposal|delegation)\b",
+            r"\bconfirm(?:\s+(?:the\s+)?(?:plan|proposal|these|this|budget|delegation))?\b",
+            r"\bapproved?\b",
+            r"\b(?:yes\s+)?(?:proceed|do\s+it|go\s+ahead|delegate)\b",
+            r"\bgo\s+ahead\b",
+            r"\bdo\s+it\b",
+            r"\bexecute(?:\s+(?:the\s+)?(?:plan|payment|proposal|delegation))?\b",
+            r"\bbuy\s+it\b",
+            r"\bapprove\s+(?:the\s+)?(?:budget|proposal|delegation|plan)\b",
             r"\bauthorized?\b",
+            r"\blooks\s+good\b",
+            r"\b(?:make|complete|process|proceed\s+with|execute|do)\s+(?:the\s+)?(?:payment|payments|purchase|transaction)\b",
+            r"\b(?:go\s+and\s+)?make\s+(?:the\s+)?payment\b",
+            r"\bpay\s+(?:for\s+)?(?:these|them|this|it|all)\b",
+            r"\b(?:these|this)\s+(?:are|is)\s+(?:the\s+)?plan\b",
         ]
         is_action_request = any(
             w in msg_lower
-            for w in ("buy the", "buy a", "buy me", "purchase", "ticket", "chai", "search products", "like biscuit")
+            for w in ("buy ", "buy the", "buy a", "buy me", "search products", "like biscuit", "order ", "book a ", "reserve a ")
         )
         has_pending = bool(
             (active_tasks and any(
@@ -726,7 +803,19 @@ class ContextCompiler:
             ))
             or (messages and any(
                 isinstance(m, dict) and m.get("role") in ("assistant", "agent")
-                and any(w in str(m.get("content") or "").lower() for w in ("proposed budget allocation", "please approve or reject", "pending human sign-off", "pending human authorization", "coordinated plan", "quoted"))
+                and any(w in str(m.get("content") or "").lower() for w in (
+                    "budget allocation proposal",
+                    "proposed budget allocation",
+                    "proposed specialist delegations",
+                    "human authorization required",
+                    "please approve or reject",
+                    "pending human sign-off",
+                    "pending human authorization",
+                    "coordinated plan",
+                    "quoted",
+                    "cryptographic child mandates",
+                    "available mandate reserve",
+                ))
                 for m in messages[-2:]
             ))
         )
@@ -836,6 +925,17 @@ class ContextCompiler:
         ) or any(w in msg_lower for w in ("tell me more", "how did you", "can you tell"))
         if is_question and not any(w in msg_lower for w in ("buy", "book", "delegate", "proceed", "execute")):
             return "INFORMATION_QUERY", "User is asking a question or seeking explanation in an ongoing conversation."
+
+        # Check for explicit payment execution intent in multi-turn conversation or direct purchase order
+        payment_order_phrases = (
+            "buy ", "book ", "pay ", "order ", "purchase ", "reserve ", "checkout",
+            "make payment", "make the payment", "spend the money", "spend this money",
+        )
+        has_payment_action = any(p in msg_lower for p in payment_order_phrases) or any(
+            w in words for w in ("buy", "book", "pay", "purchase", "order", "checkout")
+        )
+        if has_payment_action and not is_question:
+            return "PAYMENT_EXECUTION_INTENT", "User orders purchase, booking, or payment for an item or service."
 
         # If user is in multi-turn conversation and providing details
         if messages and len(messages) > 1:
@@ -1040,6 +1140,14 @@ class ContextCompiler:
                 "  Verify that an active pending proposal exists. Delegate child mandates strictly\n"
                 "  according to approved allocations through the backend Gateway."
             )
+        elif intent == "PAYMENT_EXECUTION_INTENT":
+            retrieved_task_policies = (
+                "- [POL-SUBAGENT-PAYMENT-EXECUTION-09] Category: payment | Priority: mandatory | Version: 1.0\n"
+                "  Payment execution belongs strictly to the subagent. When the user orders to book, buy,\n"
+                "  pay, purchase, or order, identify the appropriate specialist subagent from context\n"
+                "  and task that subagent to execute the payment via MCP tools under its child mandate.\n"
+                "  The main agent must never execute payments directly or bypass the subagent."
+            )
         elif intent == "CONTINUATION":
             retrieved_task_policies = (
                 "- [POL-CONTINUATION-RESUME-06] Category: state | Priority: high | Version: 1.0\n"
@@ -1099,18 +1207,71 @@ class ContextCompiler:
         relevant_execution_context = "\n".join(exec_lines)
 
         # Pending Proposal State Check
+        # 1. Authoritative check: inspect live approvals in Gateway
+        live_approvals: list[dict[str, Any]] = []
+        if self.gateway_client and environment_id:
+            try:
+                live_approvals = self.gateway_client.list_approvals(environment_id)
+            except Exception as e_appr:
+                logger.debug("Could not inspect live approvals: %s", e_appr)
+
+        pending_live = [a for a in live_approvals if a.get("status") == "pending"]
+        rejected_live = [a for a in live_approvals if a.get("status") in ("rejected", "denied")]
+
         pending_tasks = [
             t for t in (active_tasks or [])
             if t.get("status") in ("authorization_pending", "quote_received", "budget_planning")
             or t.get("phase") in ("authorization_pending", "budget_planning")
         ]
-        if pending_tasks:
+
+        if pending_live:
+            total_pending = sum(a.get("amountMinor") or a.get("amount_minor") or 0 for a in pending_live)
+            approval_ids = ", ".join([str(a.get("id") or a.get("approvalId")) for a in pending_live])
+            pending_proposal_state = (
+                f"- Status: PENDING_HUMAN_AUTHORIZATION\n"
+                f"- Active Approvals in Gateway: {len(pending_live)} (IDs: {approval_ids})\n"
+                f"- Total Proposed: {_format_currency(total_pending, cur)}\n"
+                f"- Authority Guard: Cryptographic child mandates NOT issued yet. Human approval required via UI."
+            )
+        elif rejected_live:
+            pending_proposal_state = (
+                "- Status: NONE (All previous proposals were REJECTED / DENIED by the user in the dashboard).\n"
+                "- Live Approval Status: There are NO active pending proposals in the Gateway.\n"
+                "- Authoritative Rule: The user previously denied/rejected earlier proposals. Do NOT claim that an active plan or pending proposal exists. Treat previous proposals as cancelled."
+            )
+        elif pending_tasks:
             total_pending = sum(t.get("amount_minor", 0) for t in pending_tasks)
             agents_list = ", ".join([t.get("agent", "specialist") for t in pending_tasks])
             pending_proposal_state = (
                 f"- Status: PENDING_HUMAN_AUTHORIZATION\n"
                 f"- Proposed Specialists: {agents_list}\n"
                 f"- Total Proposed: {_format_currency(total_pending, cur)}\n"
+                f"- Authority Guard: Cryptographic child mandates NOT issued yet. Human approval required via UI."
+            )
+        elif not live_approvals and messages and any(
+            isinstance(m, dict) and m.get("role") in ("assistant", "agent")
+            and any(w in str(m.get("content") or "").lower() for w in (
+                "budget allocation proposal",
+                "proposed budget allocation",
+                "proposed specialist delegations",
+                "human authorization required",
+                "please approve or reject",
+                "pending human sign-off",
+                "pending human authorization",
+                "cryptographic child mandates",
+            ))
+            for m in messages[-2:]
+        ) and not any(
+            isinstance(m, dict) and m.get("role") in ("user", "human")
+            and any(w in str(m.get("content") or "").lower() for w in ("reject", "deny", "cancel", "decline"))
+            for m in messages[-2:]
+        ):
+            last_asst = next((m for m in reversed(messages) if isinstance(m, dict) and m.get("role") in ("assistant", "agent")), None)
+            asst_text = str(last_asst.get("content") or "") if last_asst else ""
+            pending_proposal_state = (
+                f"- Status: PENDING_HUMAN_AUTHORIZATION\n"
+                f"- Proposal Context: Active proposal formulated in conversation history awaiting authorization.\n"
+                f"- Details: {asst_text[:200]}\n"
                 f"- Authority Guard: Cryptographic child mandates NOT issued yet. Human approval required via UI."
             )
         else:

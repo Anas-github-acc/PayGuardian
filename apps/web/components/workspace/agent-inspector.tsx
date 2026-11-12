@@ -1,15 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { ShieldCheck, Wallet, Clock } from "lucide-react";
+import { ShieldCheck, Wallet, Clock, Tag } from "lucide-react";
 import { formatMinorUnits, calculateAvailableMinor } from "../../app/lib/currency";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
+import type { AgentNodeData } from "../../app/lib/workspace-store";
+import type { AgentDto, MandateDto, LedgerAccountDto } from "@payguardian/contracts";
 
 export interface AgentInspectorProps {
   className?: string;
   selectedNodeId?: string | null;
   onRevoke?: (nodeId: string) => void;
   onViewTrace?: (traceId?: string) => void;
+  nodes?: AgentNodeData[];
+  agents?: AgentDto[];
+  mandates?: MandateDto[];
+  ledgerAccounts?: LedgerAccountDto[];
+  currency?: string;
 }
 
 export function AgentInspector({
@@ -17,27 +24,85 @@ export function AgentInspector({
   selectedNodeId,
   onRevoke,
   onViewTrace: _onViewTrace,
+  nodes: propNodes,
+  agents,
+  mandates,
+  ledgerAccounts,
+  currency: propCurrency,
 }: AgentInspectorProps) {
   const store = useWorkspaceStore();
   const env = store.currentEnvironment;
-  const currency = env?.currency ?? "USD";
+  const effectiveNodes = propNodes ?? store.graphNodes;
 
   const activeId = selectedNodeId ?? store.selectedNodeId ?? "orchestrator-root";
   const [showConfirmRevoke, setShowConfirmRevoke] = React.useState(false);
 
   // Find node data
-  const node = store.graphNodes.find((n) => n.id === activeId);
+  const node = effectiveNodes.find((n) => n.id === activeId);
+  const agent = agents?.find((a) => a.id === activeId);
+
+  // Prefer active mandate first, then highest version
+  const mandate = React.useMemo(() => {
+    if (!mandates) return undefined;
+    const agentMandates = mandates.filter((m) => m.holderAgentId === activeId);
+    if (agentMandates.length === 0) return undefined;
+    const sorted = [...agentMandates].sort((a, b) => {
+      if (a.state === "active" && b.state !== "active") return -1;
+      if (b.state === "active" && a.state !== "active") return 1;
+      return (b.version ?? 0) - (a.version ?? 0);
+    });
+    return sorted[0];
+  }, [mandates, activeId]);
+
+  const account = React.useMemo(() => {
+    if (!mandate || !ledgerAccounts) return undefined;
+    return ledgerAccounts.find((a) => a.mandateId === mandate.id);
+  }, [mandate, ledgerAccounts]);
+
+  const currency = propCurrency ?? mandate?.currency ?? env?.currency ?? "USD";
 
   const nodeName =
-    node?.name ?? (activeId ? `Agent (${activeId.slice(0, 8)})` : "Selected Agent");
+    node?.name ?? agent?.name ?? (activeId ? `Agent (${activeId.slice(0, 8)})` : "Selected Agent");
 
   const isRoot = node?.role === "orchestrator" || activeId === "orchestrator-root";
-  const isUnfunded = node?.status === "unfunded" || !node?.isFunded;
+  const isUnfunded = node?.status === "unfunded" || (node?.allocatedMinor === 0 && !node?.isFunded);
 
-  const allocatedMinor = node?.allocatedMinor ?? (isRoot ? env?.budgetLimitMinor ?? 0 : 0);
-  const spentMinor = node?.spentMinor ?? (isRoot ? env?.spentMinor ?? 0 : 0);
-  const reservedMinor = node?.reservedMinor ?? (isRoot ? env?.reservedMinor ?? 0 : 0);
-  const availableMinor = calculateAvailableMinor(allocatedMinor, spentMinor, reservedMinor);
+  const allocatedMinor =
+    node?.allocatedMinor ?? mandate?.budgetLimitMinor ?? (isRoot ? env?.budgetLimitMinor ?? 0 : 0);
+  const spentMinor =
+    account?.capturedMinor ?? node?.spentMinor ?? mandate?.spentMinor ?? (isRoot ? env?.spentMinor ?? 0 : 0);
+  const reservedMinor =
+    account?.reservedMinor ?? node?.reservedMinor ?? mandate?.reservedMinor ?? (isRoot ? env?.reservedMinor ?? 0 : 0);
+  const subDelegatedMinor = node?.subDelegatedMinor ?? mandate?.allocatedMinor ?? 0;
+
+  const availableMinor =
+    node?.availableMinor !== undefined
+      ? node.availableMinor
+      : calculateAvailableMinor(allocatedMinor, spentMinor + subDelegatedMinor, reservedMinor);
+
+  // Formatted Expiry Date
+  const expiresAtStr = mandate?.expiresAt ?? env?.expiresAt;
+  const formattedExpiry = React.useMemo(() => {
+    if (!expiresAtStr) return "Dec 31, 2026";
+    try {
+      const d = new Date(expiresAtStr);
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return "Dec 31, 2026";
+    }
+  }, [expiresAtStr]);
+
+  // Capabilities / Permitted Actions
+  const capabilitiesList = React.useMemo<string[]>(() => {
+    const rawCaps = (agent as unknown as { capabilities?: string[] })?.capabilities;
+    if (rawCaps && rawCaps.length > 0) {
+      return rawCaps;
+    }
+    if (mandate?.permittedActions && mandate.permittedActions.length > 0) {
+      return mandate.permittedActions;
+    }
+    return isRoot ? ["* (All actions)"] : ["General specialist actions"];
+  }, [agent, mandate, isRoot]);
 
   const handleRevokeClick = () => {
     if (!showConfirmRevoke) {
@@ -64,7 +129,11 @@ export function AgentInspector({
           </p>
         </div>
         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-          {isUnfunded ? (
+          {node?.status === "revoked" ? (
+            <span className="rounded border border-red-900/60 bg-red-950/40 px-2 py-0.5 text-red-400">
+              revoked
+            </span>
+          ) : isUnfunded ? (
             <span className="rounded border border-orange-900/60 bg-orange-950/40 px-2 py-0.5 text-orange-400">
               unfunded
             </span>
@@ -76,9 +145,9 @@ export function AgentInspector({
         </div>
       </div>
 
-      {/* Inspector Accordion / Sections matching the exact screenshot */}
+      {/* Inspector Sections */}
       <div className="mt-4 flex-1 space-y-3">
-        {/* 1. Permissions */}
+        {/* 1. Permissions & Capabilities */}
         <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3.5 transition-colors hover:border-zinc-700">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="h-4 w-4 text-zinc-400" />
@@ -87,15 +156,41 @@ export function AgentInspector({
           <div className="mt-2.5 space-y-1.5 text-xs text-zinc-400 pl-6.5">
             <div className="flex items-center justify-between">
               <span>Payment rail:</span>
-              <span className="font-mono text-zinc-300">PayPal Sandbox</span>
+              <span className="font-mono text-zinc-300">
+                {env?.allowedRails?.join(", ") || "PayPal Sandbox"}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Delegation depth:</span>
-              <span className="font-mono text-zinc-300">Max depth ≤ 2</span>
+              <span className="font-mono text-zinc-300">
+                {mandate
+                  ? mandate.canDelegate
+                    ? `Max depth ≤ ${mandate.maxDelegationDepth}`
+                    : "Leaf agent (depth 0)"
+                  : `Max depth ≤ ${env?.maxDelegationDepth ?? 2}`}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Cryptographic sign-off:</span>
-              <span className="text-blue-400">Mandate verified</span>
+              <span className="text-blue-400">
+                {mandate ? `Mandate v${mandate.version ?? 1} signed (${mandate.state})` : "Verified Mandate"}
+              </span>
+            </div>
+            <div className="pt-1.5 border-t border-zinc-800/60">
+              <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-zinc-400">
+                <Tag className="h-3 w-3 text-zinc-500" />
+                <span>Capabilities & Actions:</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {capabilitiesList.map((cap) => (
+                  <span
+                    key={cap}
+                    className="inline-block rounded bg-zinc-800/80 px-2 py-0.5 text-[10px] font-mono text-zinc-300 border border-zinc-700/50"
+                  >
+                    {cap}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -113,10 +208,24 @@ export function AgentInspector({
                 {formatMinorUnits(allocatedMinor, currency)}
               </span>
             </div>
+            {subDelegatedMinor > 0 && (
+              <div className="flex items-center justify-between text-zinc-400">
+                <span>Sub-delegated to children:</span>
+                <span className="font-medium text-zinc-300 tabular-nums">
+                  {formatMinorUnits(subDelegatedMinor, currency)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span>Autonomous threshold:</span>
               <span className="font-medium text-zinc-300 tabular-nums">
-                $500.00 / txn
+                {formatMinorUnits(env?.approvalThresholdMinor ?? 50000, currency)} / txn
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Spent:</span>
+              <span className="font-medium text-zinc-400 tabular-nums">
+                {formatMinorUnits(spentMinor, currency)}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -137,16 +246,26 @@ export function AgentInspector({
           <div className="mt-2.5 space-y-2 text-xs text-zinc-400 pl-6.5">
             <div className="flex items-center justify-between">
               <span>Valid through:</span>
-              <span className="font-mono text-zinc-300">Dec 31, 2026</span>
+              <span className="font-mono text-zinc-300">{formattedExpiry}</span>
             </div>
             <div className="flex items-center justify-between pt-1">
               <span>Kill-switch status:</span>
-              <span className="text-zinc-300">Armed & ready</span>
+              <span className="text-zinc-300">
+                {node?.status === "revoked" ? "Revoked" : "Armed & ready"}
+              </span>
             </div>
 
-            {/* Red Revocation Action */}
+            {/* Revocation Action */}
             <div className="pt-2">
-              {showConfirmRevoke ? (
+              {isRoot ? (
+                <div className="text-[11px] text-zinc-400 italic">
+                  Root orchestrator cannot be revoked directly. Manage environment in Settings.
+                </div>
+              ) : node?.status === "revoked" ? (
+                <div className="rounded-md border border-red-950 bg-red-950/20 px-3 py-1.5 text-xs text-red-400 font-medium">
+                  Authority has been revoked
+                </div>
+              ) : showConfirmRevoke ? (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"

@@ -189,3 +189,23 @@ export async function getCachedMessages(conversationId: string): Promise<CachedM
     return [];
   }
 }
+
+export async function isConversationCached(conversationId: string): Promise<boolean> {
+  if (!hasIndexedDB()) {
+    return memoryMessages.has(conversationId) && (memoryMessages.get(conversationId)?.length ?? 0) > 0;
+  }
+
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(MSG_STORE, "readonly");
+      const store = tx.objectStore(MSG_STORE);
+      const idx = store.index("conversationId");
+      const req = idx.count(conversationId);
+      req.onsuccess = () => resolve(req.result > 0);
+      req.onerror = () => resolve(false);
+    });
+  } catch {
+    return false;
+  }
+}

@@ -22,7 +22,7 @@ def build_phase_zero_agent() -> Any:
 
     return Agent(
         name="phase_zero_personal_agent",
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=os.getenv("DEFAULT_MODEL", "free/gpt-6-luna"),
         instruction=(
             "You are a Phase 0 demonstration agent. Do not execute tools, payments, "
             "delegations, or authority changes. Return planning-only responses."

@@ -24,6 +24,7 @@ export type Approval = {
 };
 
 export type CreateApprovalInput = {
+  id?: string;
   environmentId: string;
   mandateId: string;
   agentId: string;
@@ -60,7 +61,7 @@ export class InMemoryApprovalStore implements ApprovalStore {
 
     const now = new Date().toISOString();
     const approval: Approval = {
-      id: randomUUID(),
+      id: input.id ?? randomUUID(),
       environmentId: input.environmentId,
       mandateId: input.mandateId,
       agentId: input.agentId,

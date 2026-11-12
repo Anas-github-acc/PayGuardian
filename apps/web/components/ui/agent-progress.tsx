@@ -1,22 +1,18 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// Inlined from beui.dev's shared @/lib/ease motion tokens (only the constant this component uses).
-const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
-
 const GRID_CELLS = [
-  { id: "top-left", delay: 0, shade: "bg-white" },
-  { id: "top-center", delay: 0.14, shade: "bg-zinc-200" },
-  { id: "top-right", delay: 0.28, shade: "bg-zinc-400" },
-  { id: "middle-left", delay: 0.42, shade: "bg-zinc-200" },
-  { id: "middle-center", delay: 0.56, shade: "bg-zinc-400" },
-  { id: "middle-right", delay: 0.7, shade: "bg-zinc-600" },
-  { id: "bottom-left", delay: 0.84, shade: "bg-zinc-400" },
-  { id: "bottom-center", delay: 0.98, shade: "bg-zinc-600" },
-  { id: "bottom-right", delay: 1.12, shade: "bg-zinc-800" },
+  { id: "top-left", delay: 0, shade: "bg-[#D0785A]" },
+  { id: "top-center", delay: 0.14, shade: "bg-[#D0785A]/90" },
+  { id: "top-right", delay: 0.28, shade: "bg-[#D0785A]/75" },
+  { id: "middle-left", delay: 0.42, shade: "bg-[#D0785A]/90" },
+  { id: "middle-center", delay: 0.56, shade: "bg-[#D0785A]/75" },
+  { id: "middle-right", delay: 0.7, shade: "bg-[#D0785A]/60" },
+  { id: "bottom-left", delay: 0.84, shade: "bg-[#D0785A]/75" },
+  { id: "bottom-center", delay: 0.98, shade: "bg-[#D0785A]/60" },
+  { id: "bottom-right", delay: 1.12, shade: "bg-[#D0785A]/40" },
 ];
 
 export interface AgentProgressProps {
@@ -45,7 +41,6 @@ export function AgentProgress({
   running = true,
   className,
 }: AgentProgressProps) {
-  const reduce = useReducedMotion() ?? false;
   const [internalSeconds, setInternalSeconds] = useState(initialSeconds);
 
   useEffect(() => {
@@ -75,22 +70,11 @@ export function AgentProgress({
         className="grid size-4 shrink-0 grid-cols-3 gap-[2px]"
       >
         {GRID_CELLS.map(({ id, delay, shade }) => (
-          <motion.span
+          <span
             key={id}
-            className={cn("rounded-[1px]", shade)}
-            animate={
-              reduce
-                ? { opacity: [0.2, 0.9, 0.2] }
-                : {
-                    opacity: [0.2, 1, 0.2],
-                    scale: [0.8, 1, 0.8],
-                  }
-            }
-            transition={{
-              duration: 1.4,
-              ease: EASE_IN_OUT,
-              repeat: Infinity,
-              delay,
+            className={cn("rounded-[1px] inline-block animate-agent-grid", shade)}
+            style={{
+              animationDelay: `${delay}s`,
             }}
           />
         ))}

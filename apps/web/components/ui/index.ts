@@ -16,4 +16,10 @@ export * from "./agent-progress";
 export * from "./reasoning-thread";
 export * from "./background-inbox";
 export * from "./oauth-consent-card";
+export {
+  OAuthConsent,
+  OAuthConsentCard as OAuthConsentReactCard,
+  type OAuthConsentCardProps as OAuthConsentReactCardProps,
+} from "./oauth-consent-react";
+export * from "./payment-approval-overlay";
 

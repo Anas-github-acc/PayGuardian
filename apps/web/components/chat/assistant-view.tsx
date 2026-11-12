@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Brain,
@@ -27,14 +29,14 @@ import {
   Shield,
   BookOpen,
 } from "lucide-react";
-import { useWorkspaceStore } from "../../app/lib/workspace-store";
+import { cn } from "../../lib/utils";
+import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { useDashboardNavigation } from "../../app/lib/navigation";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet";
 import { AIComposer, type AIComposerSubmission } from "./ai-composer";
 import { SessionHistoryPanel } from "./session-history";
 import { useChat } from "./chat-context";
-import { AgentProgress } from "../ui/agent-progress";
 import {
   ReasoningThread,
   type ThreadMessage,
@@ -45,6 +47,7 @@ import {
   type BackgroundInboxItem,
 } from "../ui/background-inbox";
 import { OAuthConsentCard } from "../ui/oauth-consent-card";
+import { PaymentApprovalOverlay } from "../ui/payment-approval-overlay";
 import { useAdaptiveStream } from "../../lib/adaptive-stream";
 import {
   saveConversation,
@@ -88,6 +91,7 @@ interface PendingApprovalData {
   currency: string;
   mandateId: string;
   type?: string;
+  approvalUrl?: string;
   proposedAllocations?: ProposedAllocationItem[];
   rootBudgetMinor?: number;
 }
@@ -103,12 +107,28 @@ export function AssistantView({
   const currentEnvId = currentEnv?.id;
 
   // Persistent sidebar controls & conversation manager from ChatProvider
-  const { sidebarOpen, setSidebarOpen, upsertConversation, setMandateOverlayOpen } = useChat();
+  const {
+    sidebarOpen,
+    setSidebarOpen,
+    upsertConversation,
+    setMandateOverlayOpen,
+    conversations,
+    activeConversationId,
+    setActiveConversationId,
+    selectConversation,
+  } = useChat();
 
-  // Active conversation & runs
-  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(
-    conversationIdFromUrl && conversationIdFromUrl !== "new" ? conversationIdFromUrl : null
-  );
+  // Helper to validate standard UUID format
+  const isValidUuid = React.useCallback((id: unknown): id is string => {
+    return typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  }, []);
+
+  const loadedConvIdRef = React.useRef<string | null>(null);
+  const conversationsRef = React.useRef(conversations);
+  React.useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
   const [activeRunId, setActiveRunId] = React.useState<string | null>(null);
 
   // Thread messages for ReasoningThread
@@ -122,6 +142,7 @@ export function AssistantView({
 
   // Pending user approval state
   const [pendingApproval, setPendingApproval] = React.useState<PendingApprovalData | null>(null);
+  const [isProposalMinimized, setIsProposalMinimized] = React.useState(false);
 
   // Context window modal
   const [contextWindowOpen, setContextWindowOpen] = React.useState(false);
@@ -186,10 +207,27 @@ export function AssistantView({
   const loadConversation = React.useCallback(
     async (convId: string) => {
       activeFetchIdRef.current = convId;
-      setActiveConversationId(convId);
+      loadedConvIdRef.current = convId;
       setSubagents([]);
       setSelectedSubagentId(null);
-      setPendingApproval(null);
+
+      // Restore persisted pending proposal for this conversation if any
+      try {
+        const stored = typeof window !== "undefined" ? localStorage.getItem(`pg_pending_approval_${convId}`) : null;
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.type === "budget_proposal" || parsed.proposedAllocations)) {
+            setPendingApproval(parsed);
+          } else {
+            setPendingApproval(null);
+          }
+        } else {
+          setPendingApproval(null);
+        }
+      } catch {
+        setPendingApproval(null);
+      }
+      setIsProposalMinimized(false);
 
       // 1. Instant load from IndexedDB
       try {
@@ -213,10 +251,34 @@ export function AssistantView({
       }
 
       // 2. Fetch fresh messages from API
-      if (currentEnvId) {
+      const matchedConv = conversationsRef.current.find((c) => c.id === convId);
+      let targetEnvId =
+        (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
+        (isValidUuid(currentEnvId) ? currentEnvId : null) ||
+        store.environmentsList.find((e) => isValidUuid(e.id))?.id;
+
+      if (!targetEnvId) {
+        try {
+          const envRes = await fetch(`${API_BASE}/v1/environments`, {
+            headers: { "x-local-user-id": "local-user" },
+          });
+          if (envRes.ok) {
+            const envData = await envRes.json();
+            const found = (envData.environments || []).find((e: any) => isValidUuid(e.id));
+            if (found && typeof found.id === "string") {
+              targetEnvId = found.id;
+              workspaceStore.switchEnvironment(found.id);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (targetEnvId) {
         try {
           const res = await fetch(
-            `${API_BASE}/v1/environments/${currentEnvId}/conversations/${convId}/messages`,
+            `${API_BASE}/v1/environments/${targetEnvId}/conversations/${convId}/messages`,
             {
               headers: { "x-local-user-id": "local-user" },
             },
@@ -256,29 +318,111 @@ export function AssistantView({
         }
       }
     },
-    [currentEnvId],
+    [currentEnvId, isValidUuid, store, scrollToBottom],
   );
 
-  // Single source of truth: load conversation strictly based on route URL parameter
+  // Initial alignment on mount with conversationIdFromUrl or activeConversationId
   React.useEffect(() => {
-    isNearBottomRef.current = true;
-    if (!conversationIdFromUrl || conversationIdFromUrl === "new") {
-      activeFetchIdRef.current = null;
-      setActiveConversationId(null);
-      setThreadMessages([]);
-      setSubagents([]);
-      setSelectedSubagentId(null);
-      setPendingApproval(null);
+    const targetId =
+      conversationIdFromUrl && conversationIdFromUrl !== "new"
+        ? conversationIdFromUrl
+        : activeConversationId && activeConversationId !== "new"
+          ? activeConversationId
+          : null;
+
+    if (targetId) {
+      if (loadedConvIdRef.current !== targetId) {
+        loadedConvIdRef.current = targetId;
+        setActiveConversationId(targetId);
+        loadConversation(targetId);
+      }
+    } else {
+      if (loadedConvIdRef.current !== null) {
+        loadedConvIdRef.current = null;
+        activeFetchIdRef.current = null;
+        setThreadMessages([]);
+        setSubagents([]);
+        setSelectedSubagentId(null);
+        setPendingApproval(null);
+        setIsProposalMinimized(false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // In-place navigation when activeConversationId changes without page reloads
+  React.useEffect(() => {
+    if (!activeConversationId || activeConversationId === "new") {
+      if (loadedConvIdRef.current !== null) {
+        loadedConvIdRef.current = null;
+        activeFetchIdRef.current = null;
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+        }
+        setIsStreaming(false);
+        setThreadMessages([]);
+        setSubagents([]);
+        setSelectedSubagentId(null);
+        setPendingApproval(null);
+        setIsProposalMinimized(false);
+      }
       return;
     }
 
-    loadConversation(conversationIdFromUrl);
-  }, [conversationIdFromUrl, loadConversation]);
+    if (loadedConvIdRef.current === activeConversationId) {
+      return;
+    }
+
+    loadedConvIdRef.current = activeConversationId;
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+    setIsStreaming(false);
+    loadConversation(activeConversationId);
+  }, [activeConversationId, loadConversation]);
+
+  // Handle custom conversation-selected event (e.g. from sidebar clicks or history)
+  React.useEffect(() => {
+    const handleSelected = (e: Event) => {
+      const customEvent = e as CustomEvent<{ conversationId: string | null }>;
+      const targetId = customEvent.detail?.conversationId;
+      if (!targetId || targetId === "new") {
+        if (loadedConvIdRef.current !== null) {
+          loadedConvIdRef.current = null;
+          activeFetchIdRef.current = null;
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+          }
+          setIsStreaming(false);
+          setThreadMessages([]);
+          setSubagents([]);
+          setSelectedSubagentId(null);
+          setPendingApproval(null);
+          setIsProposalMinimized(false);
+        }
+      } else if (targetId !== loadedConvIdRef.current) {
+        loadedConvIdRef.current = targetId;
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+        }
+        setIsStreaming(false);
+        loadConversation(targetId);
+      }
+    };
+
+    window.addEventListener("payguardian:conversation-selected", handleSelected);
+    return () => window.removeEventListener("payguardian:conversation-selected", handleSelected);
+  }, [loadConversation]);
 
   // SSE Stream Connection with automatic reconnect & Last-Event-ID recovery
   const connectSSE = React.useCallback(
-    (runId: string) => {
-      if (!currentEnvId) return;
+    (runId: string, envId?: string) => {
+      const targetEnv =
+        (envId && isValidUuid(envId) ? envId : null) ||
+        (isValidUuid(currentEnvId) ? currentEnvId : null) ||
+        store.environmentsList.find((e) => isValidUuid(e.id))?.id;
+
+      if (!targetEnv) return;
 
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -286,7 +430,7 @@ export function AssistantView({
 
       const tokenParam = "local-user";
       const lastIdParam = lastEventIdRef.current ? `&lastEventId=${lastEventIdRef.current}` : "";
-      const streamUrl = `${API_BASE}/v1/environments/${currentEnvId}/runs/${runId}/stream?localUserId=${encodeURIComponent(
+      const streamUrl = `${API_BASE}/v1/environments/${targetEnv}/runs/${runId}/stream?localUserId=${encodeURIComponent(
         tokenParam,
       )}&token=${encodeURIComponent(tokenParam)}${lastIdParam}`;
 
@@ -478,8 +622,9 @@ export function AssistantView({
         break;
       }
 
-      case "approval.requested":
-        setPendingApproval({
+      case "approval.requested": {
+        setIsProposalMinimized(false);
+        const apprData: PendingApprovalData = {
           id: payload.approvalId || `appr-${Date.now()}`,
           clientName: payload.agentId ? `${payload.agentId} Agent` : "Specialist Agent",
           productName: "PayGuardian Gateway",
@@ -490,8 +635,18 @@ export function AssistantView({
           type: payload.type || (payload.proposedAllocations ? "budget_proposal" : "action_approval"),
           proposedAllocations: payload.proposedAllocations,
           rootBudgetMinor: payload.rootBudgetMinor || currentEnv?.budgetLimitMinor,
-        });
+        };
+        setPendingApproval(apprData);
+        const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+        if (typeof window !== "undefined" && targetId) {
+          try {
+            localStorage.setItem(`pg_pending_approval_${targetId}`, JSON.stringify(apprData));
+          } catch {
+            // ignore
+          }
+        }
         break;
+      }
 
       case "agent.output": {
         setCurrentProgressLabel("Thinking… Synthesizing coordinated response");
@@ -581,15 +736,16 @@ export function AssistantView({
               ? { ...m, text: finalTxt ? finalTxt : m.text, streaming: false }
               : m,
           );
-          if (activeConversationId) {
+          const currentTargetId = loadedConvIdRef.current || activeConversationId;
+          if (currentTargetId) {
             const toCache: CachedMessage[] = updated.map((m) => ({
               id: m.id,
-              conversationId: activeConversationId,
+              conversationId: currentTargetId,
               senderType: m.role === "user" ? "user" : "assistant",
               content: m.text,
               createdAt: new Date().toISOString(),
             }));
-            saveMessages(activeConversationId, toCache).catch(() => {});
+            saveMessages(currentTargetId, toCache).catch(() => {});
           }
           return updated;
         });
@@ -612,11 +768,38 @@ export function AssistantView({
   // Send message handler with model and mode parameters
   const handleSendMessage = async (submission: AIComposerSubmission) => {
     const text = submission.prompt.trim();
-    if (!text || isStreaming || !currentEnvId) return;
+    if (!text || isStreaming) return;
 
     if (submission.modelId) {
       setActiveModelId(submission.modelId);
     }
+
+    // Determine target environment ID
+    const matchedConv = activeConversationId ? conversations.find((c) => c.id === activeConversationId) : null;
+    let effectiveEnvId =
+      (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
+      (isValidUuid(currentEnvId) ? currentEnvId : null) ||
+      store.environmentsList.find((e) => isValidUuid(e.id))?.id;
+
+    if (!effectiveEnvId) {
+      try {
+        const envRes = await fetch(`${API_BASE}/v1/environments`, {
+          headers: { "x-local-user-id": "local-user" },
+        });
+        if (envRes.ok) {
+          const envData = await envRes.json();
+          const found = (envData.environments || []).find((e: any) => isValidUuid(e.id));
+          if (found && typeof found.id === "string") {
+            effectiveEnvId = found.id;
+            workspaceStore.switchEnvironment(found.id);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!effectiveEnvId) return;
 
     // 1. Append user message to thread immediately
     const userMsgId = `usr-${Date.now()}`;
@@ -632,7 +815,13 @@ export function AssistantView({
     requestAnimationFrame(() => scrollToBottom("smooth"));
     setCurrentProgressLabel("Thinking… Initializing Personal Agent");
     setSubagents([]);
-    setPendingApproval(null);
+    if (pendingApproval) {
+      if (pendingApproval.type === "budget_proposal") {
+        setIsProposalMinimized(true);
+      } else {
+        setPendingApproval(null);
+      }
+    }
 
     // Placeholder assistant message with streaming state
     const assistantMsgId = `asst-${Date.now()}`;
@@ -650,7 +839,7 @@ export function AssistantView({
       // Create conversation if none active
       let convId = activeConversationId;
       if (!convId) {
-        const createConvRes = await fetch(`${API_BASE}/v1/environments/${currentEnvId}/conversations`, {
+        const createConvRes = await fetch(`${API_BASE}/v1/environments/${effectiveEnvId}/conversations`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -665,13 +854,22 @@ export function AssistantView({
         if (createConvRes.ok) {
           const convData = await createConvRes.json();
           convId = convData.conversation.id;
+          loadedConvIdRef.current = convId;
+          activeFetchIdRef.current = convId;
           setActiveConversationId(convId);
           if (typeof window !== "undefined") {
             window.history.replaceState(null, "", `/chat/${convId}`);
+            if (pendingApproval) {
+              try {
+                localStorage.setItem(`pg_pending_approval_${convId}`, JSON.stringify(pendingApproval));
+              } catch {
+                // ignore
+              }
+            }
           }
           await upsertConversation({
             id: convId!,
-            environmentId: currentEnvId,
+            environmentId: effectiveEnvId,
             title: convData.conversation.title || text.slice(0, 30),
             updatedAt: new Date().toISOString(),
           });
@@ -683,7 +881,7 @@ export function AssistantView({
 
       // Submit user message with model & mode metadata to gateway
       const msgRes = await fetch(
-        `${API_BASE}/v1/environments/${currentEnvId}/conversations/${convId}/messages`,
+        `${API_BASE}/v1/environments/${effectiveEnvId}/conversations/${convId}/messages`,
         {
           method: "POST",
           headers: {
@@ -705,7 +903,7 @@ export function AssistantView({
         const result = await msgRes.json();
         setActiveRunId(result.runId);
         lastEventIdRef.current = null;
-        connectSSE(result.runId);
+        connectSSE(result.runId, effectiveEnvId);
       } else {
         const errData = await msgRes.json().catch(() => ({}));
         throw new Error(errData.message || "Failed to submit message to gateway");
@@ -721,6 +919,143 @@ export function AssistantView({
       );
     }
   };
+
+  // Proposal authorization handlers (shared across expanded and minimized views)
+  const handleApproveProposal = React.useCallback(async () => {
+    if (!pendingApproval) {
+      return { ok: false, message: "No active approval proposal." };
+    }
+    const matchedConv = activeConversationId ? conversations.find((c) => c.id === activeConversationId) : null;
+    const targetEnvId =
+      (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
+      (isValidUuid(currentEnvId) ? currentEnvId : null) ||
+      store.environmentsList.find((e) => isValidUuid(e.id))?.id;
+
+    if (!targetEnvId) {
+      return { ok: false, message: "No active environment selected." };
+    }
+    const approvalId = pendingApproval.id;
+    try {
+      const res = await fetch(
+        `${API_BASE}/v1/environments/${targetEnvId}/approvals/${approvalId}/approve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-local-user-id": "local-user",
+          },
+          body: JSON.stringify({
+            mandateId: pendingApproval.mandateId,
+            currency: pendingApproval.currency,
+            proposedAllocations: pendingApproval.proposedAllocations,
+          }),
+        },
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const reason = errData.message || errData.code || `Gateway error HTTP ${res.status}`;
+        return { ok: false, message: `Authority check failed: ${reason}` };
+      }
+
+      const data = await res.json();
+      if (data.status === "FAILED") {
+        const reason = data.failures?.[0]?.reason || "Authority rejected delegation for requested agents.";
+        return { ok: false, message: `Delegation rejected: ${reason}` };
+      }
+
+      // Success confirmed by Gateway
+      setPendingApproval(null);
+      setIsProposalMinimized(false);
+      const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+      if (typeof window !== "undefined" && targetId) {
+        try {
+          localStorage.removeItem(`pg_pending_approval_${targetId}`);
+        } catch {}
+      }
+
+      const formatCur = (minor: number, cur: string) => {
+        const val = (minor / 100).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        if (cur === "INR") return `₹${val}`;
+        if (cur === "EUR") return `€${val}`;
+        if (cur === "GBP") return `£${val}`;
+        return `$${val}`;
+      };
+
+      const delegationsList = (data.delegations || [])
+        .map(
+          (d: any) =>
+            `- **${d.agent.toUpperCase()}**: ${formatCur(d.amountMinor, d.currency)} (Child Mandate \`${d.mandateId}\`${d.parentAgent ? ` under ${d.parentAgent}` : ""})`,
+        )
+        .join("\n");
+
+      const confirmedMsg =
+        `### 🛡️ Cryptographic Child Mandates Authorized\n\n` +
+        `The PayGuardian Gateway has verified root spending authority and issued ${data.delegations?.length || 0} child mandates in the ledger:\n\n` +
+        `${delegationsList}\n\n` +
+        `**Approval Status**: \`${data.status}\`\n` +
+        `**Total Delegated**: ${formatCur(data.totalDelegatedMinor, data.currency || pendingApproval.currency)}\n` +
+        `**Remaining Buffer**: ${formatCur(data.remainingReserveMinor, data.currency || pendingApproval.currency)}\n\n` +
+        `Specialists are now active with their respective spending envelopes.`;
+
+      const assistantMsg: ThreadMessage = {
+        id: `asst-auth-${Date.now()}`,
+        role: "assistant",
+        text: confirmedMsg,
+      };
+      setThreadMessages((prev) => [...prev, assistantMsg]);
+      return { ok: true, status: data.status };
+    } catch (err: any) {
+      return { ok: false, message: err?.message || "Network error while connecting to Gateway." };
+    }
+  }, [activeConversationId, conversationIdFromUrl, conversations, currentEnvId, isValidUuid, pendingApproval, store]);
+
+  const handleDenyProposal = React.useCallback(async () => {
+    if (!pendingApproval) return;
+    const approvalId = pendingApproval.id;
+    const matchedConv = activeConversationId ? conversations.find((c) => c.id === activeConversationId) : null;
+    const targetEnvId =
+      (matchedConv && isValidUuid(matchedConv.environmentId) ? matchedConv.environmentId : null) ||
+      (isValidUuid(currentEnvId) ? currentEnvId : null) ||
+      store.environmentsList.find((e) => isValidUuid(e.id))?.id;
+
+    if (targetEnvId && approvalId) {
+      try {
+        await fetch(
+          `${API_BASE}/v1/environments/${targetEnvId}/approvals/${approvalId}/reject`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-local-user-id": "local-user",
+            },
+            body: JSON.stringify({
+              reason: "User rejected proposed budget allocation in UI.",
+            }),
+          },
+        );
+      } catch {
+        // Best effort backend audit record
+      }
+    }
+    setPendingApproval(null);
+    setIsProposalMinimized(false);
+    const targetId = activeConversationId || (conversationIdFromUrl !== "new" ? conversationIdFromUrl : null);
+    if (typeof window !== "undefined" && targetId) {
+      try {
+        localStorage.removeItem(`pg_pending_approval_${targetId}`);
+      } catch {}
+    }
+    const deniedMsg: ThreadMessage = {
+      id: `asst-deny-${Date.now()}`,
+      role: "assistant",
+      text: "Understood. The proposed budget allocation has been rejected. No funds or cryptographic child mandates were issued.",
+    };
+    setThreadMessages((prev) => [...prev, deniedMsg]);
+  }, [activeConversationId, conversationIdFromUrl, conversations, currentEnvId, isValidUuid, pendingApproval, store]);
 
   const selectedSubagent = subagents.find((s) => s.id === selectedSubagentId);
 
@@ -777,158 +1112,107 @@ export function AssistantView({
         {/* Main chat layout with optional split-screen for subagent inspection */}
         <div className="relative flex flex-1 min-h-0 divide-x divide-zinc-900 overflow-hidden">
           {/* Left Side: Main Agent Chat Thread */}
-          <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-            {/* Only messages should scroll */}
-            <div
-              ref={messagesContainerRef}
-              onScroll={handleContainerScroll}
-              className="flex-1 min-h-0 overflow-y-auto"
-            >
-              <div className="mx-auto flex w-full max-w-3xl flex-col px-4 pt-6 pb-6 sm:px-6 space-y-6">
-              {threadMessages.length === 0 ? (
-                <div className="my-auto flex flex-col items-center justify-center py-16 text-center">
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-white shadow-sm">
-                    <Brain className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold tracking-tight text-white">Personal Agent Orchestrator</h2>
-                  <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-zinc-400">
-                    Plans and delegates tasks to Travel, Hotel, and Food subagents through the PayGuardian Gateway.
-                  </p>
-                </div>
-              ) : (
-                <ReasoningThread messages={threadMessages} className="w-full max-w-full" />
-              )}
-
-            {/* Pending Approval / Proposed Budget Allocation Component (Option A) */}
-            {pendingApproval && (
-              <div className="pt-2">
-                {pendingApproval.type === "budget_proposal" && pendingApproval.proposedAllocations && pendingApproval.proposedAllocations.length > 0 ? (
+          <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            {/* Minimized Proposal Floating Pill in Top Right of Chat Thread */}
+            <AnimatePresence>
+              {pendingApproval && isProposalMinimized && pendingApproval.type === "budget_proposal" && (
+                <div key="minimized-proposal-pill" className="absolute top-3 right-4 z-30 pointer-events-auto">
                   <ProposedBudgetCard
                     id={pendingApproval.id}
                     mandateId={pendingApproval.mandateId}
                     currency={pendingApproval.currency}
                     rootBudgetMinor={pendingApproval.rootBudgetMinor ?? currentEnv?.budgetLimitMinor ?? 1000000}
                     totalProposedMinor={pendingApproval.amountMinor}
-                    allocations={pendingApproval.proposedAllocations}
-                    onApprove={async () => {
-                      if (!currentEnvId) {
-                        return { ok: false, message: "No active environment selected." };
-                      }
-                      const approvalId = pendingApproval.id;
-                      try {
-                        const res = await fetch(
-                          `${API_BASE}/v1/environments/${currentEnvId}/approvals/${approvalId}/approve`,
-                          {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                              "x-local-user-id": "local-user",
-                            },
-                            body: JSON.stringify({
-                              mandateId: pendingApproval.mandateId,
-                              currency: pendingApproval.currency,
-                              proposedAllocations: pendingApproval.proposedAllocations,
-                            }),
-                          },
-                        );
-
-                        if (!res.ok) {
-                          const errData = await res.json().catch(() => ({}));
-                          const reason = errData.message || errData.code || `Gateway error HTTP ${res.status}`;
-                          return { ok: false, message: `Authority check failed: ${reason}` };
-                        }
-
-                        const data = await res.json();
-                        if (data.status === "FAILED") {
-                          const reason = data.failures?.[0]?.reason || "Authority rejected delegation for requested agents.";
-                          return { ok: false, message: `Delegation rejected: ${reason}` };
-                        }
-
-                        // Success confirmed by Gateway
-                        setPendingApproval(null);
-
-                        const formatCur = (minor: number, cur: string) => {
-                          const val = (minor / 100).toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          });
-                          if (cur === "INR") return `₹${val}`;
-                          if (cur === "EUR") return `€${val}`;
-                          if (cur === "GBP") return `£${val}`;
-                          return `$${val}`;
-                        };
-
-                        const delegationsList = (data.delegations || [])
-                          .map(
-                            (d: any) =>
-                              `- **${d.agent.toUpperCase()}**: ${formatCur(d.amountMinor, d.currency)} (Child Mandate \`${d.mandateId}\`${d.parentAgent ? ` under ${d.parentAgent}` : ""})`,
-                          )
-                          .join("\n");
-
-                        const confirmedMsg =
-                          `### 🛡️ Cryptographic Child Mandates Authorized\n\n` +
-                          `The PayGuardian Gateway has verified root spending authority and issued ${data.delegations?.length || 0} child mandates in the ledger:\n\n` +
-                          `${delegationsList}\n\n` +
-                          `**Approval Status**: \`${data.status}\`\n` +
-                          `**Total Delegated**: ${formatCur(data.totalDelegatedMinor, data.currency || pendingApproval.currency)}\n` +
-                          `**Remaining Buffer**: ${formatCur(data.remainingReserveMinor, data.currency || pendingApproval.currency)}\n\n` +
-                          `Specialists are now active with their respective spending envelopes.`;
-
-                        const assistantMsg: ThreadMessage = {
-                          id: `asst-auth-${Date.now()}`,
-                          role: "assistant",
-                          text: confirmedMsg,
-                        };
-                        setThreadMessages((prev) => [...prev, assistantMsg]);
-                        return { ok: true, status: data.status };
-                      } catch (err: any) {
-                        return { ok: false, message: err?.message || "Network error while connecting to Gateway." };
-                      }
-                    }}
-                    onDeny={async () => {
-                      const approvalId = pendingApproval.id;
-                      if (currentEnvId && approvalId) {
-                        try {
-                          await fetch(
-                            `${API_BASE}/v1/environments/${currentEnvId}/approvals/${approvalId}/reject`,
-                            {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                                "x-local-user-id": "local-user",
-                              },
-                              body: JSON.stringify({
-                                reason: "User rejected proposed budget allocation in UI.",
-                              }),
-                            },
-                          );
-                        } catch {
-                          // Best effort backend audit record
-                        }
-                      }
-                      setPendingApproval(null);
-                      const deniedMsg: ThreadMessage = {
-                        id: `asst-deny-${Date.now()}`,
-                        role: "assistant",
-                        text: "Understood. The proposed budget allocation has been rejected. No funds or cryptographic child mandates were issued.",
-                      };
-                      setThreadMessages((prev) => [...prev, deniedMsg]);
-                    }}
+                    allocations={pendingApproval.proposedAllocations || []}
+                    isMinimized={true}
+                    onToggleMinimize={() => setIsProposalMinimized(false)}
+                    onApprove={handleApproveProposal}
+                    onDeny={handleDenyProposal}
                   />
+                </div>
+              )}
+            </AnimatePresence>
+
+            {/* Only messages should scroll */}
+            <div
+              ref={messagesContainerRef}
+              onScroll={handleContainerScroll}
+              className="flex-1 min-h-0 overflow-y-auto"
+            >
+              <div
+                className={cn(
+                  "mx-auto flex w-full max-w-3xl flex-col px-4 pt-6 pb-6 sm:px-6",
+                  threadMessages.length === 0
+                    ? "flex-1 min-h-[calc(100vh-230px)] items-center justify-center"
+                    : "space-y-6"
+                )}
+              >
+              {threadMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center max-w-md my-auto py-8">
+                  <div className="mb-5 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900 shadow-xl shadow-black/50 ring-1 ring-[#D0785A]/20">
+                    <Image
+                      src="/payguardian.svg"
+                      alt="PayGuardian Logo"
+                      width={32}
+                      height={30}
+                      className="size-7 object-contain shrink-0"
+                      priority
+                    />
+                  </div>
+                  <h2 className="text-2xl sm:text-[28px] font-semibold tracking-[-0.02em] text-white">
+                    Delegate with total control
+                  </h2>
+                  <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-zinc-400">
+                    Plan tasks, consult models, and safely delegate spending to autonomous subagents under cryptographic budget mandates.
+                  </p>
+                </div>
+              ) : (
+                <ReasoningThread
+                  messages={threadMessages}
+                  isStreaming={isStreaming}
+                  progressLabel={currentProgressLabel}
+                  className="w-full max-w-full"
+                />
+              )}
+
+            {/* Pending Approval / Proposed Budget Allocation Component */}
+            {pendingApproval && (
+              <div className="pt-2">
+                {pendingApproval.type === "budget_proposal" && pendingApproval.proposedAllocations && pendingApproval.proposedAllocations.length > 0 ? (
+                  !isProposalMinimized && (
+                    <ProposedBudgetCard
+                      id={pendingApproval.id}
+                      mandateId={pendingApproval.mandateId}
+                      currency={pendingApproval.currency}
+                      rootBudgetMinor={pendingApproval.rootBudgetMinor ?? currentEnv?.budgetLimitMinor ?? 1000000}
+                      totalProposedMinor={pendingApproval.amountMinor}
+                      allocations={pendingApproval.proposedAllocations}
+                      isMinimized={false}
+                      onToggleMinimize={() => setIsProposalMinimized(true)}
+                      onApprove={handleApproveProposal}
+                      onDeny={handleDenyProposal}
+                    />
+                  )
                 ) : (
-                  <OAuthConsentCard
+                  <PaymentApprovalOverlay
+                    isOpen={true}
                     clientName={pendingApproval.clientName}
-                    productName={pendingApproval.productName}
+                    productName={pendingApproval.productName || "PayGuardian Gateway"}
                     action={pendingApproval.action}
                     amountMinor={pendingApproval.amountMinor}
                     currency={pendingApproval.currency}
                     mandateId={pendingApproval.mandateId}
-                    redirectUri="PayGuardian Ledger Authority"
+                    approvalUrl={pendingApproval.approvalUrl}
+                    redirectUri="PayGuardian Gateway (PayPal Sandbox)"
                     email="operator@payguardian.local"
                     onApprove={async () => {
+                      const appUrl = pendingApproval.approvalUrl;
                       setPendingApproval(null);
+                      if (appUrl) {
+                        window.open(appUrl, "_blank", "noopener,noreferrer");
+                      }
                       await handleSendMessage({
-                        prompt: "okay delegate",
+                        prompt: "I have authorized the payment via PayPal. Please proceed with confirmation.",
                         mode: "Delegate",
                         modelId: activeModelId,
                         modelName: "Default Model",
@@ -941,7 +1225,7 @@ export function AssistantView({
                     onDeny={async () => {
                       setPendingApproval(null);
                       await handleSendMessage({
-                        prompt: "I reject the proposed budget allocation. Do not proceed.",
+                        prompt: "I deny the payment request.",
                         mode: "Ask",
                         modelId: activeModelId,
                         modelName: "Default Model",
@@ -975,13 +1259,6 @@ export function AssistantView({
                 <div ref={messagesEndRef} />
               </div>
             </div>
-
-            {/* Single Transparent Responding Loader with AgentProgress (Directly above response box with no top/bottom margin) */}
-            {isStreaming && (
-              <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 my-0 py-0 flex items-center bg-transparent border-0 text-zinc-300">
-                <AgentProgress label={currentProgressLabel} />
-              </div>
-            )}
 
             {/* Composer always stays at the bottom */}
             <div className="shrink-0 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent px-4 pb-6 pt-2 sm:px-6">
@@ -1023,7 +1300,7 @@ export function AssistantView({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {selectedSubagent.status === "running" ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                      <Loader2 className="h-4 w-4 animate-spin text-[#D0785A]" />
                     ) : selectedSubagent.status === "ready" ? (
                       <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     ) : (
@@ -1081,7 +1358,11 @@ export function AssistantView({
         open={contextWindowOpen}
         onOpenChange={setContextWindowOpen}
         conversationId={activeConversationId}
-        environmentId={currentEnvId}
+        environmentId={
+          (activeConversationId && conversations.find((c) => c.id === activeConversationId)?.environmentId) ||
+          (isValidUuid(currentEnvId) ? currentEnvId : undefined) ||
+          store.environmentsList.find((e) => isValidUuid(e.id))?.id
+        }
         environmentCurrency={currentEnv?.currency ?? "INR"}
         environmentBudgetLimitMinor={currentEnv?.budgetLimitMinor ?? 1000000}
         activeModel={activeModelId}
