@@ -20,6 +20,7 @@ import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { DEFAULT_MCP_TOOLS } from "./types";
+import { getAuthHeaders } from "../../lib/api/client";
 
 export interface ConnectionTesterProps {
   initialEndpoint?: string;
@@ -60,7 +61,7 @@ export function ConnectionTester({
     try {
       const response = await fetch(`${API_BASE}/v1/environments`, {
         method: "GET",
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       }).catch(() => null);
 
       const elapsed = Math.max(8, Math.round(performance.now() - start));

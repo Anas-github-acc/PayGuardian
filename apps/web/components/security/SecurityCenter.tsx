@@ -4,6 +4,7 @@ import * as React from "react";
 import { Trash2 } from "lucide-react";
 import { formatMinorUnits } from "../../app/lib/currency";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
+import { getAuthHeaders } from "../../lib/api/client";
 import { EmergencyControls } from "./EmergencyControls";
 import { RevocationDialog } from "./RevocationDialog";
 import { SecurityEventLog } from "./SecurityEventLog";
@@ -71,13 +72,13 @@ export function SecurityCenter({
       if (mandateId === "man-root-9081") {
         await fetch(`${apiBaseUrl}/v1/environments/${activeEnvId}/revoke`, {
           method: "POST",
-          headers: { "x-local-user-id": "local-user" },
+          headers: getAuthHeaders(),
         }).catch(() => null);
         workspaceStore.updateEnvironment(activeEnvId, { status: "revoked" });
       } else {
         await fetch(`${apiBaseUrl}/v1/mandates/${mandateId}/revocations`, {
           method: "POST",
-          headers: { "x-local-user-id": "local-user" },
+          headers: getAuthHeaders(),
         }).catch(() => null);
       }
     } finally {

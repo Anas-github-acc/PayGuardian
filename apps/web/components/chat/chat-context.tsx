@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useWorkspaceStore } from "../../app/lib/workspace-store";
 import { useEnvironments } from "../../lib/api/hooks/use-environments";
+import { getAuthHeaders } from "../../lib/api/client";
 import {
   getCachedConversations,
   saveConversation,
@@ -163,7 +164,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (!effectiveEnvId) return;
 
         const res = await fetch(`${API_BASE}/v1/environments/${effectiveEnvId}/conversations/${convId}/messages`, {
-          headers: { "x-local-user-id": "local-user" },
+          headers: getAuthHeaders(),
         });
 
         if (res.ok) {
@@ -207,7 +208,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const res = await fetch(`${API_BASE}/v1/environments/${effectiveEnvId}/conversations`, {
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -269,7 +270,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         try {
           await fetch(`${API_BASE}/v1/environments/${currentEnvId}/conversations/${id}`, {
             method: "DELETE",
-            headers: { "x-local-user-id": "local-user" },
+            headers: getAuthHeaders(),
           });
         } catch (err) {
           console.warn("API delete failed (retained local delete):", err);

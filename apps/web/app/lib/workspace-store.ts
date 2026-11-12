@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { getAuthHeaders } from "../../lib/api/client";
 
 export type EnvironmentType = "sandbox" | "production";
 export type EnvironmentStatus = "active" | "paused" | "closed" | "revoked";
@@ -491,7 +492,7 @@ class WorkspaceStore {
       const start = Date.now();
       const res = await fetch(`${apiBaseUrl}/v1/environments`, {
         method: "GET",
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       }).catch(() => null);
 
       const elapsed = Math.max(1, Date.now() - start);
@@ -649,7 +650,7 @@ class WorkspaceStore {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
       const res = await fetch(`${apiBaseUrl}/v1/environments`, {
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       });
       if (res.ok) {
         const data = (await res.json()) as { environments: Environment[] };

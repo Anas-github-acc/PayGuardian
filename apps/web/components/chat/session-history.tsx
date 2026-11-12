@@ -9,6 +9,7 @@ import {
   saveConversation,
   type CachedConversation,
 } from "../../lib/chat-cache";
+import { getAuthHeaders } from "../../lib/api/client";
 
 export interface SessionHistoryPanelProps {
   /** Closes the hosting Sheet after a selection/new-chat action. */
@@ -55,9 +56,7 @@ export function SessionHistoryPanel({
     // 2. Fetch fresh list from API and update cache
     try {
       const res = await fetch(`${API_BASE}/v1/environments/${currentEnv.id}/conversations`, {
-        headers: {
-          "x-local-user-id": "local-user",
-        },
+        headers: getAuthHeaders(),
       });
 
       if (res.ok) {

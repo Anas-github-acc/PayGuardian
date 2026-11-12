@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useWorkspaceStore, workspaceStore } from "../../app/lib/workspace-store";
 import { useEnvironments } from "../../lib/api/hooks";
+import { getAuthHeaders } from "../../lib/api/client";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
@@ -69,7 +70,7 @@ export function EmergencyControls({
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
       await fetch(`${apiBaseUrl}/v1/environments/${activeEnvId}/pause`, {
         method: "POST",
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       }).catch(() => null);
 
       workspaceStore.updateEnvironment(activeEnvId, { status: "paused" });
@@ -86,7 +87,7 @@ export function EmergencyControls({
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
       await fetch(`${apiBaseUrl}/v1/environments/${activeEnvId}/resume`, {
         method: "POST",
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       }).catch(() => null);
 
       workspaceStore.updateEnvironment(activeEnvId, { status: "active" });

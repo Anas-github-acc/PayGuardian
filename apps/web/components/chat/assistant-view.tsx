@@ -49,7 +49,7 @@ import {
 import { OAuthConsentCard } from "../ui/oauth-consent-card";
 import { PaymentApprovalOverlay } from "../ui/payment-approval-overlay";
 import { PaymentResultCard } from "../cards/payment-result-card";
-import { apiClient } from "../../lib/api/client";
+import { apiClient, getAuthHeaders } from "../../lib/api/client";
 import { useAdaptiveStream } from "../../lib/adaptive-stream";
 import {
   saveConversation,
@@ -274,7 +274,7 @@ export function AssistantView({
       if (!targetEnvId) {
         try {
           const envRes = await fetch(`${API_BASE}/v1/environments`, {
-            headers: { "x-local-user-id": "local-user" },
+            headers: getAuthHeaders(),
           });
           if (envRes.ok) {
             const envData = await envRes.json();
@@ -294,7 +294,7 @@ export function AssistantView({
           const res = await fetch(
             `${API_BASE}/v1/environments/${targetEnvId}/conversations/${convId}/messages`,
             {
-              headers: { "x-local-user-id": "local-user" },
+              headers: getAuthHeaders(),
             },
           );
           // Check stale response
@@ -827,7 +827,7 @@ export function AssistantView({
     if (!effectiveEnvId) {
       try {
         const envRes = await fetch(`${API_BASE}/v1/environments`, {
-          headers: { "x-local-user-id": "local-user" },
+          headers: getAuthHeaders(),
         });
         if (envRes.ok) {
           const envData = await envRes.json();
@@ -884,10 +884,9 @@ export function AssistantView({
       if (!convId) {
         const createConvRes = await fetch(`${API_BASE}/v1/environments/${effectiveEnvId}/conversations`, {
           method: "POST",
-          headers: {
+          headers: getAuthHeaders({
             "Content-Type": "application/json",
-            "x-local-user-id": "local-user",
-          },
+          }),
           body: JSON.stringify({
             title: text.slice(0, 36) + (text.length > 36 ? "..." : ""),
             metadata: { model: submission.modelId, mode: submission.mode },
@@ -927,10 +926,9 @@ export function AssistantView({
         `${API_BASE}/v1/environments/${effectiveEnvId}/conversations/${convId}/messages`,
         {
           method: "POST",
-          headers: {
+          headers: getAuthHeaders({
             "Content-Type": "application/json",
-            "x-local-user-id": "local-user",
-          },
+          }),
           body: JSON.stringify({
             content: text,
             metadata: {
@@ -983,10 +981,9 @@ export function AssistantView({
         `${API_BASE}/v1/environments/${targetEnvId}/approvals/${approvalId}/approve`,
         {
           method: "POST",
-          headers: {
+          headers: getAuthHeaders({
             "Content-Type": "application/json",
-            "x-local-user-id": "local-user",
-          },
+          }),
           body: JSON.stringify({
             mandateId: pendingApproval.mandateId,
             currency: pendingApproval.currency,
@@ -1075,10 +1072,9 @@ export function AssistantView({
           `${API_BASE}/v1/environments/${targetEnvId}/approvals/${approvalId}/reject`,
           {
             method: "POST",
-            headers: {
+            headers: getAuthHeaders({
               "Content-Type": "application/json",
-              "x-local-user-id": "local-user",
-            },
+            }),
             body: JSON.stringify({
               reason: "User rejected proposed budget allocation in UI.",
             }),

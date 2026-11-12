@@ -44,6 +44,32 @@ export class ApiClientError extends Error {
   }
 }
 
+export function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (typeof window !== "undefined") {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+            if (accessToken) {
+              headers["authorization"] = `Bearer ${accessToken}`;
+              return headers;
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  headers["x-local-user-id"] = "local-user";
+  return headers;
+}
+
 export class ApiClient {
   private readonly baseUrl: string;
 
@@ -64,24 +90,10 @@ export class ApiClient {
     }
     if (options?.token) {
       headers.set("authorization", `Bearer ${options.token}`);
-    } else if (typeof window !== "undefined") {
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
-            const raw = localStorage.getItem(k);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
-              if (accessToken) {
-                headers.set("authorization", `Bearer ${accessToken}`);
-                break;
-              }
-            }
-          }
-        }
-      } catch {
-        // ignore localStorage access issues in restricted contexts
+    } else {
+      const auth = getAuthHeaders();
+      if (auth.authorization && !headers.has("authorization")) {
+        headers.set("authorization", auth.authorization);
       }
     }
     if (!headers.has("authorization") && options?.localUserId) {

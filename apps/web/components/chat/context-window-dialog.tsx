@@ -11,6 +11,7 @@ import {
 import { Card, CardContent } from "../ui/card";
 import { cn } from "../../lib/utils";
 import type { ThreadMessage } from "../ui/reasoning-thread";
+import { getAuthHeaders } from "../../lib/api/client";
 
 export interface AssembledContextPayload {
   system_instruction?: string;
@@ -436,7 +437,7 @@ export function ContextWindowDialog({
     fetch(
       `${API_BASE}/v1/environments/${environmentId}/conversations/${conversationId}/context`,
       {
-        headers: { "x-local-user-id": "local-user" },
+        headers: getAuthHeaders(),
       }
     )
       .then((res) => (res.ok ? res.json() : null))
