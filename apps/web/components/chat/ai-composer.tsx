@@ -1223,13 +1223,19 @@ export function AIComposer({
           }
         }
 
-        .aic-pill-control:hover {
+        .aic-pill-control:hover:not(:disabled) {
           background: var(--pill-hover-bg);
           border-color: var(--pill-hover-border);
         }
 
-        .aic-pill-control:active {
+        .aic-pill-control:active:not(:disabled) {
           transform: scale(0.98);
+        }
+
+        .aic-pill-control:disabled,
+        .aic-pill-control[disabled] {
+          opacity: 0.38;
+          cursor: not-allowed;
         }
 
         .aic-add-files-btn {
@@ -1239,9 +1245,22 @@ export function AIComposer({
           flex-shrink: 0;
         }
 
-        .aic-add-files-btn:hover {
+        .aic-add-files-btn:hover:not(:disabled) {
           width: 116px;
           padding: 0 13px 0 11px;
+        }
+
+        .aic-add-files-btn:disabled:hover,
+        .aic-add-files-btn[disabled]:hover {
+          width: 38px;
+          padding: 0 10px;
+          background: var(--pill-bg);
+          border-color: var(--pill-border);
+        }
+
+        .aic-add-files-btn:disabled .aic-add-files-label,
+        .aic-add-files-btn[disabled] .aic-add-files-label {
+          display: none;
         }
 
         .aic-add-files-label {
@@ -1871,12 +1890,13 @@ export function AIComposer({
           <div className="flex items-center justify-between gap-2 relative overflow-visible">
             {/* Left Controls Group */}
             <div className="flex items-center gap-2 sm:gap-2.5 overflow-visible">
-              {/* 1. "+ Add files" Expanding Button (hidden on mobile) */}
+              {/* 1. "+ Add files" Button (Disabled) */}
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="aic-pill-control aic-add-files-btn hidden sm:inline-flex"
-                aria-label="Add files"
+                disabled
+                title="File upload is disabled"
+                className="aic-pill-control aic-add-files-btn hidden sm:inline-flex cursor-not-allowed opacity-40"
+                aria-label="Add files (disabled)"
               >
                 <svg
                   width="16"
