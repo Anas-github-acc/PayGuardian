@@ -98,7 +98,7 @@ export class AboutPayGuardianService {
    */
   public async *streamResponse(
     prompt: string,
-    modelId: string = "gemini-3.8-flash",
+    modelId: string = "gemini-3.5-flash-lite",
   ): AsyncGenerator<string, void, unknown> {
     const googleApiKey =
       process.env.GOOGLE_API_KEY ||
@@ -106,66 +106,83 @@ export class AboutPayGuardianService {
       process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
     const apinexApiKey = process.env.APINEX_API_KEY || process.env.OPENAI_API_KEY;
 
-    // 1. Try Google Gemini API if key is present
-    if (googleApiKey && (modelId.includes("gemini") || !apinexApiKey)) {
-      try {
-        const cleanModel = modelId.startsWith("gemini") ? modelId : "gemini-2.5-flash";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:streamGenerateContent?key=${googleApiKey}&alt=sse`;
+    // 1. Try Google Gemini API with verified active models
+    if (googleApiKey) {
+      const candidateModels = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-3.8-flash",
+      ];
 
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: this.getSystemInstruction() }],
-            },
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: prompt }],
+      // If caller specifically requested another Gemini model, prepend it
+      if (modelId && modelId.startsWith("gemini") && !candidateModels.includes(modelId)) {
+        candidateModels.unshift(modelId);
+      }
+
+      for (const targetGeminiModel of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetGeminiModel}:streamGenerateContent?key=${googleApiKey}&alt=sse`;
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: {
+                parts: [{ text: this.getSystemInstruction() }],
               },
-            ],
-            generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 2048,
-            },
-          }),
-        });
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: prompt }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 2048,
+              },
+            }),
+          });
 
-        if (response.ok && response.body) {
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder("utf-8");
-          let buffer = "";
+          if (response.ok && response.body) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let buffer = "";
+            let streamedAnyText = false;
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
 
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith("data: ")) {
-                const jsonStr = trimmed.slice(6);
-                if (jsonStr === "[DONE]") break;
-                try {
-                  const parsed = JSON.parse(jsonStr);
-                  const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (text) {
-                    yield text;
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith("data: ")) {
+                  const jsonStr = trimmed.slice(6);
+                  if (jsonStr === "[DONE]") break;
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (typeof text === "string" && text.length > 0) {
+                      yield text;
+                      streamedAnyText = true;
+                    }
+                  } catch {
+                    // ignore malformed SSE line
                   }
-                } catch {
-                  // ignore malformed SSE line
                 }
               }
             }
+
+            if (streamedAnyText) {
+              return;
+            }
           }
-          return;
+        } catch {
+          // Try next candidate model
         }
-      } catch (err) {
-        // Fall through to next provider
       }
     }
 
@@ -196,6 +213,7 @@ export class AboutPayGuardianService {
           const reader = response.body.getReader();
           const decoder = new TextDecoder("utf-8");
           let buffer = "";
+          let streamedAny = false;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -213,8 +231,9 @@ export class AboutPayGuardianService {
                 try {
                   const parsed = JSON.parse(dataPart);
                   const chunk = parsed?.choices?.[0]?.delta?.content;
-                  if (chunk) {
+                  if (typeof chunk === "string" && chunk.length > 0) {
                     yield chunk;
+                    streamedAny = true;
                   }
                 } catch {
                   // ignore
@@ -222,80 +241,36 @@ export class AboutPayGuardianService {
               }
             }
           }
-          return;
+
+          if (streamedAny) {
+            return;
+          }
         }
-      } catch (err) {
+      } catch {
         // Fall through to resilient fallback generator
       }
     }
 
-    // 3. Resilient Deterministic Fallback Stream (ensures 100% reliability even if external APIs are unreachable)
-    const fallbackResponse = this.generateFallbackExplanation(prompt);
+    // 3. Resilient Dynamic Fallback (only reached if external networks are completely offline)
+    const fallbackResponse = this.generateDynamicFallback(prompt);
     const words = fallbackResponse.split(" ");
     for (let i = 0; i < words.length; i++) {
       yield (i === 0 ? "" : " ") + words[i];
-      // Micro-pause simulation for natural reading stream
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 15));
     }
   }
 
-  private generateFallbackExplanation(query: string): string {
-    const q = query.toLowerCase();
+  private generateDynamicFallback(query: string): string {
+    return `### PayGuardian Architecture & Security
 
-    if (q.includes("architecture") || q.includes("how it works") || q.includes("system")) {
-      return `### PayGuardian System Architecture
+Regarding your query: **"${query}"**
 
-PayGuardian is structured as an authoritative **Delegation Gateway** connecting user agents to real-world financial settlement rails:
+- **Bounded DAG Authority**: Delegation is mathematically constrained to a maximum depth $\\le$ 2 (Human Owner $\\rightarrow$ Personal Orchestrator $\\rightarrow$ Specialist Subagents).
+- **Exact Integer Accounting**: Zero floating-point approximation error. Headroom is allocated, reserved, and captured strictly in integer minor units (cents, paise).
+- **Conservation Law**: Total Allocated Ceiling $\\equiv$ Available Reserve + Active Reservations + Captured Spend at all times.
+- **Two-Phase Commit**: Funds are first held in the ledger before provider dispatch (PayPal Sandbox), and only captured on verified settlement webhooks.
+- **Audit Integrity**: Append-only tamper-evident logs chained via rolling SHA-256 cryptographic digests.
 
-1. **Gateway Enforcement Core (Node.js/Fastify)**: Authenticates all participating agents, validates cryptographic mandate signatures, and strictly gates financial mutations.
-2. **Mandate & Authority Engine (Bounded DAG)**: Enforces delegation down a Directed Acyclic Graph with **maximum depth ≤ 2** (Human Root → Personal Orchestrator → Specialist Subagent). Budget limits are transferred between balances and cannot exceed parent headroom.
-3. **Integer Accounting Ledger**: Replaces IEEE 754 floating points with exact integer minor units (e.g. cents). Eliminates calculation drift across distributed micro-transactions.
-4. **Two-Phase Settlement Engine (Reserve & Capture)**: Automatically holds funds in the ledger prior to provider dispatch (PayPal Sandbox), and only transitions to captured spend upon verified settlement webhooks.
-5. **Tamper-Evident SHA-256 Audit Chain**: Every state change produces a cryptographically chained rolling digest for audit immutability.`;
-    }
-
-    if (q.includes("invariant") || q.includes("security") || q.includes("guarantee")) {
-      return `### PayGuardian Security Model & Cryptographic Invariants
-
-PayGuardian guarantees absolute financial safety through strict mathematical invariants:
-
-- **Invariant 1: Budget Conservation**:
-  $$\\sum \\text{Child Mandate Ceilings} \\le \\text{Parent Mandate Limit}$$
-  Headroom is carved and transferred—never duplicated or inflated.
-- **Invariant 2: Constant Ledger Equilibrium**:
-  $$\\text{Available Reserve} + \\text{Active Reservations} + \\text{Captured Spend} = \\text{Allocated Ceiling}$$
-  Holds true concurrently across all subagent threads and transactions.
-- **Invariant 3: Bounded Hierarchy (Depth ≤ 2)**:
-  Prevents runaway recursive agent loops from endlessly spawning descendant agents with compounding spend limits.
-- **Invariant 4: Tamper-Proof Audit Chaining**:
-  Each event is sealed using $H_n = \\text{SHA-256}(H_{n-1} \\parallel \\text{Event}_n)$.
-- **Invariant 5: Human-in-the-Loop Passkeys (FIDO2)**:
-  Routine sub-threshold micro-transactions execute autonomously in milliseconds; high-value actions halt for cryptographic biometric sign-off.`;
-    }
-
-    if (q.includes("why") || q.includes("problem") || q.includes("solve")) {
-      return `### Why We Built PayGuardian
-
-**Delegating work to subagents is easy. But delegating spending authority safely, with full accountability, is not.**
-
-Conventional agent frameworks hand autonomous LLMs binary, unrestricted API keys or corporate credit cards. If an agent hallucinates, loops recursively, or is compromised by prompt injection, it can drain accounts in seconds.
-
-**PayGuardian fixes this at the foundation:**
-- Humans authorize a single root budget ceiling with explicit purpose policies and expiration windows.
-- The Personal Orchestrator carves out strictly bounded sub-mandates to specialists (Travel, Hotel, Procurement).
-- Subagents execute within mathematically isolated envelopes. They never see raw banking secrets, and they cannot spend a single cent above their delegated allocation.`;
-    }
-
-    return `### PayGuardian Overview
-
-**PayGuardian** is the trust and authority layer for multi-agent financial delegation.
-
-- **Bounded Authority**: Mathematically constrained mandate delegation along a DAG (depth ≤ 2).
-- **Exact Ledger**: Zero floating-point drift with integer-only minor units.
-- **Two-Phase Commit**: Explicit reservation before capture on payment rails (PayPal Sandbox).
-- **Tamper-Evident Audit**: Append-only SHA-256 cryptographic digest verification.
-- **Framework Agnostic**: Native Model Context Protocol (MCP) server & REST API v1 for Claude, Gemini, GPT-4, and custom LangGraph agents.
-
-Feel free to ask about our cryptographic invariants, DAG authority engine, PayPal Sandbox integration, or multi-agent orchestration architecture!`;
+*(Note: Live upstream LLM inference was momentarily unavailable; displayed from local technical specifications).*`;
   }
 }
