@@ -98,7 +98,7 @@ export class AboutPayGuardianService {
    */
   public async *streamResponse(
     prompt: string,
-    modelId: string = "gemini-3.5-flash-lite",
+    modelId: string = "free/gpt-6-luna",
   ): AsyncGenerator<string, void, unknown> {
     const googleApiKey =
       process.env.GOOGLE_API_KEY ||
@@ -106,91 +106,20 @@ export class AboutPayGuardianService {
       process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
     const apinexApiKey = process.env.APINEX_API_KEY || process.env.OPENAI_API_KEY;
 
-    // 1. Try Google Gemini API with verified active models
-    if (googleApiKey) {
-      const candidateModels = [
-        "gemini-3.5-flash-lite",
-        "gemini-3.5-flash",
-        "gemini-3.8-flash",
-      ];
+    const isGeminiSelected = typeof modelId === "string" && modelId.startsWith("gemini");
+    const isApinexSelected =
+      typeof modelId === "string" &&
+      (modelId.includes("gpt") || modelId.includes("luna") || modelId.startsWith("free/"));
 
-      // If caller specifically requested another Gemini model, prepend it
-      if (modelId && modelId.startsWith("gemini") && !candidateModels.includes(modelId)) {
-        candidateModels.unshift(modelId);
-      }
-
-      for (const targetGeminiModel of candidateModels) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetGeminiModel}:streamGenerateContent?key=${googleApiKey}&alt=sse`;
-
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              system_instruction: {
-                parts: [{ text: this.getSystemInstruction() }],
-              },
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: prompt }],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.4,
-                maxOutputTokens: 2048,
-              },
-            }),
-          });
-
-          if (response.ok && response.body) {
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let buffer = "";
-            let streamedAnyText = false;
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              buffer += decoder.decode(value, { stream: true });
-
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
-
-              for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed.startsWith("data: ")) {
-                  const jsonStr = trimmed.slice(6);
-                  if (jsonStr === "[DONE]") break;
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (typeof text === "string" && text.length > 0) {
-                      yield text;
-                      streamedAnyText = true;
-                    }
-                  } catch {
-                    // ignore malformed SSE line
-                  }
-                }
-              }
-            }
-
-            if (streamedAnyText) {
-              return;
-            }
-          }
-        } catch {
-          // Try next candidate model
-        }
-      }
-    }
-
-    // 2. Try APInex / OpenAI API if available
-    if (apinexApiKey) {
+    // Helper: Stream from APInex / OpenAI-compatible endpoint
+    const tryStreamApinex = async function* (
+      thisContext: AboutPayGuardianService,
+      targetModel: string,
+    ): AsyncGenerator<string, boolean, unknown> {
+      if (!apinexApiKey) return false;
       try {
         const baseUrl = process.env.APINEX_BASE_URL || "https://api.apinex.bond/v1";
-        const targetModel = modelId.includes("gpt") ? modelId : "free/gpt-6-luna";
+        const effectiveModel = targetModel.includes("gpt") ? targetModel : "free/gpt-6-luna";
 
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
@@ -199,59 +128,198 @@ export class AboutPayGuardianService {
             Authorization: `Bearer ${apinexApiKey}`,
           },
           body: JSON.stringify({
-            model: targetModel,
+            model: effectiveModel,
             stream: true,
             temperature: 0.4,
+            max_tokens: 4096,
             messages: [
-              { role: "system", content: this.getSystemInstruction() },
+              { role: "system", content: thisContext.getSystemInstruction() },
               { role: "user", content: prompt },
             ],
           }),
         });
 
-        if (response.ok && response.body) {
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder("utf-8");
-          let buffer = "";
-          let streamedAny = false;
+        if (!response.ok || !response.body) {
+          return false;
+        }
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        let streamedAny = false;
 
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
 
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith("data: ")) {
-                const dataPart = trimmed.slice(6);
-                if (dataPart === "[DONE]") break;
-                try {
-                  const parsed = JSON.parse(dataPart);
-                  const chunk = parsed?.choices?.[0]?.delta?.content;
-                  if (typeof chunk === "string" && chunk.length > 0) {
-                    yield chunk;
-                    streamedAny = true;
-                  }
-                } catch {
-                  // ignore
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("data: ")) {
+              const dataPart = trimmed.slice(6);
+              if (dataPart === "[DONE]") return true;
+              try {
+                const parsed = JSON.parse(dataPart);
+                if (parsed.error) {
+                  throw new Error(parsed.error.message || "APInex stream error");
                 }
+                const chunk = parsed?.choices?.[0]?.delta?.content;
+                if (typeof chunk === "string" && chunk.length > 0) {
+                  yield chunk;
+                  streamedAny = true;
+                }
+              } catch (e: any) {
+                if (e?.message && !e.message.includes("JSON")) throw e;
               }
             }
           }
+        }
+        return streamedAny;
+      } catch {
+        return false;
+      }
+    };
 
-          if (streamedAny) {
-            return;
+    // Helper: Stream from Google Gemini endpoint
+    const tryStreamGemini = async function* (
+      thisContext: AboutPayGuardianService,
+      targetModel: string,
+    ): AsyncGenerator<string, boolean, unknown> {
+      if (!googleApiKey) return false;
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:streamGenerateContent?key=${googleApiKey}&alt=sse`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: thisContext.getSystemInstruction() }],
+            },
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 4096,
+            },
+          }),
+        });
+
+        if (!response.ok || !response.body) {
+          return false;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        let streamedAnyText = false;
+        let finishedCleanly = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("data: ")) {
+              const jsonStr = trimmed.slice(6);
+              if (jsonStr === "[DONE]") {
+                finishedCleanly = true;
+                break;
+              }
+              try {
+                const parsed = JSON.parse(jsonStr);
+                if (parsed.error) {
+                  throw new Error(parsed.error.message || "Gemini stream error");
+                }
+                const candidate = parsed?.candidates?.[0];
+                const text = candidate?.content?.parts?.[0]?.text;
+                if (typeof text === "string" && text.length > 0) {
+                  yield text;
+                  streamedAnyText = true;
+                }
+                if (candidate?.finishReason === "STOP") {
+                  finishedCleanly = true;
+                }
+              } catch (e: any) {
+                if (e?.message && !e.message.includes("JSON")) throw e;
+              }
+            }
           }
         }
+
+        return finishedCleanly || streamedAnyText;
       } catch {
-        // Fall through to resilient fallback generator
+        return false;
+      }
+    };
+
+    // Candidate Gemini models in order of stability
+    const geminiCandidates = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"];
+    if (isGeminiSelected && !geminiCandidates.includes(modelId)) {
+      geminiCandidates.unshift(modelId);
+    }
+
+    let successfullyCompleted = false;
+
+    // Strategy A: If user selected APInex or default, try APInex first
+    if (isApinexSelected || !isGeminiSelected) {
+      if (apinexApiKey) {
+        const apinexGen = tryStreamApinex(this, modelId || "free/gpt-6-luna");
+        for await (const chunk of apinexGen) {
+          yield chunk;
+          successfullyCompleted = true;
+        }
+        if (successfullyCompleted) return;
+      }
+
+      // Secondary fallback: Gemini
+      if (googleApiKey) {
+        for (const candidate of geminiCandidates) {
+          const geminiGen = tryStreamGemini(this, candidate);
+          for await (const chunk of geminiGen) {
+            yield chunk;
+            successfullyCompleted = true;
+          }
+          if (successfullyCompleted) return;
+        }
+      }
+    } else {
+      // Strategy B: User specifically selected Gemini
+      if (googleApiKey) {
+        for (const candidate of geminiCandidates) {
+          const geminiGen = tryStreamGemini(this, candidate);
+          for await (const chunk of geminiGen) {
+            yield chunk;
+            successfullyCompleted = true;
+          }
+          if (successfullyCompleted) return;
+        }
+      }
+
+      // Secondary fallback: APInex
+      if (apinexApiKey) {
+        const apinexGen = tryStreamApinex(this, "free/gpt-6-luna");
+        for await (const chunk of apinexGen) {
+          yield chunk;
+          successfullyCompleted = true;
+        }
+        if (successfullyCompleted) return;
       }
     }
 
-    // 3. Resilient Dynamic Fallback (only reached if external networks are completely offline)
+    // Strategy C: Dynamic architectural fallback if external models are unreachable
     const fallbackResponse = this.generateDynamicFallback(prompt);
     const words = fallbackResponse.split(" ");
     for (let i = 0; i < words.length; i++) {

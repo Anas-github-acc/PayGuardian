@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-    const modelId = typeof body.modelId === "string" ? body.modelId : "gemini-3.8-flash";
+    const modelId = typeof body.modelId === "string" && body.modelId ? body.modelId : "free/gpt-6-luna";
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
